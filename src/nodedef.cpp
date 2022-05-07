@@ -33,6 +33,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "nameidmapping.h"
 #include "util/numeric.h"
 #include "util/serialize.h"
+#include "util/string.h"
 #include "exceptions.h"
 #include "debug.h"
 #include "gamedef.h"

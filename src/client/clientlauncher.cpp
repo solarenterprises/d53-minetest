@@ -482,7 +482,7 @@ bool ClientLauncher::launch_game(std::string &error_message,
 	if (start_data.name.length() > PLAYERNAME_SIZE - 1) {
 		error_message = gettext("Player name too long.");
 		start_data.name.resize(PLAYERNAME_SIZE);
-		g_settings->set("name", start_data.name);
+		//g_settings->set("name", start_data.name);
 		return false;
 	}
 

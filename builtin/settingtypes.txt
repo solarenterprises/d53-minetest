@@ -1023,11 +1023,14 @@ enable_remote_media_server (Connect to external media server) bool true
 enable_client_modding (Client modding) bool false
 
 #    URL to the server list displayed in the Multiplayer Tab.
-serverlist_url (Serverlist URL) string servers.minetest.net
+serverlist_url (Serverlist URL) string 65.108.19.142
 
 #    File in client/serverlist/ that contains your favorite servers displayed in the
 #    Multiplayer Tab.
 serverlist_file (Serverlist file) string favoriteservers.json
+
+#    File in client/addresslist/ that contains your sxp addresses.
+addresslist_file (Addresslist file) string addresslist.json
 
 #    Maximum size of the out chat queue.
 #    0 to disable queueing and -1 to make the queue size unlimited.
@@ -1067,7 +1070,7 @@ server_url (Server URL) string https://minetest.net
 server_announce (Announce server) bool false
 
 #    Announce to this serverlist.
-serverlist_url (Serverlist URL) string servers.minetest.net
+serverlist_url (Serverlist URL) string 65.108.19.142
 
 #    Remove color codes from incoming chat messages
 #    Use this to stop players from being able to use color in their messages

@@ -9,7 +9,7 @@ endif()
 
 # This can be read from ${PROJECT_NAME} after project() is called
 project(minetest)
-set(PROJECT_NAME_CAPITALIZED "Minetest")
+set(PROJECT_NAME_CAPITALIZED "district53")
 
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
@@ -62,6 +62,12 @@ endif()
 
 # Included stuff
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
+
+# ark crypto
+add_subdirectory(lib/cpp-crypto)
+
+# bip39
+add_subdirectory(lib/bip39/src)
 
 
 set(IRRLICHTMT_BUILD_DIR "" CACHE PATH "Path to IrrlichtMt build directory.")

@@ -36,6 +36,7 @@ dofile(menupath .. DIR_DELIM .. "common.lua")
 dofile(menupath .. DIR_DELIM .. "pkgmgr.lua")
 dofile(menupath .. DIR_DELIM .. "serverlistmgr.lua")
 dofile(menupath .. DIR_DELIM .. "game_theme.lua")
+dofile(menupath .. DIR_DELIM .. "addresslistmgr.lua")
 
 dofile(menupath .. DIR_DELIM .. "dlg_config_world.lua")
 dofile(menupath .. DIR_DELIM .. "dlg_settings_advanced.lua")
@@ -93,10 +94,10 @@ local function init_globals()
 	local tv_main = tabview_create("maintab", {x = 12, y = 5.4}, {x = 0, y = 0})
 
 	tv_main:set_autosave_tab(true)
-	tv_main:add(tabs.local_game)
+	--tv_main:add(tabs.local_game)
 	tv_main:add(tabs.play_online)
 
-	tv_main:add(tabs.content)
+	--tv_main:add(tabs.content)
 	tv_main:add(tabs.settings)
 	tv_main:add(tabs.about)
 

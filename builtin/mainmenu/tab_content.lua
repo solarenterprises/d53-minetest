@@ -51,7 +51,6 @@ local function get_formspec(tabview, name, tabdata)
 		tabdata.selected_pkg = 1
 	end
 
-
 	local retval =
 		"label[0.05,-0.25;".. fgettext("Installed Packages:") .. "]" ..
 		"tablecolumns[color;tree;text]" ..

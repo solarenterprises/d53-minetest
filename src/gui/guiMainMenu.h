@@ -22,6 +22,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "irrlichttypes_extrabloated.h"
 #include <string>
 #include <list>
+#include "crypto/message.hpp"
 
 struct MainMenuDataForScript {
 
@@ -36,10 +37,18 @@ struct MainMenuData {
 	// Client options
 	std::string servername;
 	std::string serverdescription;
+	std::string sxpaddress;
 	std::string address;
 	std::string port;
 	std::string name;
 	std::string password;
+
+	// new auth stuff added by mike
+	std::string alias;
+	std::time_t timestamp;
+	Ark::Crypto::Message message;
+
+
 	// Whether to reconnect
 	bool do_reconnect = false;
 

@@ -94,6 +94,16 @@ private:
 
 	static int l_get_textlist_index(lua_State *L);
 
+	static int l_get_new_sxpaddress(lua_State *L);
+
+	static int l_get_restore_sxpaddress(lua_State *L);
+
+	static int l_copy_to_clipboard(lua_State *L);
+
+	static int l_validate_sxp_password(lua_State *L);
+
+	static int l_get_sxp_mnemonic(lua_State *L);
+
 	static int l_get_table_index(lua_State *L);
 
 	static int l_set_background(lua_State *L);
