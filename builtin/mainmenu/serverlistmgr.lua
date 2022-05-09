@@ -47,7 +47,7 @@ function serverlistmgr.sync()
 		}}
 	end
 
-	local serverlist_url = core.settings:get("serverlist_url") or ""
+	local serverlist_url = core.settings:get("serverlist_url") or "serverlist.mainnet.sh"
 	if not core.get_http_api or serverlist_url == "" then
 		serverlistmgr.servers = {{
 			name = fgettext("Public server list is disabled"),

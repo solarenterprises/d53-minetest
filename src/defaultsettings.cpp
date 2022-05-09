@@ -35,7 +35,7 @@ void set_default_settings()
 	settings->setDefault("language", "");
 	settings->setDefault("name", "");
 	settings->setDefault("bind_address", "");
-	settings->setDefault("serverlist_url", "65.108.19.142");
+	settings->setDefault("serverlist_url", "serverlist.mainnet.sh");
 
 	// Client
 	settings->setDefault("address", "");
