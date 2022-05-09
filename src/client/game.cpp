@@ -4239,8 +4239,9 @@ void Game::showPauseMenu()
 		<< strgettext("Continue") << "]";
 
 	if (!simple_singleplayer_mode) {
-		os << "button_exit[4," << (ypos++) << ";3,0.5;btn_change_password;"
-			<< strgettext("Change Password") << "]";
+		// Can't change password, since it doesn't use the typed password
+		//os << "button_exit[4," << (ypos++) << ";3,0.5;btn_change_password;"
+		//	<< strgettext("Change Password") << "]";
 	} else {
 		os << "field[4.95,0;5,1.5;;" << strgettext("Game paused") << ";]";
 	}

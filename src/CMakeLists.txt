@@ -1,4 +1,5 @@
-project(minetest)
+project(district53)
+#project(minetest)
 
 INCLUDE(CheckIncludeFiles)
 INCLUDE(CheckLibraryExists)

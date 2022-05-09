@@ -8,7 +8,8 @@ else()
 endif()
 
 # This can be read from ${PROJECT_NAME} after project() is called
-project(minetest)
+#project(minetest)
+project(district53)
 set(PROJECT_NAME_CAPITALIZED "district53")
 
 set(CMAKE_CXX_STANDARD 14)
@@ -308,8 +309,8 @@ cpack_add_component(Docs
 )
 
 cpack_add_component(SUBGAME_MINETEST_GAME
-	DISPLAY_NAME "Minetest Game"
-	DESCRIPTION "The default game bundled in the Minetest engine. Mainly used as a modding base."
+	DISPLAY_NAME "district53 Game"
+	DESCRIPTION "The default game bundled in the district53 engine. Mainly used as a modding base."
 	GROUP "Games"
 )
 

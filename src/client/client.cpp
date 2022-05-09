@@ -1041,6 +1041,7 @@ void Client::deleteAuthData()
 
 AuthMechanism Client::choseAuthMech(const u32 mechs)
 {
+
 	if (mechs & AUTH_MECHANISM_SRP)
 		return AUTH_MECHANISM_SRP;
 
@@ -1051,6 +1052,7 @@ AuthMechanism Client::choseAuthMech(const u32 mechs)
 		return AUTH_MECHANISM_LEGACY_PASSWORD;
 
 	return AUTH_MECHANISM_NONE;
+
 }
 
 void Client::sendInit(const std::string &playerName)
@@ -1070,7 +1072,9 @@ void Client::sendInit(const std::string &playerName)
 void Client::promptConfirmRegistration(AuthMechanism chosen_auth_mechanism)
 {
 	m_chosen_auth_mech = chosen_auth_mechanism;
-	m_is_registration_confirmation_state = true;
+	//m_is_registration_confirmation_state = true;
+	m_is_registration_confirmation_state = false;
+	startAuth(m_chosen_auth_mech);
 }
 
 void Client::confirmRegistration()
@@ -1099,10 +1103,11 @@ void Client::startAuth(AuthMechanism chosen_auth_mechanism)
 		}
 		case AUTH_MECHANISM_SRP:
 		case AUTH_MECHANISM_LEGACY_PASSWORD: {
+
 			u8 based_on = 1;
 
 			if (chosen_auth_mechanism == AUTH_MECHANISM_LEGACY_PASSWORD) {
-				m_password = translate_password(getPlayerName(), m_password);
+				m_password = translate_password(getPlayerName(), "");
 				based_on = 0;
 			}
 
@@ -1122,6 +1127,7 @@ void Client::startAuth(AuthMechanism chosen_auth_mechanism)
 			resp_pkt << std::string(bytes_A, len_A) << based_on;
 			Send(&resp_pkt);
 			break;
+
 		}
 		case AUTH_MECHANISM_NONE:
 			break; // not handled in this method

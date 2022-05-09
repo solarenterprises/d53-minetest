@@ -731,17 +731,11 @@ int ModApiMainMenu::l_start(lua_State *L)
 	const std::uint8_t version = 0x3F;
 	const Ark::Crypto::identities::Address address = Ark::Crypto::identities::Address::fromPassphrase(dtext.c_str(), version);
 
-	struct timeval time_now{};
-	std::time_t timestamp = time_now.tv_sec;
-
   	// Message - sign
-	std::stringstream ss;
-	ss << timestamp;
-	std::string stringtime = ss.str();
-
   	Ark::Crypto::Message message;
-  	message.sign(stringtime, dtext);
+  	message.sign(address.toString(), dtext);
 
+	const std::string newpass = bytes_to_str(message.signature);
 
 	data->selected_world = getIntegerData(L, "selected_world",valid) -1;
 	data->simple_singleplayer_mode = getBoolData(L,"singleplayer",valid);
@@ -749,9 +743,7 @@ int ModApiMainMenu::l_start(lua_State *L)
 	if (!data->do_reconnect) {
 		data->name     	= address.toString();
 		data->alias     = getTextData(L,"aliasname");
-		data->password  = "";
-		data->timestamp = timestamp;
-		data->message    = message;
+		data->password  = newpass;
 		data->address   = getTextData(L,"address");
 		data->port      = getTextData(L,"port");
 	}
