@@ -10,7 +10,7 @@ include(ExternalProject)
 # ------------------------------------------------------------------------------
 
 ExternalProject_Add(ArduinoJson
-  GIT_REPOSITORY    https://github.com/bblanchon/ArduinoJson
+  GIT_REPOSITORY    https://github.com/district53/ArduinoJson
   GIT_TAG           v6.19.4
   GIT_CONFIG        advice.detachedHead=false
   SOURCE_DIR        "${EXTERNAL_LIBRARY_DIR}/arduinojson/src"
