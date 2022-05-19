@@ -110,7 +110,7 @@ word_list create_mnemonic(std::vector<uint8_t>& entropy, language lang) {
     return words;
 }
 
-word_list generate_mnemonic(entropy_bits_t entropy /* = entropy_bits::_128 */, language lang /* = language::en */) {
+word_list generate_mnemonic(entropy_bits_t entropy = entropy_bits::_128, language lang /* = language::en */) {
 
     typedef std::chrono::high_resolution_clock myclock;
     myclock::time_point beginning = myclock::now();

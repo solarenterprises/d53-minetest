@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-CORE_GIT=https://github.com/minetest/minetest
+CORE_GIT=https://github.com/district53/minetest
 CORE_BRANCH=master
 CORE_NAME=minetest
 GAME_GIT=https://github.com/minetest/minetest_game
@@ -128,6 +128,7 @@ cmake -S $sourcedir -B build \
 	-DENABLE_SOUND=1 \
 	-DENABLE_CURL=1 \
 	-DENABLE_GETTEXT=1 \
+	-DENABLE_FREETYPE=1 \
 	-DENABLE_LEVELDB=1 \
 	\
 	-DCMAKE_PREFIX_PATH=$libdir/irrlicht \
@@ -163,6 +164,7 @@ cmake -S $sourcedir -B build \
 	\
 	-DGETTEXT_MSGFMT=`command -v msgfmt` \
 	-DGETTEXT_DLL="$gettext_dlls" \
+	-DGETTEXT_ICONV_DLL=$libdir/gettext/bin/libiconv-2.dll \
 	-DGETTEXT_INCLUDE_DIR=$libdir/gettext/include \
 	-DGETTEXT_LIBRARY=$libdir/gettext/lib/libintl.dll.a \
 	\

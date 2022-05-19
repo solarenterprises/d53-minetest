@@ -4,6 +4,7 @@ project(district53)
 INCLUDE(CheckIncludeFiles)
 INCLUDE(CheckLibraryExists)
 
+
 # Add custom SemiDebug build mode
 set(CMAKE_CXX_FLAGS_SEMIDEBUG "-O1 -g -Wall" CACHE STRING
 	"Flags used by the C++ compiler during semidebug builds."
@@ -500,13 +501,23 @@ if(USE_CURL)
 endif()
 
 
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -lcrypt32 -lws2_32")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -lcrypt32 -lws2_32")
+
+
+
 # When cross-compiling assume the user doesn't want to run the executable anyway,
 # otherwise place it in <source dir>/bin/ since Minetest can only run from there.
 if(NOT CMAKE_CROSSCOMPILING)
 	set(EXECUTABLE_OUTPUT_PATH "${CMAKE_SOURCE_DIR}/bin")
 endif()
 
-find_package(OpenSSL REQUIRED)
+#set(OPENSSL_CRYPTO_LIBRARY "/root/mingssl/bin/")
+#set(OPENSSL_INCLUDE_DIR "/root/mingssl/include/openssl/")
+
+#set(OPENSSL_USE_STATIC_LIBS TRUE)
+#find_package(OpenSSL REQUIRED)
+
 
 if(BUILD_CLIENT)
 	add_executable(${PROJECT_NAME} ${client_SRCS} ${extra_windows_SRCS})
@@ -527,8 +538,8 @@ if(BUILD_CLIENT)
 		${PLATFORM_LIBS}
 		ark_cpp_crypto
 		bip39
-		OpenSSL::SSL
-		OpenSSL::Crypto
+		ssl
+		crypto
 	)
 	if(NOT USE_LUAJIT)
 		set_target_properties(${PROJECT_NAME} PROPERTIES
