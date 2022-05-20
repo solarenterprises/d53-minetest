@@ -141,8 +141,11 @@ public:
 	// Not callable from Lua
 	static int create(lua_State *L, const ItemStack &item);
 	static LuaItemStack* checkobject(lua_State *L, int narg);
-	static void Register(lua_State *L);
 
+	static void *packIn(lua_State *L, int idx);
+	static void packOut(lua_State *L, void *ptr);
+
+	static void Register(lua_State *L);
 };
 
 class ModApiItemMod : public ModApiBase {
@@ -154,4 +157,5 @@ private:
 	static int l_get_name_from_content_id(lua_State *L);
 public:
 	static void Initialize(lua_State *L, int top);
+	static void InitializeAsync(lua_State *L, int top);
 };

@@ -21,6 +21,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "lua_api/l_internal.h"
 #include "common/c_converter.h"
 #include "common/c_content.h"
+#include "common/c_packer.h"
 #include "log.h"
 #include "porting.h"
 #include "util/numeric.h"
@@ -30,7 +31,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
   LuaPerlinNoise
 */
 
-LuaPerlinNoise::LuaPerlinNoise(NoiseParams *params) :
+LuaPerlinNoise::LuaPerlinNoise(const NoiseParams *params) :
 	np(*params)
 {
 }
@@ -100,6 +101,23 @@ LuaPerlinNoise *LuaPerlinNoise::checkobject(lua_State *L, int narg)
 	return *(LuaPerlinNoise **)ud;
 }
 
+void *LuaPerlinNoise::packIn(lua_State *L, int idx)
+{
+	LuaPerlinNoise *o = checkobject(L, idx);
+	return new NoiseParams(o->np);
+}
+
+void LuaPerlinNoise::packOut(lua_State *L, void *ptr)
+{
+	NoiseParams *np = reinterpret_cast<NoiseParams*>(ptr);
+	if (L) {
+		LuaPerlinNoise *o = new LuaPerlinNoise(np);
+		*(void **)(lua_newuserdata(L, sizeof(void *))) = o;
+		luaL_getmetatable(L, className);
+		lua_setmetatable(L, -2);
+	}
+	delete np;
+}
 
 void LuaPerlinNoise::Register(lua_State *L)
 {
@@ -126,6 +144,8 @@ void LuaPerlinNoise::Register(lua_State *L)
 	lua_pop(L, 1);
 
 	lua_register(L, className, create_object);
+
+	script_register_packer(L, className, packIn, packOut);
 }
 
 
@@ -141,12 +161,10 @@ luaL_Reg LuaPerlinNoise::methods[] = {
   LuaPerlinNoiseMap
 */
 
-LuaPerlinNoiseMap::LuaPerlinNoiseMap(NoiseParams *params, s32 seed, v3s16 size)
+LuaPerlinNoiseMap::LuaPerlinNoiseMap(const NoiseParams *np, s32 seed, v3s16 size)
 {
-	m_is3d = size.Z > 1;
-	np = *params;
 	try {
-		noise = new Noise(&np, seed, size.X, size.Y, size.Z);
+		noise = new Noise(np, seed, size.X, size.Y, size.Z);
 	} catch (InvalidNoiseParamsException &e) {
 		throw LuaError(e.what());
 	}
@@ -217,7 +235,7 @@ int LuaPerlinNoiseMap::l_get_3d_map(lua_State *L)
 	LuaPerlinNoiseMap *o = checkobject(L, 1);
 	v3f p = check_v3f(L, 2);
 
-	if (!o->m_is3d)
+	if (!o->is3D())
 		return 0;
 
 	Noise *n = o->noise;
@@ -248,7 +266,7 @@ int LuaPerlinNoiseMap::l_get_3d_map_flat(lua_State *L)
 	v3f p                = check_v3f(L, 2);
 	bool use_buffer      = lua_istable(L, 3);
 
-	if (!o->m_is3d)
+	if (!o->is3D())
 		return 0;
 
 	Noise *n = o->noise;
@@ -289,7 +307,7 @@ int LuaPerlinNoiseMap::l_calc_3d_map(lua_State *L)
 	LuaPerlinNoiseMap *o = checkobject(L, 1);
 	v3f p                = check_v3f(L, 2);
 
-	if (!o->m_is3d)
+	if (!o->is3D())
 		return 0;
 
 	Noise *n = o->noise;
@@ -358,6 +376,33 @@ LuaPerlinNoiseMap *LuaPerlinNoiseMap::checkobject(lua_State *L, int narg)
 	return *(LuaPerlinNoiseMap **)ud;
 }
 
+struct NoiseMapParams {
+	NoiseParams np;
+	s32 seed;
+	v3s16 size;
+};
+
+void *LuaPerlinNoiseMap::packIn(lua_State *L, int idx)
+{
+	LuaPerlinNoiseMap *o = checkobject(L, idx);
+	NoiseMapParams *ret = new NoiseMapParams();
+	ret->np = o->noise->np;
+	ret->seed = o->noise->seed;
+	ret->size = v3s16(o->noise->sx, o->noise->sy, o->noise->sz);
+	return ret;
+}
+
+void LuaPerlinNoiseMap::packOut(lua_State *L, void *ptr)
+{
+	NoiseMapParams *p = reinterpret_cast<NoiseMapParams*>(ptr);
+	if (L) {
+		LuaPerlinNoiseMap *o = new LuaPerlinNoiseMap(&p->np, p->seed, p->size);
+		*(void **)(lua_newuserdata(L, sizeof(void *))) = o;
+		luaL_getmetatable(L, className);
+		lua_setmetatable(L, -2);
+	}
+	delete p;
+}
 
 void LuaPerlinNoiseMap::Register(lua_State *L)
 {
@@ -384,6 +429,8 @@ void LuaPerlinNoiseMap::Register(lua_State *L)
 	lua_pop(L, 1);
 
 	lua_register(L, className, create_object);
+
+	script_register_packer(L, className, packIn, packOut);
 }
 
 

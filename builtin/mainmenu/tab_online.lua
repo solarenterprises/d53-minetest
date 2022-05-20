@@ -156,10 +156,10 @@ local function get_formspec(tabview, name, tabdata)
 			core.formspec_escape(core.settings:get("remote_port")) .. "]" ..
 
 		-- Name / Password
-		"label[0.25,1.55;" .. fgettext("Player Name") .. "]" ..
+		--"label[0.25,1.55;" .. fgettext("Player Name") .. "]" ..
 		--"label[3,1.55;" .. fgettext("Password") .. "]" ..
-		"field[0.25,1.75;5.25,0.75;te_name;;" ..
-			core.formspec_escape(core.settings:get("name")) .. "]" ..
+		--"field[0.25,1.75;5.25,0.75;te_name;;" ..
+		--	core.formspec_escape(core.settings:get("name")) .. "]" ..
 		--"pwdfield[3,1.75;2.5,0.75;te_pwd;]" ..
 
 		-- Description Background

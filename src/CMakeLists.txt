@@ -501,46 +501,62 @@ if(USE_CURL)
 endif()
 
 
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -lcrypt32 -lws2_32")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -lcrypt32 -lws2_32")
-
-
-
 # When cross-compiling assume the user doesn't want to run the executable anyway,
 # otherwise place it in <source dir>/bin/ since Minetest can only run from there.
 if(NOT CMAKE_CROSSCOMPILING)
 	set(EXECUTABLE_OUTPUT_PATH "${CMAKE_SOURCE_DIR}/bin")
 endif()
 
-#set(OPENSSL_CRYPTO_LIBRARY "/root/mingssl/bin/")
-#set(OPENSSL_INCLUDE_DIR "/root/mingssl/include/openssl/")
-
-#set(OPENSSL_USE_STATIC_LIBS TRUE)
-#find_package(OpenSSL REQUIRED)
-
+if (NOT WIN32)
+	find_package(OpenSSL REQUIRED)
+endif()
 
 if(BUILD_CLIENT)
 	add_executable(${PROJECT_NAME} ${client_SRCS} ${extra_windows_SRCS})
 	add_dependencies(${PROJECT_NAME} GenerateVersion)
-	target_link_libraries(
-		${PROJECT_NAME}
-		${ZLIB_LIBRARIES}
-		IrrlichtMt::IrrlichtMt
-		${ZSTD_LIBRARY}
-		${X11_LIBRARIES}
-		${SOUND_LIBRARIES}
-		${SQLITE3_LIBRARY}
-		${LUA_LIBRARY}
-		${GMP_LIBRARY}
-		${JSON_LIBRARY}
-		${LUA_BIT_LIBRARY}
-		${FREETYPE_LIBRARY}
-		${PLATFORM_LIBS}
-		ark_cpp_crypto
-		bip39
-		ssl
-		crypto
-	)
+
+	if (WIN32)
+		target_link_libraries(
+			${PROJECT_NAME}
+			${ZLIB_LIBRARIES}
+			IrrlichtMt::IrrlichtMt
+			${ZSTD_LIBRARY}
+			${X11_LIBRARIES}
+			${SOUND_LIBRARIES}
+			${SQLITE3_LIBRARY}
+			${LUA_LIBRARY}
+			${GMP_LIBRARY}
+			${JSON_LIBRARY}
+			${LUA_BIT_LIBRARY}
+			${FREETYPE_LIBRARY}
+			${PLATFORM_LIBS}
+			ark_cpp_crypto
+			bip39
+			ssl
+			crypto
+		)
+	else()
+		target_link_libraries(
+			${PROJECT_NAME}
+			${ZLIB_LIBRARIES}
+			IrrlichtMt::IrrlichtMt
+			${ZSTD_LIBRARY}
+			${X11_LIBRARIES}
+			${SOUND_LIBRARIES}
+			${SQLITE3_LIBRARY}
+			${LUA_LIBRARY}
+			${GMP_LIBRARY}
+			${JSON_LIBRARY}
+			${LUA_BIT_LIBRARY}
+			${FREETYPE_LIBRARY}
+			${PLATFORM_LIBS}
+			ark_cpp_crypto
+			bip39
+			OpenSSL::SSL
+			OpenSSL::Crypto
+		)
+	endif()
+
 	if(NOT USE_LUAJIT)
 		set_target_properties(${PROJECT_NAME} PROPERTIES
 			# This is necessary for dynamic Lua modules
@@ -711,8 +727,10 @@ if(MSVC)
 	endif()
 else()
 	# GCC or compatible compilers such as Clang
+	set(WARNING_FLAGS "-Wall -Wextra")
+	set(WARNING_FLAGS "${WARNING_FLAGS} -Wno-unused-parameter -Wno-implicit-fallthrough")
 	if(WARN_ALL)
-		set(RELEASE_WARNING_FLAGS "-Wall")
+		set(RELEASE_WARNING_FLAGS "${WARNING_FLAGS}")
 	else()
 		set(RELEASE_WARNING_FLAGS "")
 	endif()
@@ -760,7 +778,7 @@ else()
 		endif()
 	endif()
 
-	set(CMAKE_CXX_FLAGS_RELEASE "-DNDEBUG ${RELEASE_WARNING_FLAGS} ${WARNING_FLAGS} ${OTHER_FLAGS} -Wall -pipe -funroll-loops")
+	set(CMAKE_CXX_FLAGS_RELEASE "-DNDEBUG ${RELEASE_WARNING_FLAGS} ${OTHER_FLAGS} -pipe -funroll-loops")
 	if(CMAKE_SYSTEM_NAME MATCHES "(Darwin|BSD|DragonFly)")
 		set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Os")
 	else()
@@ -773,8 +791,9 @@ else()
 			set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} ${MATH_FLAGS}")
 		endif()
 	endif()
-	set(CMAKE_CXX_FLAGS_SEMIDEBUG "-g -O1 -Wall ${WARNING_FLAGS} ${OTHER_FLAGS}")
-	set(CMAKE_CXX_FLAGS_DEBUG "-g -O0 -Wall ${WARNING_FLAGS} ${OTHER_FLAGS}")
+	set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELEASE} -g")
+	set(CMAKE_CXX_FLAGS_SEMIDEBUG "-g -O1 ${WARNING_FLAGS} ${OTHER_FLAGS}")
+	set(CMAKE_CXX_FLAGS_DEBUG "-g -O0 ${WARNING_FLAGS} ${OTHER_FLAGS}")
 
 	if(USE_GPROF)
 		set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -pg")
@@ -844,12 +863,13 @@ if(WIN32)
 		if(LUA_DLL)
 			install(FILES ${LUA_DLL} DESTINATION ${BINDIR})
 		endif()
-		if(BUILD_CLIENT AND IRRLICHT_DLL)
-			install(FILES ${IRRLICHT_DLL} DESTINATION ${BINDIR})
-		endif()
 		if(BUILD_CLIENT AND USE_GETTEXT AND GETTEXT_DLL)
 			install(FILES ${GETTEXT_DLL} DESTINATION ${BINDIR})
 		endif()
+	endif()
+
+	if(BUILD_CLIENT AND IRRLICHT_DLL)
+		install(FILES ${IRRLICHT_DLL} DESTINATION ${BINDIR})
 	endif()
 endif()
 

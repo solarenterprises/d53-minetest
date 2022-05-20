@@ -310,12 +310,7 @@ local function handle_revoke_command(caller, revokename, revokeprivstr)
 			and revokename == core.settings:get("name")
 			and revokename ~= ""
 	if revokeprivstr == "all" then
-		revokeprivs = privs
-		privs = {}
-	else
-		for priv, _ in pairs(revokeprivs) do
-			privs[priv] = nil
-		end
+		revokeprivs = table.copy(privs)
 	end
 
 	local privs_unknown = ""
@@ -332,7 +327,10 @@ local function handle_revoke_command(caller, revokename, revokeprivstr)
 		end
 		local def = core.registered_privileges[priv]
 		if not def then
-			privs_unknown = privs_unknown .. S("Unknown privilege: @1", priv) .. "\n"
+			-- Old/removed privileges might still be granted to certain players
+			if not privs[priv] then
+				privs_unknown = privs_unknown .. S("Unknown privilege: @1", priv) .. "\n"
+			end
 		elseif is_singleplayer and def.give_to_singleplayer then
 			irrevokable[priv] = true
 		elseif is_admin and def.give_to_admin then
@@ -360,10 +358,8 @@ local function handle_revoke_command(caller, revokename, revokeprivstr)
 
 	local revokecount = 0
 
-	core.set_player_privs(revokename, privs)
 	for priv, _ in pairs(revokeprivs) do
-		-- call the on_revoke callbacks
-		core.run_priv_callbacks(revokename, priv, caller, "revoke")
+		privs[priv] = nil
 		revokecount = revokecount + 1
 	end
 	local new_privs = core.get_player_privs(revokename)
@@ -371,6 +367,13 @@ local function handle_revoke_command(caller, revokename, revokeprivstr)
 	if revokecount == 0 then
 		return false, S("No privileges were revoked.")
 	end
+
+	core.set_player_privs(revokename, privs)
+	for priv, _ in pairs(revokeprivs) do
+		-- call the on_revoke callbacks
+		core.run_priv_callbacks(revokename, priv, caller, "revoke")
+	end
+	local new_privs = core.get_player_privs(revokename)
 
 	core.log("action", caller..' revoked ('
 			..core.privs_to_string(revokeprivs, ', ')

@@ -47,6 +47,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include <cstdint>
 #include <iostream>
 #include "util/base64.h"
+#include <iterator>
+#include <sstream>
 
 /* ssl stuff */
 
@@ -930,7 +932,7 @@ int ModApiMainMenu::l_get_sxp_mnemonic(lua_State *L)
 int ModApiMainMenu::l_get_new_sxpaddress(lua_State *L)
 {
 	
-  	const BIP39::word_list wordlist = BIP39::generate_mnemonic();
+  	const BIP39::word_list wordlist = BIP39::generate_mnemonic(BIP39::entropy_bits_t::_256, BIP39::language::en);
  
 	const std::string passphrase1 = wordlist.to_string();
 

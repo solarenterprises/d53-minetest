@@ -25,15 +25,27 @@
 cmake_minimum_required(VERSION 3.2)
 project(openssl-cmake)
 
-set(BUILD_OPENSSL ON CACHE BOOL "Automated OpenSSL building")
-set(OPENSSL_BUILD_VERSION "1.1.1f" CACHE STRING "OpenSSL version to build")
-set(OPENSSL_INSTALL_MAN OFF CACHE STRING "Install man pages?")
-set(OPENSSL_MODULES "no-cast no-md2 no-md4 no-mdc2 no-rc4 no-rc5 no-engine no-idea no-mdc2 no-rc5 no-camellia no-ssl3 no-heartbeats no-gost no-deprecated no-capieng no-comp no-dtls no-psk no-srp no-dso no-dsa no-rc2 no-des" CACHE STRING "OpenSSL configure options")
-set(CROSS_ANDROID OFF CACHE BOOL "Cross-compiling for Android?")
-set(CROSS ON CACHE BOOL "Cross-compiling?")
-set(CROSS_TARGET "mingw64" CACHE STRING "Cross-compilation target")
-set(CROSS_PREFIX "x86_64-w64-mingw32-")
-set(SYSTEM_OPENSSL OFF CACHE STRING "Use system-provided openssl libraries (instead of prebuilts or building)")
+if (WIN32)
+    set(BUILD_OPENSSL ON CACHE BOOL "Automated OpenSSL building")
+    set(OPENSSL_BUILD_VERSION "1.1.1f" CACHE STRING "OpenSSL version to build")
+    set(OPENSSL_INSTALL_MAN OFF CACHE STRING "Install man pages?")
+    set(OPENSSL_MODULES "no-cast no-md2 no-md4 no-mdc2 no-rc4 no-rc5 no-engine no-idea no-mdc2 no-rc5 no-camellia no-ssl3 no-heartbeats no-gost no-deprecated no-capieng no-comp no-dtls no-psk no-srp no-dso no-dsa no-rc2 no-des" CACHE STRING "OpenSSL configure options")
+    set(CROSS_ANDROID OFF CACHE BOOL "Cross-compiling for Android?")
+    set(CROSS ON CACHE BOOL "Cross-compiling?")
+    set(CROSS_TARGET "mingw64" CACHE STRING "Cross-compilation target")
+    set(CROSS_PREFIX "x86_64-w64-mingw32-")
+    set(SYSTEM_OPENSSL OFF CACHE STRING "Use system-provided openssl libraries (instead of prebuilts or building)")
+else()
+    set(BUILD_OPENSSL OFF CACHE BOOL "Automated OpenSSL building")
+    set(OPENSSL_BUILD_VERSION "1.1.1f" CACHE STRING "OpenSSL version to build")
+    set(OPENSSL_INSTALL_MAN OFF CACHE STRING "Install man pages?")
+    set(OPENSSL_MODULES "no-cast no-md2 no-md4 no-mdc2 no-rc4 no-rc5 no-engine no-idea no-mdc2 no-rc5 no-camellia no-ssl3 no-heartbeats no-gost no-deprecated no-capieng no-comp no-dtls no-psk no-srp no-dso no-dsa no-rc2 no-des" CACHE STRING "OpenSSL configure options")
+    set(CROSS_ANDROID OFF CACHE BOOL "Cross-compiling for Android?")
+    set(CROSS OFF CACHE BOOL "Cross-compiling?")
+    set(CROSS_TARGET "mingw64" CACHE STRING "Cross-compilation target")
+    set(CROSS_PREFIX "x86_64-w64-mingw32-")
+    set(SYSTEM_OPENSSL ON CACHE STRING "Use system-provided openssl libraries (instead of prebuilts or building)")
+endif()
 
 # allow including our modules
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
@@ -67,9 +79,11 @@ else()
         set(OPENSSL_PREFIX ${CMAKE_CURRENT_BINARY_DIR}/openssl-prefix/src/openssl)
     endif()
 
-    set(OPENSSL_LIBSSL_PATH ${OPENSSL_PREFIX}/usr/local/lib/libssl.dll.a)
-    set(OPENSSL_LIBCRYPTO_PATH ${OPENSSL_PREFIX}/usr/local/lib/libcrypto.dll.a)
-    
+    if (CROSS)
+        set(OPENSSL_LIBSSL_PATH ${OPENSSL_PREFIX}/usr/local/lib/libssl.dll.a)
+        set(OPENSSL_LIBCRYPTO_PATH ${OPENSSL_PREFIX}/usr/local/lib/libcrypto.dll.a)
+    endif()
+
     # set up openssl target
     if (BUILD_OPENSSL)
         include(BuildOpenSSL)
@@ -77,9 +91,11 @@ else()
         include(PrebuiltOpenSSL)
     endif()
     
-    # set import locations
-    set_target_properties(ssl_lib PROPERTIES IMPORTED_LOCATION ${OPENSSL_LIBSSL_PATH})
-    set_target_properties(crypto_lib PROPERTIES IMPORTED_LOCATION ${OPENSSL_LIBCRYPTO_PATH})
+    if (CROSS)
+        # set import locations
+        set_target_properties(ssl_lib PROPERTIES IMPORTED_LOCATION ${OPENSSL_LIBSSL_PATH})
+        set_target_properties(crypto_lib PROPERTIES IMPORTED_LOCATION ${OPENSSL_LIBCRYPTO_PATH})
+    endif()
 
     # set include locations
     target_include_directories(ssl BEFORE INTERFACE $<BUILD_INTERFACE:${OPENSSL_PREFIX}/usr/local/include>)

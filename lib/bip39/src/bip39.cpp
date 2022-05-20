@@ -16,12 +16,10 @@
 #include <algorithm>
 #include <functional>
 #include <cassert>
-#include <chrono>
 
 namespace BIP39 {
 
-using random_bytes_engine = std::independent_bits_engine<
-    std::default_random_engine, 16, uint16_t>;
+using random_bytes_engine = std::independent_bits_engine<std::default_random_engine, 16, unsigned long>;
 
 const char* const * get_string_table(language lang) {
 	switch (lang) {
@@ -75,7 +73,7 @@ void append_checksum_bits(std::vector<uint8_t>& entropyBuffer) {
 
 }
 
-word_list create_mnemonic(std::vector<uint8_t>& entropy, language lang) {
+word_list create_mnemonic(std::vector<uint8_t>& entropy, language lang /* = language::en */) {
     const size_t entropy_bits = (entropy.size() * BYTE_BITS);
     const size_t check_bits = (entropy_bits / ENTROPY_BIT_DIVISOR);
     const size_t total_bits = (entropy_bits + check_bits);
@@ -110,11 +108,7 @@ word_list create_mnemonic(std::vector<uint8_t>& entropy, language lang) {
     return words;
 }
 
-word_list generate_mnemonic(entropy_bits_t entropy = entropy_bits::_128, language lang /* = language::en */) {
-
-    typedef std::chrono::high_resolution_clock myclock;
-    myclock::time_point beginning = myclock::now();
-
+word_list generate_mnemonic(entropy_bits_t entropy /* = entropy_bits::_128 */, language lang /* = language::en */) {
     const auto entropy_bits = static_cast<entropy_bits_int_type>(entropy);
     assert(entropy_bits % (MNEMONIC_SEED_MULTIPLE * BYTE_BITS) == 0);
 
@@ -125,13 +119,9 @@ word_list generate_mnemonic(entropy_bits_t entropy = entropy_bits::_128, languag
     assert((total_bits % BITS_PER_WORD) == 0);
     assert((word_count % MNEMONIC_WORD_MULTIPLE) == 0);
 
-    random_bytes_engine rbe;
+    std::random_device rd;
+    random_bytes_engine rbe(rd());
 
-    myclock::duration d = myclock::now() - beginning;
-    unsigned seed2 = d.count();
-
-    rbe.seed(seed2);
-    
     std::vector<uint8_t> data(entropy_bits / BYTE_BITS);
     std::generate(begin(data), end(data), [&rbe]() { return static_cast<uint8_t>(std::ref(rbe)()); });
     return create_mnemonic(data, lang);

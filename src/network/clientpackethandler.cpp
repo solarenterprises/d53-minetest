@@ -196,14 +196,14 @@ void Client::handleCommand_AccessDenied(NetworkPacket* pkt)
 	if (pkt->getSize() < 1)
 		return;
 
-	u8 denyCode = SERVER_ACCESSDENIED_UNEXPECTED_DATA;
+	u8 denyCode;
 	*pkt >> denyCode;
 	if (denyCode == SERVER_ACCESSDENIED_SHUTDOWN ||
 			denyCode == SERVER_ACCESSDENIED_CRASH) {
 		*pkt >> m_access_denied_reason;
-		if (m_access_denied_reason.empty()) {
+		if (m_access_denied_reason.empty())
 			m_access_denied_reason = accessDeniedStrings[denyCode];
-		}
+
 		u8 reconnect;
 		*pkt >> reconnect;
 		m_access_denied_reconnect = reconnect & 1;
@@ -220,9 +220,9 @@ void Client::handleCommand_AccessDenied(NetworkPacket* pkt)
 		// Until then (which may be never), this is outside
 		// of the defined protocol.
 		*pkt >> m_access_denied_reason;
-		if (m_access_denied_reason.empty()) {
+		if (m_access_denied_reason.empty())
 			m_access_denied_reason = "Unknown";
-		}
+
 	}
 }
 

@@ -988,7 +988,7 @@ mute_sound (Mute sound) bool false
 [Client]
 
 #    Clickable weblinks (middle-click or Ctrl+left-click) enabled in chat console output.
-clickable_chat_weblinks (Chat weblinks) bool false
+clickable_chat_weblinks (Chat weblinks) bool true
 
 #    Optional override for chat weblink color.
 chat_weblink_color (Weblink color) string
@@ -1048,6 +1048,12 @@ client_unload_unused_data_timeout (Mapblock unload timeout) int 600
 #    Maximum number of mapblocks for client to be kept in memory.
 #    Set to -1 for unlimited amount.
 client_mapblock_limit (Mapblock limit) int 7500
+
+#    Whether to show technical names.
+#    Affects mods and texture packs in the Content and Select Mods menus, as well as
+#    setting names in All Settings.
+#    Controlled by the checkbox in the "All settings" menu.
+show_technical_names (Show technical names) bool false
 
 #    Whether to show the client debug info (has the same effect as hitting F5).
 show_debug (Show debug info) bool false
@@ -1465,7 +1471,8 @@ language (Language) enum   ,be,bg,ca,cs,da,de,el,en,eo,es,et,eu,fi,fr,gd,gl,hu,i
 #    -    action
 #    -    info
 #    -    verbose
-debug_log_level (Debug log level) enum action ,none,error,warning,action,info,verbose
+#    -    trace
+debug_log_level (Debug log level) enum action ,none,error,warning,action,info,verbose,trace
 
 #    If the file size of debug.txt exceeds the number of megabytes specified in
 #    this setting when it is opened, the file is moved to debug.txt.1,
@@ -1474,7 +1481,7 @@ debug_log_level (Debug log level) enum action ,none,error,warning,action,info,ve
 debug_log_size_max (Debug log file size threshold) int 50
 
 #    Minimal level of logging to be written to chat.
-chat_log_level (Chat log level) enum error ,none,error,warning,action,info,verbose
+chat_log_level (Chat log level) enum error ,none,error,warning,action,info,verbose,trace
 
 #    Enable IPv6 support (for both client and server).
 #    Required for IPv6 connections to work at all.
