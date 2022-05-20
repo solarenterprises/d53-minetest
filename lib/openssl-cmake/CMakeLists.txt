@@ -36,7 +36,7 @@ if (WIN32)
     set(CROSS_PREFIX "x86_64-w64-mingw32-")
     set(SYSTEM_OPENSSL OFF CACHE STRING "Use system-provided openssl libraries (instead of prebuilts or building)")
 else()
-    set(BUILD_OPENSSL OFF CACHE BOOL "Automated OpenSSL building")
+    set(BUILD_OPENSSL ON CACHE BOOL "Automated OpenSSL building")
     set(OPENSSL_BUILD_VERSION "1.1.1f" CACHE STRING "OpenSSL version to build")
     set(OPENSSL_INSTALL_MAN OFF CACHE STRING "Install man pages?")
     set(OPENSSL_MODULES "no-cast no-md2 no-md4 no-mdc2 no-rc4 no-rc5 no-engine no-idea no-mdc2 no-rc5 no-camellia no-ssl3 no-heartbeats no-gost no-deprecated no-capieng no-comp no-dtls no-psk no-srp no-dso no-dsa no-rc2 no-des" CACHE STRING "OpenSSL configure options")
@@ -44,7 +44,7 @@ else()
     set(CROSS OFF CACHE BOOL "Cross-compiling?")
     set(CROSS_TARGET "mingw64" CACHE STRING "Cross-compilation target")
     set(CROSS_PREFIX "x86_64-w64-mingw32-")
-    set(SYSTEM_OPENSSL ON CACHE STRING "Use system-provided openssl libraries (instead of prebuilts or building)")
+    set(SYSTEM_OPENSSL OFF CACHE STRING "Use system-provided openssl libraries (instead of prebuilts or building)")
 endif()
 
 # allow including our modules
@@ -82,6 +82,9 @@ else()
     if (CROSS)
         set(OPENSSL_LIBSSL_PATH ${OPENSSL_PREFIX}/usr/local/lib/libssl.dll.a)
         set(OPENSSL_LIBCRYPTO_PATH ${OPENSSL_PREFIX}/usr/local/lib/libcrypto.dll.a)
+    else()
+        set(OPENSSL_LIBSSL_PATH ${OPENSSL_PREFIX}/usr/local/lib/libssl.a)
+        set(OPENSSL_LIBCRYPTO_PATH ${OPENSSL_PREFIX}/usr/local/lib/libcrypto.a)
     endif()
 
     # set up openssl target
@@ -91,11 +94,11 @@ else()
         include(PrebuiltOpenSSL)
     endif()
     
-    if (CROSS)
-        # set import locations
-        set_target_properties(ssl_lib PROPERTIES IMPORTED_LOCATION ${OPENSSL_LIBSSL_PATH})
-        set_target_properties(crypto_lib PROPERTIES IMPORTED_LOCATION ${OPENSSL_LIBCRYPTO_PATH})
-    endif()
+
+    # set import locations
+    set_target_properties(ssl_lib PROPERTIES IMPORTED_LOCATION ${OPENSSL_LIBSSL_PATH})
+    set_target_properties(crypto_lib PROPERTIES IMPORTED_LOCATION ${OPENSSL_LIBCRYPTO_PATH})
+
 
     # set include locations
     target_include_directories(ssl BEFORE INTERFACE $<BUILD_INTERFACE:${OPENSSL_PREFIX}/usr/local/include>)
