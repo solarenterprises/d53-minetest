@@ -792,10 +792,11 @@ void Client::deletingPeer(con::Peer *peer, bool timeout)
 			"Server Peer is getting deleted "
 			<< "(timeout=" << timeout << ")" << std::endl;
 
-	if (timeout) {
-		m_access_denied = true;
+	m_access_denied = true;
+	if (timeout)
 		m_access_denied_reason = gettext("Connection timed out.");
-	}
+	else
+		m_access_denied_reason = gettext("Connection aborted (protocol error?).");
 }
 
 /*

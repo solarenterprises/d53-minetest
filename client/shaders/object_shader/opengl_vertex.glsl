@@ -30,6 +30,7 @@ centroid varying vec2 varTexCoord;
 	varying float adj_shadow_strength;
 	varying float f_normal_length;
 	varying vec3 shadow_position;
+	varying float perspective_factor;
 #endif
 
 varying vec3 eyeVec;
@@ -162,7 +163,8 @@ void main(void)
 
 		shadow_position = applyPerspectiveDistortion(m_ShadowViewProj * mWorld * (inVertexPosition + vec4(normalOffsetScale * nNormal, 0.0))).xyz;
 		shadow_position.z -= z_bias;
-
+		perspective_factor = pFactor;
+		
 		if (f_timeofday < 0.2) {
 			adj_shadow_strength = f_shadow_strength * 0.5 *
 				(1.0 - mtsmoothstep(0.18, 0.2, f_timeofday));
