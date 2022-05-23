@@ -1,4 +1,4 @@
-Minetest
+District53
 ========
 
 ![Build Status](https://github.com/minetest/minetest/workflows/build/badge.svg)
@@ -144,7 +144,7 @@ Compiling
 
 For Debian/Ubuntu users:
 
-    sudo apt install g++ make libc6-dev cmake libpng-dev libjpeg-dev libxxf86vm-dev libgl1-mesa-dev libsqlite3-dev libogg-dev libvorbis-dev libopenal-dev libcurl4-gnutls-dev libfreetype6-dev zlib1g-dev libgmp-dev libjsoncpp-dev libzstd-dev libluajit-5.1-dev
+    sudo apt-get install git g++ make libc6-dev cmake libpng-dev libjpeg-dev libxxf86vm-dev libgl1-mesa-dev libsqlite3-dev libogg-dev libvorbis-dev libopenal-dev libcurl4-gnutls-dev libfreetype6-dev zlib1g-dev libgmp-dev libjsoncpp-dev libzstd-dev libluajit-5.1-dev libssl-dev -y
 
 For Fedora users:
 
@@ -172,7 +172,7 @@ For Fedora users:
 
 Download source (this is the URL to the latest of source repository, which might not work at all times) using Git:
 
-    git clone --depth 1 https://github.com/minetest/minetest.git
+    git clone https://github.com/district53/minetest.git
     cd minetest
 
 Download minetest_game (otherwise only the "Development Test" game is available) using Git:
@@ -209,12 +209,12 @@ Download IrrlichtMt, without using Git:
 
 Build a version that runs directly from the source directory:
 
-    cmake . -DRUN_IN_PLACE=TRUE
+    cmake . -DRUN_IN_PLACE=FALSE -DBUILD_SERVER=FALSE -DBUILD_CLIENT=TRUE -DBUILD_UNITTESTS=FALSE -DCMAKE_BUILD_TYPE=Release
     make -j$(nproc)
 
 Run it:
 
-    ./bin/minetest
+    ./bin/district53
 
 - Use `cmake . -LH` to see all CMake options and their current state.
 - If you want to install it system-wide (or are making a distribution package),
