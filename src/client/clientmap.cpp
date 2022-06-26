@@ -678,6 +678,7 @@ void ClientMap::renderPostFx(CameraMode cam_mode)
 
 	const ContentFeatures& features = m_nodedef->get(n);
 	video::SColor post_effect_color = features.post_effect_color;
+
 	// If the camera is in a solid node, make everything black.
 	// (first person mode only)
 	if (features.solidness == 2 && cam_mode == CAMERA_MODE_FIRST &&
@@ -686,7 +687,6 @@ void ClientMap::renderPostFx(CameraMode cam_mode)
 	}
 
 	if (post_effect_color.getAlpha() != 0) {
-	{
 		// Draw a full-screen rectangle
 		video::IVideoDriver* driver = SceneManager->getVideoDriver();
 		v2u32 ss = driver->getScreenSize();
