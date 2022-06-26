@@ -4,11 +4,11 @@ AppDir:
   path: ./AppDir
 
   app_info:
-    id: minetest
-    name: Minetest
+    id: district53
+    name: District53
     icon: minetest
-    version: !ENV ${VERSION}
-    exec: usr/bin/minetest
+    version: 3.0.2
+    exec: usr/local/bin/district53
     exec_args: $@
   runtime:
     env:
@@ -50,5 +50,6 @@ AppDir:
 
 AppImage:
   update-information: None
-  sign-key: None
+  #sign-key: None
+  sign-key: 0236A9D6C1366CDA
   arch: x86_64
