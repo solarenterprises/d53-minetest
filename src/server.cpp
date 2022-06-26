@@ -2174,6 +2174,7 @@ void Server::fadeSound(s32 handle, float step, float gain)
 
 	// Remove sound reference
 	if (gain <= 0 || psound.clients.empty())
+	{
 		m_playing_sounds.erase(it);
 	}
 }
