@@ -13,4 +13,4 @@ cmake .. \
     -DRUN_IN_PLACE=FALSE -DENABLE_GETTEXT=TRUE
 
 make -j$(sysctl -n hw.logicalcpu)
-make install
+make package
