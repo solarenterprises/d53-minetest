@@ -39,6 +39,8 @@ AppDir:
       - libx11-6
       - libxxf86vm1
       - zlib1g
+      - libluajit-5.1-dev
+      - libssl-dev
 
   files:
     exclude:
