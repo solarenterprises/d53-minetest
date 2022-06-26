@@ -1366,7 +1366,7 @@ int ObjectRef::l_get_player_control(lua_State *L)
 	lua_newtable(L);
 	if (player == nullptr)
 		return 1;
-	
+
 	const PlayerControl &control = player->getPlayerControl();
 	lua_pushboolean(L, control.direction_keys & (1 << 0));
 	lua_setfield(L, -2, "up");
@@ -2323,6 +2323,19 @@ int ObjectRef::l_get_lighting(lua_State *L)
 	return 1;
 }
 
+int ObjectRef::l_respawn(lua_State *L)
+{
+	NO_MAP_LOCK_REQUIRED;
+	ObjectRef *ref = checkobject(L, 1);
+	RemotePlayer *player = getplayer(ref);
+	if (player == nullptr)
+		return 0;
+
+	getServer(L)->RespawnPlayer(player->getPeerId());
+	lua_pushboolean(L, true);
+	return 1;
+}
+
 ObjectRef::ObjectRef(ServerActiveObject *object):
 	m_object(object)
 {}
@@ -2478,5 +2491,6 @@ luaL_Reg ObjectRef::methods[] = {
 	luamethod(ObjectRef, set_minimap_modes),
 	luamethod(ObjectRef, set_lighting),
 	luamethod(ObjectRef, get_lighting),
+	luamethod(ObjectRef, respawn),
 	{0,0}
 };

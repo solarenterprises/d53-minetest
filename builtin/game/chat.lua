@@ -362,12 +362,10 @@ local function handle_revoke_command(caller, revokename, revokeprivstr)
 	end
 
 	local revokecount = 0
-
 	for priv, _ in pairs(revokeprivs) do
 		privs[priv] = nil
 		revokecount = revokecount + 1
 	end
-	local new_privs = core.get_player_privs(revokename)
 
 	if revokecount == 0 then
 		return false, S("No privileges were revoked.")
@@ -601,7 +599,7 @@ core.register_chatcommand("teleport", {
 		local teleportee_name
 		p = {}
 		teleportee_name, p.x, p.y, p.z = param:match(
-			"^([^ ]+) +([%d.~-]+)[, ] *([%d.~-]+)[, ] *([%d.~-]+)$")
+				"^([^ ]+) +([%d.~-]+)[, ] *([%d.~-]+)[, ] *([%d.~-]+)$")
 		if teleportee_name then
 			local teleportee = core.get_player_by_name(teleportee_name)
 			if not teleportee then
@@ -879,7 +877,7 @@ core.register_chatcommand("spawnentity", {
 			return false, S("Cannot spawn an unknown entity.")
 		end
 		local p
-		if p == "" then
+		if pstr == "" then
 			p = player:get_pos()
 		else
 			p = {}
@@ -1188,6 +1186,9 @@ core.register_chatcommand("ban", {
 			else
 				return true, S("Ban list: @1", ban_list)
 			end
+		end
+		if core.is_singleplayer() then
+			return false, S("You cannot ban players in singleplayer!")
 		end
 		if not core.get_player_by_name(param) then
 			return false, S("Player is not online.")

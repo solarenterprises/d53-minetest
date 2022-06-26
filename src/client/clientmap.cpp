@@ -219,13 +219,11 @@ void ClientMap::updateDrawList()
 	// Number of blocks occlusion culled
 	u32 blocks_occlusion_culled = 0;
 
-	// No occlusion culling when free_move is on and camera is
-	// inside ground
+	// No occlusion culling when free_move is on and camera is inside ground
 	bool occlusion_culling_enabled = true;
-	if (g_settings->getBool("free_move") && g_settings->getBool("noclip")) {
+	if (m_control.allow_noclip) {
 		MapNode n = getNode(cam_pos_nodes);
-		if (n.getContent() == CONTENT_IGNORE ||
-				m_nodedef->get(n).solidness == 2)
+		if (n.getContent() == CONTENT_IGNORE || m_nodedef->get(n).solidness == 2)
 			occlusion_culling_enabled = false;
 	}
 
@@ -678,18 +676,16 @@ void ClientMap::renderPostFx(CameraMode cam_mode)
 
 	MapNode n = getNode(floatToInt(m_camera_position, BS));
 
-	// - If the player is in a solid node, make everything black.
-	// - If the player is in liquid, draw a semi-transparent overlay.
-	// - Do not if player is in third person mode
 	const ContentFeatures& features = m_nodedef->get(n);
 	video::SColor post_effect_color = features.post_effect_color;
-	if(features.solidness == 2 && !(g_settings->getBool("noclip") &&
-			m_client->checkLocalPrivilege("noclip")) &&
-			cam_mode == CAMERA_MODE_FIRST)
-	{
+	// If the camera is in a solid node, make everything black.
+	// (first person mode only)
+	if (features.solidness == 2 && cam_mode == CAMERA_MODE_FIRST &&
+		!m_control.allow_noclip) {
 		post_effect_color = video::SColor(255, 0, 0, 0);
 	}
-	if (post_effect_color.getAlpha() != 0)
+
+	if (post_effect_color.getAlpha() != 0) {
 	{
 		// Draw a full-screen rectangle
 		video::IVideoDriver* driver = SceneManager->getVideoDriver();
@@ -782,9 +778,9 @@ void ClientMap::renderMapShadows(video::IVideoDriver *driver,
 	for (auto &lists : grouped_buffers.lists)
 		for (MeshBufList &list : lists)
 			buffer_count += list.bufs.size();
-	
+
 	draw_order.reserve(draw_order.size() + buffer_count);
-	
+
 	// Capture draw order for all solid meshes
 	for (auto &lists : grouped_buffers.lists) {
 		for (MeshBufList &list : lists) {
@@ -927,8 +923,8 @@ void ClientMap::updateTransparentMeshBuffers()
 		MapBlock* block = it->second;
 		if (!block->mesh)
 			continue;
-		
-		if (m_needs_update_transparent_meshes || 
+
+		if (m_needs_update_transparent_meshes ||
 				block->mesh->getTransparentBuffers().size() == 0) {
 
 			v3s16 block_pos = block->getPos();

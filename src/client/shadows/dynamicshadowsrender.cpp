@@ -36,7 +36,7 @@ ShadowRenderer::ShadowRenderer(IrrlichtDevice *device, Client *client) :
 		m_perspective_bias_xy(0.8), m_perspective_bias_z(0.5)
 {
 	(void) m_client;
-	
+
 	m_shadows_supported = true; // assume shadows supported. We will check actual support in initialize
 	m_shadows_enabled = true;
 
@@ -119,7 +119,7 @@ void ShadowRenderer::initialize()
 	m_texture_format_color = m_shadow_map_texture_32bit
 						 ? video::ECOLOR_FORMAT::ECF_G32R32F
 						 : video::ECOLOR_FORMAT::ECF_G16R16F;
-	
+
 	m_shadows_enabled &= m_shadows_supported;
 }
 
@@ -242,7 +242,7 @@ void ShadowRenderer::updateSMTextures()
 
 		// detect if SM should be regenerated
 		for (DirectionalLight &light : m_light_list) {
-			if (light.should_update_map_shadow) {
+			if (light.should_update_map_shadow || m_force_update_shadow_map) {
 				light.should_update_map_shadow = false;
 				m_current_frame = 0;
 				reset_sm_texture = true;
@@ -264,21 +264,21 @@ void ShadowRenderer::updateSMTextures()
 					cb->PerspectiveBiasZ = getPerspectiveBiasZ();
 					cb->CameraPos = light.getFuturePlayerPos();
 				}
-			
+
 			// set the Render Target
 			// right now we can only render in usual RTT, not
 			// Depth texture is available in irrlicth maybe we
 			// should put some gl* fn here
 
 
-			if (m_current_frame < m_map_shadow_update_frames) {
+			if (m_current_frame < m_map_shadow_update_frames || m_force_update_shadow_map) {
 				m_driver->setRenderTarget(shadowMapTargetTexture, reset_sm_texture, true,
 						video::SColor(255, 255, 255, 255));
 				renderShadowMap(shadowMapTargetTexture, light);
 
 				// Render transparent part in one pass.
 				// This is also handled in ClientMap.
-				if (m_current_frame == m_map_shadow_update_frames - 1) {
+				if (m_current_frame == m_map_shadow_update_frames - 1 || m_force_update_shadow_map) {
 					if (m_shadow_map_colored) {
 						m_driver->setRenderTarget(0, false, false);
 						m_driver->setRenderTarget(shadowMapTextureColors,
@@ -298,7 +298,7 @@ void ShadowRenderer::updateSMTextures()
 			++m_current_frame;
 
 		// pass finished, swap textures and commit light changes
-		if (m_current_frame == m_map_shadow_update_frames) {
+		if (m_current_frame == m_map_shadow_update_frames || m_force_update_shadow_map) {
 			if (shadowMapClientMapFuture != nullptr)
 				std::swap(shadowMapClientMapFuture, shadowMapClientMap);
 
@@ -306,6 +306,7 @@ void ShadowRenderer::updateSMTextures()
 			for (DirectionalLight &light : m_light_list)
 				light.commitFrustum();
 		}
+		m_force_update_shadow_map = false;
 	}
 }
 
@@ -325,7 +326,7 @@ void ShadowRenderer::update(video::ITexture *outputTarget)
 
 		for (DirectionalLight &light : m_light_list) {
 			// Static shader values for entities are set in updateSMTextures
-			// SM texture for entities is not updated incrementally and 
+			// SM texture for entities is not updated incrementally and
 			// must by updated using current player position.
 			m_shadow_depth_entity_cb->CameraPos = light.getPlayerPos();
 
@@ -368,7 +369,7 @@ void ShadowRenderer::drawDebug()
 		m_driver->draw2DImage(shadowMapClientMap,
 				core::rect<s32>(0, 50 + 128, 128, 128 + 50 + 128),
 				core::rect<s32>({0, 0}, shadowMapTextureFinal->getSize()));
-	
+
 	if (shadowMapTextureDynamicObjects)
 		m_driver->draw2DImage(shadowMapTextureDynamicObjects,
 				core::rect<s32>(0, 128 + 50 + 128, 128,
@@ -432,7 +433,10 @@ void ShadowRenderer::renderShadowMap(video::ITexture *target,
 		m_driver->setTransform(video::ETS_WORLD,
 				map_node->getAbsoluteTransformation());
 
-		map_node->renderMapShadows(m_driver, material, pass, m_current_frame, m_map_shadow_update_frames);
+		int frame = m_force_update_shadow_map ? 0 : m_current_frame;
+		int total_frames = m_force_update_shadow_map ? 1 : m_map_shadow_update_frames;
+
+		map_node->renderMapShadows(m_driver, material, pass, frame, total_frames);
 		break;
 	}
 }

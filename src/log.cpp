@@ -107,7 +107,7 @@ static unsigned int g_level_to_android[] = {
 	//ANDROID_LOG_INFO,
 	ANDROID_LOG_DEBUG,    // LL_INFO
 	ANDROID_LOG_VERBOSE,  // LL_VERBOSE
-	ANDROID_LOG_VERBOSE, // LL_TRACE
+	ANDROID_LOG_VERBOSE,  // LL_TRACE
 };
 
 void AndroidLogOutput::logRaw(LogLevel lev, const std::string &line) {
@@ -116,7 +116,6 @@ void AndroidLogOutput::logRaw(LogLevel lev, const std::string &line) {
 	__android_log_print(g_level_to_android[lev],
 		PROJECT_NAME_C, "%s", line.c_str());
 }
-
 #endif
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -153,12 +152,14 @@ void Logger::addOutput(ILogOutput *out)
 
 void Logger::addOutput(ILogOutput *out, LogLevel lev)
 {
+	MutexAutoLock lock(m_mutex);
 	m_outputs[lev].push_back(out);
 	m_has_outputs[lev] = true;
 }
 
 void Logger::addOutputMasked(ILogOutput *out, LogLevelMask mask)
 {
+	MutexAutoLock lock(m_mutex);
 	for (size_t i = 0; i < LL_MAX; i++) {
 		if (mask & LOGLEVEL_TO_MASKLEVEL(i)) {
 			m_outputs[i].push_back(out);
@@ -169,6 +170,7 @@ void Logger::addOutputMasked(ILogOutput *out, LogLevelMask mask)
 
 void Logger::addOutputMaxLevel(ILogOutput *out, LogLevel lev)
 {
+	MutexAutoLock lock(m_mutex);
 	assert(lev < LL_MAX);
 	for (size_t i = 0; i <= lev; i++) {
 		m_outputs[i].push_back(out);
@@ -178,6 +180,7 @@ void Logger::addOutputMaxLevel(ILogOutput *out, LogLevel lev)
 
 LogLevelMask Logger::removeOutput(ILogOutput *out)
 {
+	MutexAutoLock lock(m_mutex);
 	LogLevelMask ret_mask = 0;
 	for (size_t i = 0; i < LL_MAX; i++) {
 		std::vector<ILogOutput *>::iterator it;
@@ -387,6 +390,6 @@ void LogOutputBuffer::logRaw(LogLevel lev, const std::string &line)
 		default: break;
 		}
 	}
-
-	m_buffer.push(color.append(line));
+	MutexAutoLock lock(m_buffer_mutex);
+	m_buffer.emplace(color.append(line));
 }

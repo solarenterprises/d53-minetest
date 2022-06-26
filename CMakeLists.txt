@@ -118,9 +118,9 @@ else()
 
 		include(MinetestFindIrrlichtHeaders)
 		if(NOT IRRLICHT_INCLUDE_DIR)
-			message(FATAL_ERROR "Irrlicht or IrrlichtMt headers are required to build the server, but none found.\n${explanation_msg}")
+			message(FATAL_ERROR "IrrlichtMt headers are required to build the server, but none found.\n${explanation_msg}")
 		endif()
-		message(STATUS "Found Irrlicht headers: ${IRRLICHT_INCLUDE_DIR}")
+		message(STATUS "Found IrrlichtMt headers: ${IRRLICHT_INCLUDE_DIR}")
 		add_library(IrrlichtMt::IrrlichtMt INTERFACE IMPORTED)
 		# Note that we can't use target_include_directories() since that doesn't work for IMPORTED targets before CMake 3.11
 		set_target_properties(IrrlichtMt::IrrlichtMt PROPERTIES

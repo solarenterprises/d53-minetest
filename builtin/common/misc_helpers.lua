@@ -204,7 +204,7 @@ end
 
 --------------------------------------------------------------------------------
 function string:trim()
-	return (self:gsub("^%s*(.-)%s*$", "%1"))
+	return self:match("^%s*(.-)%s*$")
 end
 
 --------------------------------------------------------------------------------
@@ -245,16 +245,16 @@ function math.round(x)
 	return math.ceil(x - 0.5)
 end
 
-
+local formspec_escapes = {
+	["\\"] = "\\\\",
+	["["] = "\\[",
+	["]"] = "\\]",
+	[";"] = "\\;",
+	[","] = "\\,"
+}
 function core.formspec_escape(text)
-	if text ~= nil then
-		text = string.gsub(text,"\\","\\\\")
-		text = string.gsub(text,"%]","\\]")
-		text = string.gsub(text,"%[","\\[")
-		text = string.gsub(text,";","\\;")
-		text = string.gsub(text,",","\\,")
-	end
-	return text
+	-- Use explicit character set instead of dot here because it doubles the performance
+	return text and string.gsub(text, "[\\%[%];,]", formspec_escapes)
 end
 
 
@@ -265,18 +265,21 @@ function core.wrap_text(text, max_length, as_table)
 		return as_table and {text} or text
 	end
 
-	for word in text:gmatch('%S+') do
-		local cur_length = #table.concat(line, ' ')
-		if cur_length > 0 and cur_length + #word + 1 >= max_length then
+	local line_length = 0
+	for word in text:gmatch("%S+") do
+		if line_length > 0 and line_length + #word + 1 >= max_length then
 			-- word wouldn't fit on current line, move to next line
-			table.insert(result, table.concat(line, ' '))
-			line = {}
+			table.insert(result, table.concat(line, " "))
+			line = {word}
+			line_length = #word
+		else
+			table.insert(line, word)
+			line_length = line_length + 1 + #word
 		end
-		table.insert(line, word)
 	end
 
-	table.insert(result, table.concat(line, ' '))
-	return as_table and result or table.concat(result, '\n')
+	table.insert(result, table.concat(line, " "))
+	return as_table and result or table.concat(result, "\n")
 end
 
 --------------------------------------------------------------------------------
@@ -440,6 +443,7 @@ end
 
 
 --------------------------------------------------------------------------------
+
 do
 	local rel_num_cap = "(~?-?%d*%.?%d*)" -- may be overly permissive as this will be tonumber'ed anyways
 	local num_delim = "[,%s]%s*"
@@ -699,6 +703,7 @@ end
 
 --[[ Helper function for parsing an optionally relative number
 of a chat command parameter, using the chat command tilde notation.
+
 Parameters:
 * arg: String snippet containing the number; possible values:
     * "<number>": return as number
@@ -706,8 +711,10 @@ Parameters:
     * "~": return relative_to
     * Anything else will return `nil`
 * relative_to: Number to which the `arg` number might be relative to
+
 Returns:
 A number or `nil`, depending on `arg.
+
 Examples:
 * `core.parse_relative_number("5", 10)` returns 5
 * `core.parse_relative_number("~5", 10)` returns 15
@@ -739,13 +746,16 @@ end
 --[[ Helper function to parse coordinates that might be relative
 to another position; supports chat command tilde notation.
 Intended to be used in chat command parameter parsing.
+
 Parameters:
 * x, y, z: Parsed x, y, and z coordinates as strings
 * relative_to: Position to which to compare the position
+
 Syntax of x, y and z:
 * "<number>": return as number
 * "~<number>": return <number> + player position on this axis
 * "~": return player position on this axis
+
 Returns: a vector or nil for invalid input or if player does not exist
 ]]
 function core.parse_coordinates(x, y, z, relative_to)

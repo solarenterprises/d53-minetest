@@ -638,17 +638,6 @@ float RenderingEngine::getDisplayDensity()
 
 #endif
 
-v2u32 RenderingEngine::getDisplaySize()
-{
-	IrrlichtDevice *nulldevice = createDevice(video::EDT_NULL);
-
-	core::dimension2d<u32> deskres =
-			nulldevice->getVideoModeList()->getDesktopResolution();
-	nulldevice->drop();
-
-	return deskres;
-}
-
 #else // __ANDROID__
 float RenderingEngine::getDisplayDensity()
 {
