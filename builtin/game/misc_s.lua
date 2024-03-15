@@ -8,10 +8,9 @@
 -- Misc. API functions
 --
 
+-- This must match the implementation in src/script/common/c_converter.h
 function core.hash_node_position(pos)
-	return (pos.z + 32768) * 65536 * 65536
-		 + (pos.y + 32768) * 65536
-		 +  pos.x + 32768
+	return (pos.z + 0x8000) * 0x100000000 + (pos.y + 0x8000) * 0x10000 + (pos.x + 0x8000)
 end
 
 
@@ -63,6 +62,13 @@ function core.encode_png(width, height, data, compression)
 	end
 	if type(height) ~= "number" then
 		error("Incorrect type for 'height', expected number, got " .. type(height))
+	end
+
+	if width < 1 then
+		error("Incorrect value for 'width', must be at least 1")
+	end
+	if height < 1 then
+		error("Incorrect value for 'height', must be at least 1")
 	end
 
 	local expected_byte_count = width * height * 4

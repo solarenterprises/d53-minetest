@@ -30,6 +30,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "porting.h"
 #ifndef SERVER
 #include "irr_ptr.h"
+#include <IFileArchive.h>
+#include <IFileSystem.h>
 #endif
 
 namespace fs
@@ -41,9 +43,6 @@ namespace fs
  * Windows *
  ***********/
 
-#ifndef _WIN32_WINNT
-#define _WIN32_WINNT 0x0501
-#endif
 #include <windows.h>
 #include <shlwapi.h>
 #include <io.h>
@@ -125,6 +124,12 @@ bool IsDir(const std::string &path)
 	DWORD attr = GetFileAttributes(path.c_str());
 	return (attr != INVALID_FILE_ATTRIBUTES &&
 			(attr & FILE_ATTRIBUTE_DIRECTORY));
+}
+
+bool IsExecutable(const std::string &path)
+{
+	DWORD type;
+	return GetBinaryType(path.c_str(), &type) != 0;
 }
 
 bool IsDirDelimiter(char c)
@@ -307,6 +312,11 @@ bool IsDir(const std::string &path)
 	if(stat(path.c_str(), &statbuf))
 		return false; // Actually error; but certainly not a directory
 	return ((statbuf.st_mode & S_IFDIR) == S_IFDIR);
+}
+
+bool IsExecutable(const std::string &path)
+{
+	return access(path.c_str(), X_OK) == 0;
 }
 
 bool IsDirDelimiter(char c)
@@ -639,7 +649,7 @@ std::string RemoveLastPathComponent(const std::string &path,
 		std::string *removed, int count)
 {
 	if(removed)
-		*removed = "";
+		removed->clear();
 
 	size_t remaining = path.size();
 
@@ -750,14 +760,32 @@ bool safeWriteToFile(const std::string &path, const std::string &content)
 	std::string tmp_file = path + ".~mt";
 
 	// Write to a tmp file
-	std::ofstream os(tmp_file.c_str(), std::ios::binary);
-	if (!os.good())
+	bool tmp_success = false;
+
+#ifdef _WIN32
+	// We've observed behavior suggesting that the MSVC implementation of std::ofstream::flush doesn't
+	// actually flush, so we use win32 APIs.
+	HANDLE tmp_handle = CreateFile(
+		tmp_file.c_str(), GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
+	if (tmp_handle == INVALID_HANDLE_VALUE) {
 		return false;
+	}
+	DWORD bytes_written;
+	tmp_success = (WriteFile(tmp_handle, content.c_str(), content.size(), &bytes_written, nullptr) &&
+					FlushFileBuffers(tmp_handle));
+	CloseHandle(tmp_handle);
+#else
+	std::ofstream os(tmp_file.c_str(), std::ios::binary);
+	if (!os.good()) {
+		return false;
+	}
 	os << content;
 	os.flush();
 	os.close();
-	if (os.fail()) {
-		// Remove the temporary file because writing it failed and it's useless.
+	tmp_success = !os.fail();
+#endif
+
+	if (!tmp_success) {
 		remove(tmp_file.c_str());
 		return false;
 	}
@@ -769,14 +797,12 @@ bool safeWriteToFile(const std::string &path, const std::string &content)
 	// When creating the file, it can cause Windows Search indexer, virus scanners and other apps
 	// to query the file. This can make the move file call below fail.
 	// We retry up to 5 times, with a 1ms sleep between, before we consider the whole operation failed
-	int number_attempts = 0;
-	while (number_attempts < 5) {
+	for (int attempt = 0; attempt < 5; attempt++) {
 		rename_success = MoveFileEx(tmp_file.c_str(), path.c_str(),
 				MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH);
 		if (rename_success)
 			break;
 		sleep_ms(1);
-		++number_attempts;
 	}
 #else
 	// On POSIX compliant systems rename() is specified to be able to swap the
@@ -877,4 +903,3 @@ bool Rename(const std::string &from, const std::string &to)
 }
 
 } // namespace fs
-

@@ -12,14 +12,14 @@ endif()
 project(district53)
 set(PROJECT_NAME_CAPITALIZED "district53")
 
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
-set(GCC_MINIMUM_VERSION "5.1")
-set(CLANG_MINIMUM_VERSION "3.5")
+set(GCC_MINIMUM_VERSION "7.5")
+set(CLANG_MINIMUM_VERSION "7.0.1")
 
-# Also remember to set PROTOCOL_VERSION in network/networkprotocol.h when releasing
+# You should not need to edit these manually, use util/bump_version.sh
 set(VERSION_MAJOR 5)
-set(VERSION_MINOR 6)
+set(VERSION_MINOR 9)
 set(VERSION_PATCH 0)
 set(VERSION_EXTRA "" CACHE STRING "Stuff to append to version string")
 
@@ -38,10 +38,13 @@ if (CMAKE_BUILD_TYPE STREQUAL Debug)
 	set(VERSION_STRING "${VERSION_STRING}-debug")
 endif()
 
-message(STATUS "*** Will build version ${VERSION_STRING} ***")
-
-
 # Configuration options
+set(BUILD_CLIENT TRUE CACHE BOOL "Build client")
+set(BUILD_SERVER FALSE CACHE BOOL "Build server")
+set(BUILD_UNITTESTS TRUE CACHE BOOL "Build unittests")
+set(BUILD_BENCHMARKS FALSE CACHE BOOL "Build benchmarks")
+set(BUILD_DOCUMENTATION TRUE CACHE BOOL "Build documentation")
+
 set(DEFAULT_RUN_IN_PLACE FALSE)
 if(WIN32)
 	set(DEFAULT_RUN_IN_PLACE TRUE)
@@ -49,10 +52,13 @@ endif()
 set(RUN_IN_PLACE ${DEFAULT_RUN_IN_PLACE} CACHE BOOL
 	"Run directly in source directory structure")
 
-
-set(BUILD_CLIENT TRUE CACHE BOOL "Build client")
-set(BUILD_SERVER FALSE CACHE BOOL "Build server")
-set(BUILD_UNITTESTS FALSE CACHE BOOL "Build unittests")
+message(STATUS "*** Will build version ${VERSION_STRING} ***")
+message(STATUS "BUILD_CLIENT: " ${BUILD_CLIENT})
+message(STATUS "BUILD_SERVER: " ${BUILD_SERVER})
+message(STATUS "BUILD_UNITTESTS: " ${BUILD_UNITTESTS})
+message(STATUS "BUILD_BENCHMARKS: " ${BUILD_BENCHMARKS})
+message(STATUS "BUILD_DOCUMENTATION: " ${BUILD_DOCUMENTATION})
+message(STATUS "RUN_IN_PLACE: " ${RUN_IN_PLACE})
 
 set(WARN_ALL TRUE CACHE BOOL "Enable -Wall for Release build")
 
@@ -61,12 +67,17 @@ if(NOT CMAKE_BUILD_TYPE)
 	set(CMAKE_BUILD_TYPE Release CACHE STRING "Build type: Debug or Release" FORCE)
 endif()
 
+set(ENABLE_UPDATE_CHECKER (NOT ${DEVELOPMENT_BUILD}) CACHE BOOL
+	"Whether to enable update checks by default")
+
 # Included stuff
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
 
-
-# openssl
-add_subdirectory(lib/openssl-cmake)
+# Load default options for Android
+if(ANDROID)
+	cmake_minimum_required(VERSION 3.20)
+	include(MinetestAndroidLibs)
+endif()
 
 # ark crypto
 add_subdirectory(lib/cpp-crypto)
@@ -74,9 +85,14 @@ add_subdirectory(lib/cpp-crypto)
 # bip39
 add_subdirectory(lib/bip39/src)
 
+# find_package(unofficial-libmysql REQUIRED)
+set(MYSQL_LIBDIR "" CACHE PATH "MYSQL Library Directory")
+set(MYSQL_INCLUDE "" CACHE PATH "MYSQL Include Directory")
 
 set(IRRLICHTMT_BUILD_DIR "" CACHE PATH "Path to IrrlichtMt build directory.")
-if(NOT "${IRRLICHTMT_BUILD_DIR}" STREQUAL "")
+if(ANDROID)
+	# currently manually provided
+elseif(NOT "${IRRLICHTMT_BUILD_DIR}" STREQUAL "")
 	find_package(IrrlichtMt QUIET
 		PATHS "${IRRLICHTMT_BUILD_DIR}"
 		NO_DEFAULT_PATH
@@ -88,7 +104,6 @@ if(NOT "${IRRLICHTMT_BUILD_DIR}" STREQUAL "")
 		# IrrlichtMtConfig.cmake
 		message(FATAL_ERROR "Could not find IrrlichtMtConfig.cmake in ${IRRLICHTMT_BUILD_DIR}/cmake.")
 	endif()
-# This is done here so that relative search paths are more reasonable
 elseif(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/lib/irrlichtmt")
 	message(STATUS "Using user-provided IrrlichtMt at subdirectory 'lib/irrlichtmt'")
 	if(BUILD_CLIENT)
@@ -109,9 +124,7 @@ else()
 	find_package(IrrlichtMt QUIET)
 	if(NOT TARGET IrrlichtMt::IrrlichtMt)
 		string(CONCAT explanation_msg
-			"The Minetest team has forked Irrlicht to make their own customizations. "
-			"It can be found here: https://github.com/minetest/irrlicht\n"
-			"For example use: git clone --depth=1 https://github.com/minetest/irrlicht lib/irrlichtmt\n")
+			"You must install IrrlichMt as described in docs/compiling/\n")
 		if(BUILD_CLIENT)
 			message(FATAL_ERROR "IrrlichtMt is required to build the client, but it was not found.\n${explanation_msg}")
 		endif()
@@ -128,10 +141,35 @@ else()
 	endif()
 endif()
 
-if(TARGET IrrlichtMt::IrrlichtMt)
+if(ANDROID)
+	# skipped for now
+elseif(BUILD_CLIENT AND TARGET IrrlichtMt::IrrlichtMt)
+	# retrieve version somehow
+	if(NOT IrrlichtMt_VERSION)
+		get_target_property(IrrlichtMt_VERSION IrrlichtMt VERSION)
+	endif()
 	message(STATUS "Found IrrlichtMt ${IrrlichtMt_VERSION}")
+
+	set(TARGET_VER_S 1.9.0mt14)
+	string(REPLACE "mt" "." TARGET_VER ${TARGET_VER_S})
+	if(IrrlichtMt_VERSION VERSION_LESS ${TARGET_VER})
+		message(FATAL_ERROR "At least IrrlichtMt ${TARGET_VER_S} is required to build")
+	elseif(NOT DEVELOPMENT_BUILD AND IrrlichtMt_VERSION VERSION_GREATER ${TARGET_VER})
+		message(FATAL_ERROR "IrrlichtMt ${TARGET_VER_S} is required to build")
+	endif()
 endif()
 
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+	if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS "${GCC_MINIMUM_VERSION}")
+		message(FATAL_ERROR "Insufficient gcc version, found ${CMAKE_CXX_COMPILER_VERSION}. "
+			"Version ${GCC_MINIMUM_VERSION} or higher is required.")
+	endif()
+elseif(CMAKE_CXX_COMPILER_ID MATCHES "(Apple)?Clang")
+	if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS "${CLANG_MINIMUM_VERSION}")
+		message(FATAL_ERROR "Insufficient clang version, found ${CMAKE_CXX_COMPILER_VERSION}. "
+			"Version ${CLANG_MINIMUM_VERSION} or higher is required.")
+	endif()
+endif()
 
 # Installation
 
@@ -232,10 +270,12 @@ if(RUN_IN_PLACE)
 	install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/textures/texture_packs_here.txt" DESTINATION "${SHAREDIR}/textures")
 endif()
 
-install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/games/minetest_game" DESTINATION "${SHAREDIR}/games/"
-	COMPONENT "SUBGAME_MINETEST_GAME" OPTIONAL PATTERN ".git*" EXCLUDE )
-install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/games/devtest" DESTINATION "${SHAREDIR}/games/"
-	COMPONENT "SUBGAME_MINIMAL" OPTIONAL PATTERN ".git*" EXCLUDE )
+set(INSTALL_DEVTEST FALSE CACHE BOOL "Install Development Test")
+
+if(INSTALL_DEVTEST)
+	install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/games/devtest" DESTINATION "${SHAREDIR}/games/"
+		PATTERN ".git*" EXCLUDE )
+endif()
 
 if(BUILD_CLIENT)
 	install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/client/shaders" DESTINATION "${SHAREDIR}/client")
@@ -247,11 +287,11 @@ if(BUILD_CLIENT)
 endif()
 
 install(FILES "README.md" DESTINATION "${DOCDIR}" COMPONENT "Docs")
-install(FILES "doc/lua_api.txt" DESTINATION "${DOCDIR}" COMPONENT "Docs")
-install(FILES "doc/client_lua_api.txt" DESTINATION "${DOCDIR}" COMPONENT "Docs")
-install(FILES "doc/menu_lua_api.txt" DESTINATION "${DOCDIR}" COMPONENT "Docs")
-install(FILES "doc/texture_packs.txt" DESTINATION "${DOCDIR}" COMPONENT "Docs")
-install(FILES "doc/world_format.txt" DESTINATION "${DOCDIR}" COMPONENT "Docs")
+install(FILES "doc/lua_api.md" DESTINATION "${DOCDIR}" COMPONENT "Docs")
+install(FILES "doc/client_lua_api.md" DESTINATION "${DOCDIR}" COMPONENT "Docs")
+install(FILES "doc/menu_lua_api.md" DESTINATION "${DOCDIR}" COMPONENT "Docs")
+install(FILES "doc/texture_packs.md" DESTINATION "${DOCDIR}" COMPONENT "Docs")
+install(FILES "doc/world_format.md" DESTINATION "${DOCDIR}" COMPONENT "Docs")
 install(FILES "minetest.conf.example" DESTINATION "${EXAMPLE_CONF_DIR}")
 
 if(UNIX AND NOT APPLE)
@@ -271,30 +311,26 @@ endif()
 
 # Library pack
 find_package(GMP REQUIRED)
-find_package(Json REQUIRED)
-find_package(Lua REQUIRED)
+# find_package(Json REQUIRED)
+# find_package(Lua REQUIRED)
+
+add_subdirectory(lib/jsoncpp)
+SET(JSON_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/lib/jsoncpp")
+
+add_subdirectory(lib/lua)
+SET(LUA_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/lib/lua/src")
+
 if(NOT USE_LUAJIT)
-	set(LUA_BIT_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/lib/bitop)
-	set(LUA_BIT_LIBRARY bitop)
 	add_subdirectory(lib/bitop)
 endif()
 
-if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-	if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS "${GCC_MINIMUM_VERSION}")
-		message(FATAL_ERROR "Insufficient gcc version, found ${CMAKE_CXX_COMPILER_VERSION}. "
-			"Version ${GCC_MINIMUM_VERSION} or higher is required.")
-	endif()
-elseif(CMAKE_CXX_COMPILER_ID MATCHES "(Apple)?Clang")
-	if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS "${CLANG_MINIMUM_VERSION}")
-		message(FATAL_ERROR "Insufficient clang version, found ${CMAKE_CXX_COMPILER_VERSION}. "
-			"Version ${CLANG_MINIMUM_VERSION} or higher is required.")
-	endif()
+if(BUILD_BENCHMARKS)
+	add_subdirectory(lib/catch2)
 endif()
 
 # Subdirectories
 # Be sure to add all relevant definitions above this
 add_subdirectory(src)
-
 
 # CPack
 
@@ -330,7 +366,7 @@ cpack_add_component_group(Subgames
 )
 
 if(WIN32)
-	# Include all dynamically linked runtime libaries such as MSVCRxxx.dll
+	# Include all dynamically linked runtime libraries such as MSVCRxxx.dll
 	include(InstallRequiredSystemLibraries)
 
 	if(RUN_IN_PLACE)
@@ -382,13 +418,15 @@ include(CPack)
 
 
 # Add a target to generate API documentation with Doxygen
-find_package(Doxygen)
-if(DOXYGEN_FOUND)
-	configure_file(${CMAKE_CURRENT_SOURCE_DIR}/doc/Doxyfile.in
-			${CMAKE_CURRENT_BINARY_DIR}/doc/Doxyfile @ONLY)
-	add_custom_target(doc
-		${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/doc/Doxyfile
-		WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/doc
-		COMMENT "Generating API documentation with Doxygen" VERBATIM
-	)
+if(BUILD_DOCUMENTATION)
+	find_package(Doxygen)
+	if(DOXYGEN_FOUND)
+		configure_file(${CMAKE_CURRENT_SOURCE_DIR}/doc/Doxyfile.in
+				${CMAKE_CURRENT_BINARY_DIR}/doc/Doxyfile @ONLY)
+		add_custom_target(doc
+			${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/doc/Doxyfile
+			WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/doc
+			COMMENT "Generating API documentation with Doxygen" VERBATIM
+		)
+	endif()
 endif()

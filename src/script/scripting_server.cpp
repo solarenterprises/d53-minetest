@@ -45,6 +45,9 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "lua_api/l_settings.h"
 #include "lua_api/l_http.h"
 #include "lua_api/l_storage.h"
+#include "lua_api/l_sql.h"
+
+#include "filesys.h"
 
 extern "C" {
 #include <lualib.h>
@@ -78,6 +81,23 @@ ServerScripting::ServerScripting(Server* server):
 	lua_newtable(L);
 	lua_setfield(L, -2, "luaentities");
 
+
+	//
+	// Set paths to lua libs (for require)
+	//--------------------------------------------
+	static const std::string lualibs_dir = porting::path_share + DIR_DELIM + "luaLibs/";
+
+	lua_getglobal(L, "package");
+	lua_getfield(L, -1, "path"); // get current package.path
+	std::string currentPath = lua_tostring(L, -1); // convert to std::string
+	currentPath += ";"+ lualibs_dir+"?.lua"; // add your module's directory to the path
+	currentPath += ";"+ lualibs_dir+"?/?.lua"; // add your module's directory to the path
+	lua_pop(L, 1); // pop the old package.path
+	lua_pushstring(L, currentPath.c_str()); // push the new package.path
+	lua_setfield(L, -2, "path"); // set the package.path to the new value
+	lua_pop(L, 1); // pop the package table
+	//--------------------------------------------
+	
 	// Initialize our lua_api modules
 	InitializeModApi(L, top);
 	lua_pop(L, 1);
@@ -89,28 +109,30 @@ ServerScripting::ServerScripting(Server* server):
 	infostream << "SCRIPTAPI: Initialized game modules" << std::endl;
 }
 
+void ServerScripting::saveGlobals()
+{
+	SCRIPTAPI_PRECHECKHEADER
+
+	lua_getglobal(L, "core");
+	luaL_checktype(L, -1, LUA_TTABLE);
+	lua_getfield(L, -1, "get_globals_to_transfer");
+	lua_call(L, 0, 1);
+	auto *data = script_pack(L, -1);
+	assert(!data->contains_userdata);
+	getServer()->m_lua_globals_data.reset(data);
+	// unset the function
+	lua_pushnil(L);
+	lua_setfield(L, -3, "get_globals_to_transfer");
+	lua_pop(L, 2); // pop 'core', return value
+}
+
 void ServerScripting::initAsync()
 {
-	// Save globals to transfer
-	{
-		lua_State *L = getStack();
-		lua_getglobal(L, "core");
-		luaL_checktype(L, -1, LUA_TTABLE);
-		lua_getfield(L, -1, "get_globals_to_transfer");
-		lua_call(L, 0, 1);
-		auto *data = script_pack(L, -1);
-		assert(!data->contains_userdata);
-		getServer()->m_async_globals_data.reset(data);
-		lua_pushnil(L);
-		lua_setfield(L, -3, "get_globals_to_transfer"); // unset function too
-		lua_pop(L, 2); // pop 'core', return value
-	}
-
 	infostream << "SCRIPTAPI: Initializing async engine" << std::endl;
 	asyncEngine.registerStateInitializer(InitializeAsync);
 	asyncEngine.registerStateInitializer(ModApiUtil::InitializeAsync);
 	asyncEngine.registerStateInitializer(ModApiCraft::InitializeAsync);
-	asyncEngine.registerStateInitializer(ModApiItemMod::InitializeAsync);
+	asyncEngine.registerStateInitializer(ModApiItem::InitializeAsync);
 	asyncEngine.registerStateInitializer(ModApiServer::InitializeAsync);
 	// not added: ModApiMapgen is a minefield for thread safety
 	// not added: ModApiHttp async api can't really work together with our jobs
@@ -156,9 +178,9 @@ void ServerScripting::InitializeModApi(lua_State *L, int top)
 	// Initialize mod api modules
 	ModApiAuth::Initialize(L, top);
 	ModApiCraft::Initialize(L, top);
-	ModApiEnvMod::Initialize(L, top);
+	ModApiEnv::Initialize(L, top);
 	ModApiInventory::Initialize(L, top);
-	ModApiItemMod::Initialize(L, top);
+	ModApiItem::Initialize(L, top);
 	ModApiMapgen::Initialize(L, top);
 	ModApiParticles::Initialize(L, top);
 	ModApiRollback::Initialize(L, top);
@@ -167,11 +189,15 @@ void ServerScripting::InitializeModApi(lua_State *L, int top)
 	ModApiHttp::Initialize(L, top);
 	ModApiStorage::Initialize(L, top);
 	ModApiChannels::Initialize(L, top);
+
+	lua_register(L, "mysql", luaopen_luasql_mysql);
 }
 
 void ServerScripting::InitializeAsync(lua_State *L, int top)
 {
 	// classes
+	ItemStackMetaRef::Register(L);
+	LuaAreaStore::Register(L);
 	LuaItemStack::Register(L);
 	LuaPerlinNoise::Register(L);
 	LuaPerlinNoiseMap::Register(L);
@@ -182,10 +208,8 @@ void ServerScripting::InitializeAsync(lua_State *L, int top)
 	LuaSettings::Register(L);
 
 	// globals data
-	lua_getglobal(L, "core");
-	luaL_checktype(L, -1, LUA_TTABLE);
-	auto *data = ModApiBase::getServer(L)->m_async_globals_data.get();
+	auto *data = ModApiBase::getServer(L)->m_lua_globals_data.get();
+	assert(data);
 	script_unpack(L, data);
-	lua_setfield(L, -2, "transferred_globals");
-	lua_pop(L, 1); // pop 'core'
+	lua_setfield(L, top, "transferred_globals");
 }

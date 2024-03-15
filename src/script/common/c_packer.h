@@ -1,14 +1,17 @@
 /*
 Minetest
 Copyright (C) 2022 sfan5 <sfan5@live.de>
+
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU Lesser General Public License as published by
 the Free Software Foundation; either version 2.1 of the License, or
 (at your option) any later version.
+
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU Lesser General Public License for more details.
+
 You should have received a copy of the GNU Lesser General Public License along
 with this program; if not, write to the Free Software Foundation, Inc.,
 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
@@ -42,7 +45,7 @@ struct PackedInstr
 {
 	s16 type; // LUA_T* or INSTR_*
 	u16 set_into; // set into table on stack
-    bool keep_ref; // is referenced later by INSTR_PUSHREF?
+	bool keep_ref; // is referenced later by INSTR_PUSHREF?
 	bool pop; // remove from stack?
 	union {
 		bool bdata; // boolean: value
@@ -59,7 +62,7 @@ struct PackedInstr
 			s32 sidata1, sidata2;
 		};
 		void *ptrdata; // userdata: implementation defined
-        s32 ref; // PUSHREF: index of referenced instr
+		s32 ref; // PUSHREF: index of referenced instr
 	};
 	/*
 		- string: value
@@ -116,7 +119,7 @@ void script_register_packer(lua_State *L, const char *regname,
 // Pack a Lua value
 PackedValue *script_pack(lua_State *L, int idx);
 // Unpack a Lua value (left on top of stack)
-// Note that this may modify the PackedValue, you can't reuse it!
+// Note that this may modify the PackedValue, reusability is not guaranteed!
 void script_unpack(lua_State *L, PackedValue *val);
 
 // Dump contents of PackedValue to stdout for debugging

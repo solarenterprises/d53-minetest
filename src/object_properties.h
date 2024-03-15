@@ -19,12 +19,13 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #pragma once
 
+#include <optional>
 #include <string>
 #include "irrlichttypes_bloated.h"
 #include <iostream>
 #include <map>
 #include <vector>
-#include "util/Optional.h"
+#include "util/pointabilities.h"
 
 struct ObjectProperties
 {
@@ -35,7 +36,8 @@ struct ObjectProperties
 	// Values are BS=1
 	aabb3f collisionbox = aabb3f(-0.5f, -0.5f, -0.5f, 0.5f, 0.5f, 0.5f);
 	aabb3f selectionbox = aabb3f(-0.5f, -0.5f, -0.5f, 0.5f, 0.5f, 0.5f);
-	bool pointable = true;
+	bool rotate_selectionbox = false;
+	PointabilityType pointable = PointabilityType::POINTABLE;
 	std::string visual = "sprite";
 	std::string mesh = "";
 	v3f visual_size = v3f(1, 1, 1);
@@ -54,7 +56,7 @@ struct ObjectProperties
 	s8 glow = 0;
 	std::string nametag = "";
 	video::SColor nametag_color = video::SColor(255, 255, 255, 255);
-	Optional<video::SColor> nametag_bgcolor = nullopt;
+	std::optional<video::SColor> nametag_bgcolor = std::nullopt;
 	f32 automatic_face_movement_max_rotation_per_sec = -1.0f;
 	std::string infotext;
 	//! For dropped items, this contains item information.

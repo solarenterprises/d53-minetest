@@ -120,7 +120,8 @@ function core.get_player_radius_area(player_name, radius)
 	return p1, p2
 end
 
--- To be overriden by protection mods
+
+-- To be overridden by protection mods
 
 function core.is_protected(pos, name)
 	return false
@@ -235,6 +236,7 @@ end
 -- Used for callback handling with dynamic_add_media
 core.dynamic_media_callbacks = {}
 
+
 -- Transfer of certain globals into async environment
 -- see builtin/async/game.lua for the other side
 
@@ -259,6 +261,11 @@ function core.get_globals_to_transfer()
 	local all = {
 		registered_items = copy_filtering(core.registered_items),
 		registered_aliases = core.registered_aliases,
+
+		nodedef_default = copy_filtering(core.nodedef_default),
+		craftitemdef_default = copy_filtering(core.craftitemdef_default),
+		tooldef_default = copy_filtering(core.tooldef_default),
+		noneitemdef_default = copy_filtering(core.noneitemdef_default),
 	}
 	return all
 end

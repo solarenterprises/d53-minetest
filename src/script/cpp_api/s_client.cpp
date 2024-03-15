@@ -23,6 +23,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "client/client.h"
 #include "common/c_converter.h"
 #include "common/c_content.h"
+#include "lua_api/l_item.h"
+#include "itemdef.h"
 #include "s_item.h"
 
 void ScriptApiClient::on_mods_loaded()
@@ -186,15 +188,13 @@ bool ScriptApiClient::on_dignode(v3s16 p, MapNode node)
 {
 	SCRIPTAPI_PRECHECKHEADER
 
-	const NodeDefManager *ndef = getClient()->ndef();
-
 	// Get core.registered_on_dignode
 	lua_getglobal(L, "core");
 	lua_getfield(L, -1, "registered_on_dignode");
 
 	// Push data
 	push_v3s16(L, p);
-	pushnode(L, node, ndef);
+	pushnode(L, node);
 
 	// Call functions
 	try {
@@ -210,15 +210,13 @@ bool ScriptApiClient::on_punchnode(v3s16 p, MapNode node)
 {
 	SCRIPTAPI_PRECHECKHEADER
 
-	const NodeDefManager *ndef = getClient()->ndef();
-
 	// Get core.registered_on_punchgnode
 	lua_getglobal(L, "core");
 	lua_getfield(L, -1, "registered_on_punchnode");
 
 	// Push data
 	push_v3s16(L, p);
-	pushnode(L, node, ndef);
+	pushnode(L, node);
 
 	// Call functions
 	try {

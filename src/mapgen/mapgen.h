@@ -25,6 +25,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "nodedef.h"
 #include "util/string.h"
 #include "util/container.h"
+#include <utility>
 
 #define MAPGEN_DEFAULT MAPGEN_V7
 #define MAPGEN_DEFAULT_NAME "v7"
@@ -139,7 +140,6 @@ struct MapgenParams {
 	s32 getSpawnRangeMax();
 
 private:
-	void calcMapgenEdges();
 	bool m_mapgen_edges_calculated = false;
 };
 
@@ -163,6 +163,9 @@ public:
 	int id = -1;
 
 	MMVManip *vm = nullptr;
+	// Note that this contains various things the mapgens *can* use, so biomegen
+	// might be NULL while m_emerge->biomegen is not.
+	EmergeParams *m_emerge = nullptr;
 	const NodeDefManager *ndef = nullptr;
 
 	u32 blockseed;
@@ -175,7 +178,7 @@ public:
 
 	Mapgen() = default;
 	Mapgen(int mapgenid, MapgenParams *params, EmergeParams *emerge);
-	virtual ~Mapgen() = default;
+	virtual ~Mapgen();
 	DISABLE_CLASS_COPY(Mapgen);
 
 	virtual MapgenType getType() const { return MAPGEN_INVALID; }
@@ -255,6 +258,7 @@ private:
 	 */
 	void lightSpread(VoxelArea &a, std::queue<std::pair<v3s16, u8>> &queue,
 		const v3s16 &p, u8 light);
+
 	// isLiquidHorizontallyFlowable() is a helper function for updateLiquid()
 	// that checks whether there are floodable nodes without liquid beneath
 	// the node at index vi.
@@ -288,7 +292,6 @@ public:
 	virtual void generateDungeons(s16 max_stone_y);
 
 protected:
-	EmergeParams *m_emerge;
 	BiomeManager *m_bmgr;
 
 	Noise *noise_filler_depth;
@@ -328,3 +331,7 @@ protected:
 	s16 dungeon_ymin;
 	s16 dungeon_ymax;
 };
+
+// Calculate exact edges of the outermost mapchunks that are within the set
+// mapgen_limit. Returns the minimum and maximum edges in nodes in that order.
+std::pair<s16, s16> get_mapgen_edges(s16 mapgen_limit, s16 chunksize);

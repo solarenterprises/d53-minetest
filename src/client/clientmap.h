@@ -24,6 +24,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "camera.h"
 #include <set>
 #include <map>
+#include <CNullDriver.h>
+#include "memoryManager.h"
 
 struct MapDrawControl
 {
@@ -37,24 +39,187 @@ struct MapDrawControl
 	bool show_wireframe = false;
 };
 
-struct MeshBufList
+namespace irr
 {
-	video::SMaterial m;
-	std::vector<std::pair<v3s16,scene::IMeshBuffer*>> bufs;
-};
+	namespace scene
+	{
+		class SMeshBuffer32 : public SMeshBuffer
+		{
+		public:
+			//! Get type of index data which is stored in this meshbuffer.
+			/** \return Index type of this buffer. */
+			video::E_INDEX_TYPE getIndexType() const override
+			{
+				return video::EIT_32BIT;
+			}
 
-struct MeshBufListList
-{
-	/*!
-	 * Stores the mesh buffers of the world.
-	 * The array index is the material's layer.
-	 * The vector part groups vertices by material.
-	 */
-	std::vector<MeshBufList> lists[MAX_TILE_LAYERS];
+			//! Get pointer to indices
+			/** \return Pointer to indices. */
+			const u16* getIndices() const override
+			{
+				return nullptr;
+			}
 
-	void clear();
-	void add(scene::IMeshBuffer *buf, v3s16 position, u8 layer);
-};
+			//! Get pointer to indices
+			/** \return Pointer to indices. */
+			u16* getIndices() override
+			{
+				return nullptr;
+			}
+
+
+			//! Get number of indices
+			/** \return Number of indices. */
+			u32 getIndexCount() const override
+			{
+				return indexCount;
+			}
+
+			u32 getVertexCount() const override
+			{
+				return vertexCount;
+			}
+
+			virtual u32 getPrimitiveCount() const
+			{
+				return drawPrimitiveCount;
+			}
+
+			//! Indices into the vertices of this buffer.
+			//core::array<u32> Indices32;
+
+			u32 drawPrimitiveCount = 0;
+			u32 indexCount = 0;
+			u32 vertexCount = 0;
+		};
+	}
+}
+
+namespace {
+	struct SMeshBufferData {
+		MemoryManager::MemoryInfo vertexMemory;
+		MemoryManager::MemoryInfo indexMemory;
+
+		scene::IMeshBuffer* meshBuffer;
+		video::ITexture* texture = nullptr;
+		u8 layer = 0;
+	};
+
+	struct MeshBlockBuffer {
+		MapBlockMesh* mapBlockMesh = nullptr;
+		scene::IMeshBuffer* meshBuffer = nullptr;
+	};
+
+	struct TextureBufListMaps
+	{
+		struct TextureHash
+		{
+			size_t operator()(const video::ITexture* t) const noexcept
+			{
+				// Only hash first texture. Simple and fast.
+				//return std::hash<video::ITexture*>{}(m.TextureLayers[0].Texture);
+				return (size_t)t;
+			}
+		};
+
+		struct Data
+		{
+			scene::SMeshBuffer32* buffer;
+
+			MemoryManager vertex_memory;
+			MemoryManager index_memory;
+
+			Data() :
+				buffer(nullptr),
+				vertex_memory(sizeof(video::S3DVertex)),
+				index_memory(sizeof(u32)*3) {
+
+			}
+		};
+
+		using MaterialBufListMap = std::unordered_map<
+			video::ITexture *,
+			Data *,
+			TextureHash>;
+
+		std::array<MaterialBufListMap, MAX_TILE_LAYERS> maps;
+
+		~TextureBufListMaps() {
+			clear();
+		}
+
+		void clear()
+		{
+			for (int layer = 0; layer < MAX_TILE_LAYERS; layer++) {
+				auto& map = maps[layer];
+
+				for (auto it : map) {
+					it.first->drop();
+					auto data = it.second;
+					data->buffer->drop();
+					delete data;
+				}
+
+				map.clear();
+			}
+		}
+
+		Data* getNoCreate(video::ITexture* texture, u8 layer)
+		{
+			assert(layer < MAX_TILE_LAYERS);
+
+			// Append to the correct layer
+			auto& map = maps[layer];
+			if (map.find(texture) == map.end())
+				return nullptr;
+
+			return map[texture];
+		}
+
+		Data* get(video::ITexture* texture, u8 layer)
+		{
+			assert(layer < MAX_TILE_LAYERS);
+
+			// Append to the correct layer
+			auto& map = maps[layer];
+
+			Data* d = map[texture];
+			if (d)
+				return d;
+
+			texture->grab();
+			scene::SMeshBuffer32* buffer = new scene::SMeshBuffer32();
+			buffer->MappingHint_Index = scene::E_HARDWARE_MAPPING::EHM_DYNAMIC;
+			buffer->MappingHint_Vertex = scene::E_HARDWARE_MAPPING::EHM_DYNAMIC;
+			buffer->grab();
+			
+			d = new Data();
+			d->buffer = buffer;
+
+			map[texture] = d;
+
+			return d;
+		}
+
+		void drop(video::ITexture* texture, u8 layer)
+		{
+			assert(layer < MAX_TILE_LAYERS);
+
+			// Append to the correct layer
+			auto& map = maps[layer];
+			if (map.find(texture) == map.end())
+				return;
+
+			texture->drop();
+
+			Data* d = map[texture];
+			d->buffer->drop();
+			d->buffer = nullptr;
+			delete d;
+			map.erase(texture);
+		}
+	};
+}
 
 class Client;
 class ITextureSource;
@@ -76,7 +241,7 @@ public:
 			s32 id
 	);
 
-	virtual ~ClientMap() = default;
+	virtual ~ClientMap();
 
 	bool maySaveBlocks() override
 	{
@@ -88,14 +253,12 @@ public:
 		ISceneNode::drop(); // calls destructor
 	}
 
-	void updateCamera(v3f pos, v3f dir, f32 fov, v3s16 offset);
+	void updateCamera(v3f pos, v3f dir, f32 fov, v3s16 offset, video::SColor light_color);
 
 	/*
 		Forcefully get a sector from somewhere
 	*/
 	MapSector * emergeSector(v2s16 p) override;
-
-	//void deSerializeSector(v2s16 p2d, std::istream &is);
 
 	/*
 		ISceneNode methods
@@ -117,7 +280,9 @@ public:
 
 	void getBlocksInViewRange(v3s16 cam_pos_nodes,
 		v3s16 *p_blocks_min, v3s16 *p_blocks_max, float range=-1.0f);
-	void updateDrawList();
+	void updateDrawList(video::IVideoDriver* driver);
+	// @brief Calculate statistics about the map and keep the blocks alive
+	void touchMapBlocks();
 	void updateDrawListShadow(v3f shadow_light_pos, v3f shadow_light_dir, float radius, float length);
 	// Returns true if draw list needs updating before drawing the next frame.
 	bool needsUpdateDrawList() { return m_needs_update_drawlist; }
@@ -138,10 +303,19 @@ public:
 	f32 getWantedRange() const { return m_control.wanted_range; }
 	f32 getCameraFov() const { return m_camera_fov; }
 
+	void onSettingChanged(const std::string &name);
+
+	bool doesNeedToUpdateCache();
+	void updateCacheBuffers(video::IVideoDriver* driver);
+
+protected:
+	void reportMetrics(u64 save_time_us, u32 saved_blocks, u32 all_blocks) override;
 private:
+	bool isMeshOccluded(MapBlock *mesh_block, u16 mesh_size, v3s16 cam_pos_nodes);
 
 	// update the vertex order in transparent mesh buffers
 	void updateTransparentMeshBuffers();
+
 
 	// Orders blocks by distance to the camera
 	class MapBlockComparer
@@ -195,9 +369,11 @@ private:
 	v3f m_camera_direction = v3f(0,0,1);
 	f32 m_camera_fov = M_PI;
 	v3s16 m_camera_offset;
+	video::SColor m_camera_light_color = video::SColor(0xFFFFFFFF);
 	bool m_needs_update_transparent_meshes = true;
 
 	std::map<v3s16, MapBlock*, MapBlockComparer> m_drawlist;
+	std::vector<MapBlock*> m_keeplist;
 	std::map<v3s16, MapBlock*> m_drawlist_shadow;
 	bool m_needs_update_drawlist;
 
@@ -206,6 +382,15 @@ private:
 	bool m_cache_trilinear_filter;
 	bool m_cache_bilinear_filter;
 	bool m_cache_anistropic_filter;
-	bool m_added_to_shadow_renderer{false};
 	u16 m_cache_transparency_sorting_distance;
+
+	bool m_loops_occlusion_culler;
+	bool m_enable_raytraced_culling;
+
+	TextureBufListMaps cache_buffers;
+	core::array<u32> empty_data;
+
+	std::unordered_map<v3s16, MapBlock*> cache_keep_blocks;
+	std::unordered_map<MapBlock*, std::vector<SMeshBufferData>> buffer_data;
+	int last_frameno = -1;
 };

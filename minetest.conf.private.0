@@ -1,0 +1,23 @@
+sxpaddress = SVHj6VUDdfAFpXpqxYt5rDT7uCxi8nHNnn
+menu_last_game = devtest
+remote_port = 30001
+screen_w = 1310
+screen_h = 1006
+address = dev.district53.io
+maintab_LAST = local
+name = SVHj6VUDdfAFpXpqxYt5rDT7uCxi8nHNnn
+no_mtg_notification = true
+creative_mode = true
+enable_damage = true
+mainmenu_last_selected_world = 1
+server_announce = false
+enable_fog = false
+enable_server = false
+default_privs = interact, shout, areas
+secure.enable_security = false
+secure.trusted_mods = areas,dcwebhook,adv_chat
+
+cottages_feldweg_mode = mesh
+wieldview_update_time = 2
+wieldview_node_tiles = false
+world_config_selected_mod = 10

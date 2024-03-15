@@ -50,7 +50,7 @@ endif(LUA_ANSI)
 
 # Standard flags to use
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|(Apple)?Clang")
-	set(COMMON_CFLAGS "${COMMON_CFLAGS} -pipe -Wall -Wextra -Wshadow -W -pedantic")
+	set(COMMON_CFLAGS "${COMMON_CFLAGS} -pipe -Wall -Wextra -Wshadow -W -pedantic -Wno-implicit-fallthrough -Wmisleading-indentation")
 endif()
 
 # COMMON_CFLAGS has no effect without this line

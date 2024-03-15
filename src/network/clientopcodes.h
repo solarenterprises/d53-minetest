@@ -20,10 +20,12 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #pragma once
 
-#include "client/client.h"
 #include "networkprotocol.h"
 
 class NetworkPacket;
+class Client;
+
+typedef void (Client::* ClientFunctionPtr)(NetworkPacket* pkt);
 
 enum ToClientConnectionState {
 	TOCLIENT_STATE_NOT_CONNECTED,
@@ -31,12 +33,14 @@ enum ToClientConnectionState {
 	TOCLIENT_STATE_ALL,
 };
 
-struct ToClientCommandHandler
+template<typename T> struct TemplateToClientCommandHandler
 {
-    const char* name;
-    ToClientConnectionState state;
-    void (Client::*handler)(NetworkPacket* pkt);
+	const char* name;
+	ToClientConnectionState state;
+	T handler;
 };
+
+typedef TemplateToClientCommandHandler<ClientFunctionPtr> ToClientCommandHandler;
 
 struct ServerCommandFactory
 {

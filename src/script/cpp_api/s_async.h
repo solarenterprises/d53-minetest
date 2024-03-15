@@ -172,7 +172,7 @@ private:
 
 	// Only set for the server async environment (duh)
 	Server *server = nullptr;
-	
+
 	// Internal store for registred state initializers
 	std::vector<StateInitializer> stateInitializers;
 

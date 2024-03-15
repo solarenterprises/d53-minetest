@@ -21,6 +21,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "luaentity_sao.h"
 #include "collision.h"
 #include "constants.h"
+#include "inventory.h"
+#include "irrlicht_changes/printing.h"
 #include "player_sao.h"
 #include "scripting_server.h"
 #include "server.h"
@@ -69,8 +71,12 @@ LuaEntitySAO::LuaEntitySAO(ServerEnvironment *env, v3f pos, const std::string &d
 		break;
 	}
 	// create object
-	infostream << "LuaEntitySAO::create(name=\"" << name << "\" state=\""
-			 << state << "\")" << std::endl;
+	infostream << "LuaEntitySAO::create(name=\"" << name << "\" state is";
+	if (state.empty())
+		infostream << "empty";
+	else
+		infostream << state.size() << " bytes";
+	infostream << ")" << std::endl;
 
 	m_init_name = name;
 	m_init_state = state;
@@ -101,7 +107,7 @@ void LuaEntitySAO::addedToEnvironment(u32 dtime_s)
 	if(m_registered){
 		// Get properties
 		m_env->getScriptIface()->
-			luaentity_GetProperties(m_id, this, &m_prop);
+			luaentity_GetProperties(m_id, this, &m_prop, m_init_name);
 		// Initialize HP from properties
 		m_hp = m_prop.hp_max;
 		// Activate entity, supplying serialized state
@@ -139,7 +145,7 @@ void LuaEntitySAO::step(float dtime, bool send_recommended)
 	// If attached, check that our parent is still there. If it isn't, detach.
 	if (m_attachment_parent_id && !isAttached()) {
 		// This is handled when objects are removed from the map
-		warningstream << "LuaEntitySAO::step() id=" << m_id <<
+		warningstream << "LuaEntitySAO::step() " << m_init_name << " at " << m_last_sent_position << ", id=" << m_id <<
 			" is attached to nonexistent parent. This is a bug." << std::endl;
 		clearParentAttachment();
 		sendPosition(false, true);
@@ -175,8 +181,7 @@ void LuaEntitySAO::step(float dtime, bool send_recommended)
 			m_velocity = p_velocity;
 			m_acceleration = p_acceleration;
 		} else {
-			m_base_position += dtime * m_velocity + 0.5 * dtime
-					* dtime * m_acceleration;
+			m_base_position += (m_velocity + m_acceleration * 0.5f * dtime) * dtime;
 			m_velocity += dtime * m_acceleration;
 		}
 
@@ -196,6 +201,11 @@ void LuaEntitySAO::step(float dtime, bool send_recommended)
 				m_rotation.Y = target_yaw;
 			}
 		}
+	}
+
+	if (fabs(m_prop.automatic_rotate) > 0.001f) {
+		m_rotation_add_yaw = modulo360f(m_rotation_add_yaw + dtime * core::RADTODEG *
+				m_prop.automatic_rotate);
 	}
 
 	if(m_registered) {
@@ -235,7 +245,7 @@ std::string LuaEntitySAO::getClientInitializationData(u16 protocol_version)
 
 	// PROTOCOL_VERSION >= 37
 	writeU8(os, 1); // version
-	os << serializeString16(""); // name
+	os << serializeString16(m_init_name); // name
 	writeU8(os, 0); // is_player
 	writeU16(os, getId()); //id
 	writeV3F32(os, m_base_position);
@@ -246,13 +256,13 @@ std::string LuaEntitySAO::getClientInitializationData(u16 protocol_version)
 	msg_os << serializeString32(getPropertyPacket()); // message 1
 	msg_os << serializeString32(generateUpdateArmorGroupsCommand()); // 2
 	msg_os << serializeString32(generateUpdateAnimationCommand()); // 3
-	for (const auto &bone_pos : m_bone_position) {
-		msg_os << serializeString32(generateUpdateBonePositionCommand(
-			bone_pos.first, bone_pos.second.X, bone_pos.second.Y)); // 3 + N
+	for (const auto &bone_override : m_bone_override) {
+		msg_os << serializeString32(generateUpdateBoneOverrideCommand(
+			bone_override.first, bone_override.second)); // 3 + N
 	}
-	msg_os << serializeString32(generateUpdateAttachmentCommand()); // 4 + m_bone_position.size
+	msg_os << serializeString32(generateUpdateAttachmentCommand()); // 4 + m_bone_override.size
 
-	int message_count = 4 + m_bone_position.size();
+	int message_count = 4 + m_bone_override.size();
 
 	for (const auto &id : getAttachmentChildIds()) {
 		if (ServerActiveObject *obj = m_env->getActiveObject(id)) {
@@ -275,7 +285,6 @@ std::string LuaEntitySAO::getClientInitializationData(u16 protocol_version)
 
 void LuaEntitySAO::getStaticData(std::string *result) const
 {
-	verbosestream<<FUNCTION_NAME<<std::endl;
 	std::ostringstream os(std::ios::binary);
 	// version must be 1 to keep backwards-compatibility. See version2
 	writeU8(os, 1);
@@ -290,7 +299,7 @@ void LuaEntitySAO::getStaticData(std::string *result) const
 		os<<serializeString32(m_init_state);
 	}
 	writeU16(os, m_hp);
-	writeV3F1000(os, m_velocity);
+	writeV3F1000(os, clampToF1000(m_velocity));
 	// yaw
 	writeF1000(os, m_rotation.Y);
 
@@ -385,7 +394,7 @@ std::string LuaEntitySAO::getDescription()
 	std::ostringstream oss;
 	oss << "LuaEntitySAO \"" << m_init_name << "\" ";
 	auto pos = floatToInt(m_base_position, BS);
-	oss << "at " << PP(pos);
+	oss << "at " << pos;
 	return oss.str();
 }
 
@@ -544,7 +553,7 @@ bool LuaEntitySAO::getCollisionBox(aabb3f *toset) const
 
 bool LuaEntitySAO::getSelectionBox(aabb3f *toset) const
 {
-	if (!m_prop.is_visible || !m_prop.pointable) {
+	if (!m_prop.is_visible) {
 		return false;
 	}
 

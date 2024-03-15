@@ -248,9 +248,6 @@ Minimap::~Minimap()
 
 	driver->removeTexture(data->texture);
 	driver->removeTexture(data->heightmap_texture);
-	driver->removeTexture(data->minimap_overlay_round);
-	driver->removeTexture(data->minimap_overlay_square);
-	driver->removeTexture(data->object_marker_red);
 
 	for (MinimapMarker *m : m_markers)
 		delete m;
@@ -327,7 +324,7 @@ void Minimap::addMode(MinimapModeDef mode)
 	int zoom = -1;
 
 	// Build a default standard label
-	if (mode.label == "") {
+	if (mode.label.empty()) {
 		switch (mode.type) {
 			case MINIMAP_TYPE_OFF:
 				mode.label = gettext("Minimap hidden");
@@ -361,8 +358,8 @@ void Minimap::addMode(MinimapModeDef mode)
 	m_modes.push_back(mode);
 }
 
-void Minimap::addMode(MinimapType type, u16 size, std::string label,
-		std::string texture, u16 scale)
+void Minimap::addMode(MinimapType type, u16 size, const std::string &label,
+		const std::string &texture, u16 scale)
 {
 	MinimapModeDef mode;
 	mode.type = type;
@@ -608,10 +605,13 @@ void Minimap::drawMinimap(core::rect<s32> rect) {
 	matrix.makeIdentity();
 
 	video::SMaterial &material = m_meshbuffer->getMaterial();
-	material.setFlag(video::EMF_TRILINEAR_FILTER, true);
+	material.forEachTexture([] (auto &tex) {
+		tex.MinFilter = video::ETMINF_LINEAR_MIPMAP_LINEAR;
+		tex.MagFilter = video::ETMAGF_LINEAR;
+	});
 	material.Lighting = false;
-	material.TextureLayer[0].Texture = minimap_texture;
-	material.TextureLayer[1].Texture = data->heightmap_texture;
+	material.TextureLayers[0].Texture = minimap_texture;
+	material.TextureLayers[1].Texture = data->heightmap_texture;
 
 	if (m_enable_shaders && data->mode.type == MINIMAP_TYPE_SURFACE) {
 		u16 sid = m_shdrsrc->getShader("minimap_shader", TILE_MATERIAL_ALPHA);
@@ -631,7 +631,7 @@ void Minimap::drawMinimap(core::rect<s32> rect) {
 	// Draw overlay
 	video::ITexture *minimap_overlay = data->minimap_shape_round ?
 		data->minimap_overlay_round : data->minimap_overlay_square;
-	material.TextureLayer[0].Texture = minimap_overlay;
+	material.TextureLayers[0].Texture = minimap_overlay;
 	material.MaterialType = video::EMT_TRANSPARENT_ALPHA_CHANNEL;
 	driver->setMaterial(material);
 	driver->drawMeshBuffer(m_meshbuffer);
@@ -643,7 +643,7 @@ void Minimap::drawMinimap(core::rect<s32> rect) {
 		matrix.setRotationDegrees(core::vector3df(0, 0, m_angle));
 	}
 
-	material.TextureLayer[0].Texture = data->player_marker;
+	material.TextureLayers[0].Texture = data->player_marker;
 	driver->setTransform(video::ETS_WORLD, matrix);
 	driver->setMaterial(material);
 	driver->drawMeshBuffer(m_meshbuffer);

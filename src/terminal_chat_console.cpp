@@ -280,7 +280,7 @@ void TerminalChatConsole::handleInput(int ch, bool &complete_redraw_needed)
 				ChatPrompt::CURSOROP_DIR_RIGHT,
 				ChatPrompt::CURSOROP_SCOPE_LINE);
 			break;
-		case KEY_TAB:
+		case '\t':
 			// Tab pressed
 			// Nick completion
 			prompt.nickCompletion(m_nicks, false);
@@ -323,10 +323,10 @@ void TerminalChatConsole::step(int ch)
 		ChatEvent *evt = m_chat_interface->outgoing_queue.pop_frontNoEx();
 		switch (evt->type) {
 			case CET_NICK_REMOVE:
-				m_nicks.remove(((ChatEventNick *)evt)->nick);
+				m_nicks.erase(((ChatEventNick *)evt)->nick);
 				break;
 			case CET_NICK_ADD:
-				m_nicks.push_back(((ChatEventNick *)evt)->nick);
+				m_nicks.insert(((ChatEventNick *)evt)->nick);
 				break;
 			case CET_CHAT:
 				complete_redraw_needed = true;

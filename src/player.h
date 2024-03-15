@@ -26,11 +26,12 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "util/basic_macros.h"
 #include <list>
 #include <mutex>
+#include <functional>
 
 #define PLAYERNAME_SIZE 36
 
-#define PLAYERNAME_ALLOWED_CHARS "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-#define PLAYERNAME_ALLOWED_CHARS_USER_EXPL "'a' to 'z', 'A' to 'Z', '0' to '9'"
+#define PLAYERNAME_ALLOWED_CHARS "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_"
+#define PLAYERNAME_ALLOWED_CHARS_USER_EXPL "'a' to 'z', 'A' to 'Z', '0' to '9', '-', '_'"
 
 struct PlayerFovSpec
 {
@@ -96,6 +97,26 @@ struct PlayerControl
 	float movement_direction = 0.0f;
 };
 
+struct PlayerPhysicsOverride
+{
+	float speed = 1.f;
+	float jump = 1.f;
+	float gravity = 1.f;
+
+	bool sneak = true;
+	bool sneak_glitch = false;
+	// "Temporary" option for old move code
+	bool new_move = true;
+
+	float speed_climb = 1.f;
+	float speed_crouch = 1.f;
+	float liquid_fluidity = 1.f;
+	float liquid_fluidity_smooth = 1.f;
+	float liquid_sink = 1.f;
+	float acceleration_default = 1.f;
+	float acceleration_air = 1.f;
+};
+
 struct PlayerSettings
 {
 	bool free_move = false;
@@ -134,14 +155,15 @@ public:
 			std::vector<CollisionInfo> *collision_info)
 	{}
 
+	// in BS-space
 	v3f getSpeed() const
 	{
 		return m_speed;
 	}
 
+	// in BS-space
 	void setSpeed(v3f speed)
 	{
-		clampToF1000(speed);
 		m_speed = speed;
 	}
 
@@ -159,6 +181,7 @@ public:
 
 	v3f eye_offset_first;
 	v3f eye_offset_third;
+	v3f eye_offset_third_front;
 
 	Inventory inventory;
 
@@ -183,6 +206,7 @@ public:
 
 	PlayerControl control;
 	const PlayerControl& getPlayerControl() { return control; }
+	PlayerPhysicsOverride physics_override;
 	PlayerSettings &getPlayerSettings() { return m_player_settings; }
 	static void settingsChangedCallback(const std::string &name, void *data);
 
@@ -202,6 +226,7 @@ public:
 	}
 
 	HudElement* getHud(u32 id);
+	void        hudApply(std::function<void(const std::vector<HudElement*>&)> f);
 	u32         addHud(HudElement* hud);
 	HudElement* removeHud(u32 id);
 	void        clearHud();
@@ -211,7 +236,7 @@ public:
 
 protected:
 	char m_name[PLAYERNAME_SIZE];
-	v3f m_speed;
+	v3f m_speed; // velocity; in BS-space
 	u16 m_wield_index = 0;
 	PlayerFovSpec m_fov_override_spec = { 0.0f, false, 0.0f };
 

@@ -24,6 +24,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "voxel.h"
 #include <array>
 #include <map>
+#include <unordered_map>
+#include <unordered_set>
 
 class Client;
 class IShaderSource;
@@ -42,6 +44,8 @@ struct MeshMakeData
 	v3s16 m_blockpos = v3s16(-1337,-1337,-1337);
 	v3s16 m_crack_pos_relative = v3s16(-1337,-1337,-1337);
 	bool m_smooth_lighting = false;
+	MeshGrid m_mesh_grid;
+	u16 side_length;
 
 	Client *m_client;
 	bool m_use_shaders;
@@ -52,13 +56,7 @@ struct MeshMakeData
 		Copy block data manually (to allow optimizations by the caller)
 	*/
 	void fillBlockDataBegin(const v3s16 &blockpos);
-	void fillBlockData(const v3s16 &block_offset, MapNode *data);
-
-	/*
-		Copy central data directly from block, and other data from
-		parent of block.
-	*/
-	void fill(MapBlock *block);
+	void fillBlockData(const v3s16 &bp, MapNode *data);
 
 	/*
 		Set the (node) position of a crack
@@ -100,7 +98,7 @@ public:
 };
 
 /**
- * Implements a binary space partitioning tree 
+ * Implements a binary space partitioning tree
  * See also: https://en.wikipedia.org/wiki/Binary_space_partitioning
  */
 class MapBlockBspTree
@@ -108,7 +106,7 @@ class MapBlockBspTree
 public:
 	MapBlockBspTree() {}
 
-	void buildTree(const std::vector<MeshTriangle> *triangles);
+	void buildTree(const std::vector<MeshTriangle> *triangles, u16 side_lingth);
 
 	void traverse(v3f viewpoint, std::vector<s32> &output) const
 	{
@@ -181,6 +179,13 @@ private:
 class MapBlockMesh
 {
 public:
+	struct AnimationInfo {
+		int frame; // last animation frame
+		int frame_offset;
+		TileLayer tile;
+	};
+
+public:
 	// Builds the mesh given
 	MapBlockMesh(MeshMakeData *data, v3s16 camera_offset);
 	~MapBlockMesh();
@@ -191,7 +196,9 @@ public:
 	//   daynight_ratio: 0 .. 1000
 	//   crack: -1 .. CRACK_ANIMATION_LENGTH-1 (-1 for off)
 	// Returns true if anything has been changed.
-	bool animate(bool faraway, float time, int crack, u32 daynight_ratio);
+	bool animate(bool faraway, float time, u32 daynight_ratio, u32 bufferIndex);
+	bool animateCracks(int crack);
+	bool animateTransparent(float time);
 
 	scene::IMesh *getMesh()
 	{
@@ -203,11 +210,11 @@ public:
 		return m_mesh[layer];
 	}
 
-	MinimapMapblock *moveMinimapMapblock()
+	std::vector<MinimapMapblock*> moveMinimapMapblocks()
 	{
-		MinimapMapblock *p = m_minimap_mapblock;
-		m_minimap_mapblock = NULL;
-		return p;
+		std::vector<MinimapMapblock*> minimap_mapblocks;
+		minimap_mapblocks.swap(m_minimap_mapblocks);
+		return minimap_mapblocks;
 	}
 
 	bool isAnimationForced() const
@@ -221,6 +228,12 @@ public:
 			m_animation_force_timer--;
 	}
 
+	/// Radius of the bounding-sphere, in BS-space.
+	f32 getBoundingRadius() const { return m_bounding_radius; }
+
+	/// Center of the bounding-sphere, in BS-space, relative to block pos.
+	v3f getBoundingSphereCenter() const { return m_bounding_sphere_center; }
+
 	/// update transparent buffers to render towards the camera
 	void updateTransparentBuffers(v3f camera_pos, v3s16 block_pos);
 	void consolidateTransparentBuffers();
@@ -230,17 +243,31 @@ public:
 	{
 		return this->m_transparent_buffers;
 	}
-private:
-	struct AnimationInfo {
-		int frame; // last animation frame
-		int frame_offset;
-		TileLayer tile;
-	};
 
+	const std::unordered_set<scene::IMeshBuffer*> &getMapTransparentBuffers() const
+	{
+		return m_map_transparent_buffers;
+	}
+
+	inline std::map<std::pair<u8, u32>, AnimationInfo>& getAnimationInfo() {
+		return m_animation_info;
+	}
+
+	bool isMeshBufferAnimated(u32 layer, u32 index);
+
+	bool canMeshBufferBeCached(u32 index);
+
+	// If buffer has animation it will get the animated texture parent and not the texture tile.
+	video::ITexture* getBufferMainTexture(u32 layer, u32 bufferIndex);
+
+private:
 	scene::IMesh *m_mesh[MAX_TILE_LAYERS];
-	MinimapMapblock *m_minimap_mapblock;
+	std::vector<MinimapMapblock*> m_minimap_mapblocks;
 	ITextureSource *m_tsrc;
 	IShaderSource *m_shdrsrc;
+
+	f32 m_bounding_radius;
+	v3f m_bounding_sphere_center;
 
 	bool m_enable_shaders;
 	bool m_enable_vbo;
@@ -274,6 +301,10 @@ private:
 	MapBlockBspTree m_bsp_tree;
 	// Ordered list of references to parts of transparent buffers to draw
 	std::vector<PartialMeshBuffer> m_transparent_buffers;
+	std::unordered_set<scene::IMeshBuffer*> m_map_transparent_buffers;
+
+	std::vector<video::ITexture*> cache_buffer_main_texture[MAX_TILE_LAYERS];
+	std::vector<bool> cache_is_buffer_animated[MAX_TILE_LAYERS];
 };
 
 /*!
@@ -292,8 +323,7 @@ video::SColor encode_light(u16 light, u8 emissive_light);
 
 // Compute light at node
 u16 getInteriorLight(MapNode n, s32 increment, const NodeDefManager *ndef);
-u16 getFaceLight(MapNode n, MapNode n2, const v3s16 &face_dir,
-	const NodeDefManager *ndef);
+u16 getFaceLight(MapNode n, MapNode n2, const NodeDefManager *ndef);
 u16 getSmoothLightSolid(const v3s16 &p, const v3s16 &face_dir, const v3s16 &corner, MeshMakeData *data);
 u16 getSmoothLightTransparent(const v3s16 &p, const v3s16 &corner, MeshMakeData *data);
 
@@ -329,3 +359,8 @@ void final_color_blend(video::SColor *result,
 // TileFrame vector copy cost very much to client
 void getNodeTileN(MapNode mn, const v3s16 &p, u8 tileindex, MeshMakeData *data, TileSpec &tile);
 void getNodeTile(MapNode mn, const v3s16 &p, const v3s16 &dir, MeshMakeData *data, TileSpec &tile);
+
+/// Return bitset of the sides of the mesh that consist of solid nodes only
+/// Bits:
+/// 0 0 -Z +Z -X +X -Y +Y
+u8 get_solid_sides(MeshMakeData *data);

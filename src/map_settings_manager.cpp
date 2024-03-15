@@ -34,7 +34,7 @@ MapSettingsManager::MapSettingsManager(const std::string &map_meta_path):
 	 * It looks as follows: (lowest prio first)
 	 * 0: whatever is picked up from g_settings (incl. engine defaults)
 	 * 1: defaults set by scripts (override_meta = false)
-	 * 2: settings present in map_meta.txt or overriden by scripts
+	 * 2: settings present in map_meta.txt or overridden by scripts
 	 */
 	m_defaults = new Settings("", &m_hierarchy, 1);
 	m_map_settings = new Settings("[end_of_params]", &m_hierarchy, 2);
@@ -50,14 +50,14 @@ MapSettingsManager::~MapSettingsManager()
 
 
 bool MapSettingsManager::getMapSetting(
-	const std::string &name, std::string *value_out)
+	const std::string &name, std::string *value_out) const
 {
 	return m_map_settings->getNoEx(name, *value_out);
 }
 
 
 bool MapSettingsManager::getMapSettingNoiseParams(
-	const std::string &name, NoiseParams *value_out)
+	const std::string &name, NoiseParams *value_out) const
 {
 	// TODO: Rename to "getNoiseParams"
 	return m_map_settings->getNoiseParams(name, *value_out);

@@ -71,7 +71,8 @@ Player::Player(const char *name, IItemDefManager *idef):
 		HUD_FLAG_HOTBAR_VISIBLE    | HUD_FLAG_HEALTHBAR_VISIBLE |
 		HUD_FLAG_CROSSHAIR_VISIBLE | HUD_FLAG_WIELDITEM_VISIBLE |
 		HUD_FLAG_BREATHBAR_VISIBLE | HUD_FLAG_MINIMAP_VISIBLE   |
-		HUD_FLAG_MINIMAP_RADAR_VISIBLE | HUD_FLAG_BASIC_DEBUG;
+		HUD_FLAG_MINIMAP_RADAR_VISIBLE | HUD_FLAG_BASIC_DEBUG   |
+		HUD_FLAG_CHAT_VISIBLE;
 
 	hud_hotbar_itemcount = HUD_HOTBAR_ITEMCOUNT_DEFAULT;
 
@@ -136,6 +137,12 @@ HudElement* Player::getHud(u32 id)
 		return hud[id];
 
 	return NULL;
+}
+
+void Player::hudApply(std::function<void(const std::vector<HudElement*>&)> f)
+{
+	MutexAutoLock lock(m_mutex);
+	f(hud);
 }
 
 HudElement* Player::removeHud(u32 id)

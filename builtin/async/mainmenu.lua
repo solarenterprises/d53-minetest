@@ -1,4 +1,3 @@
-
 core.log("info", "Initializing asynchronous environment")
 
 function core.job_processor(func, serialized_param)
@@ -8,4 +7,3 @@ function core.job_processor(func, serialized_param)
 
 	return retval or core.serialize(nil)
 end
-

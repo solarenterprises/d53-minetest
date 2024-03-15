@@ -31,6 +31,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "config.h"
 #include "constants.h"
 #include "environment.h"
+#include "irrlicht_changes/printing.h"
 #include "log.h"
 #include "map.h"
 #include "mapblock.h"
@@ -158,8 +159,8 @@ EmergeManager::EmergeManager(Server *server, MetricsBackend *mb)
 
 	enable_mapgen_debug_info = g_settings->getBool("enable_mapgen_debug_info");
 
-	STATIC_ASSERT(ARRLEN(emergeActionStrs) == ARRLEN(m_completed_emerge_counter),
-		enum_size_mismatches);
+	static_assert(ARRLEN(emergeActionStrs) == ARRLEN(m_completed_emerge_counter),
+		"enum size mismatches");
 	for (u32 i = 0; i < ARRLEN(m_completed_emerge_counter); i++) {
 		std::string help_str("Number of completed emerges with status ");
 		help_str.append(emergeActionStrs[i]);
@@ -173,7 +174,7 @@ EmergeManager::EmergeManager(Server *server, MetricsBackend *mb)
 	g_settings->getS16NoEx("num_emerge_threads", nthreads);
 	// If automatic, leave a proc for the main thread and one for
 	// some other misc thread
-	if (nthreads == 0)
+	if (nthreads <= 0)
 		nthreads = Thread::getNumberOfProcessors() - 2;
 	if (nthreads < 1)
 		nthreads = 1;
@@ -504,9 +505,10 @@ EmergeThread *EmergeManager::getOptimalThread()
 
 void EmergeManager::reportCompletedEmerge(EmergeAction action)
 {
-	assert((int)action < ARRLEN(m_completed_emerge_counter));
+	assert((size_t)action < ARRLEN(m_completed_emerge_counter));
 	m_completed_emerge_counter[(int)action]->increment();
 }
+
 
 ////
 //// EmergeThread
@@ -559,7 +561,7 @@ void EmergeThread::runCompletionCallbacks(const v3s16 &pos, EmergeAction action,
 	const EmergeCallbackList &callbacks)
 {
 	m_emerge->reportCompletedEmerge(action);
-	
+
 	for (size_t i = 0; i != callbacks.size(); i++) {
 		EmergeCompletionCallback callback;
 		void *param;
@@ -595,7 +597,7 @@ EmergeAction EmergeThread::getBlockOrStartGen(
 
 	// 1). Attempt to fetch block from memory
 	*block = m_map->getBlockNoCreateNoEx(pos);
-	if (*block && !(*block)->isDummy()) {
+	if (*block) {
 		if ((*block)->isGenerated())
 			return EMERGE_FROM_MEMORY;
 	} else {
@@ -630,7 +632,7 @@ MapBlock *EmergeThread::finishGen(v3s16 pos, BlockMakeData *bmdata,
 	MapBlock *block = m_map->getBlockNoCreateNoEx(pos);
 	if (!block) {
 		errorstream << "EmergeThread::finishGen: Couldn't grab block we "
-			"just generated: " << PP(pos) << std::endl;
+			"just generated: " << pos << std::endl;
 		return NULL;
 	}
 
@@ -700,7 +702,7 @@ void *EmergeThread::run()
 			continue;
 
 		bool allow_gen = bedata.flags & BLOCK_EMERGE_ALLOW_GEN;
-		EMERGE_DBG_OUT("pos=" PP(pos) " allow_gen=" << allow_gen);
+		EMERGE_DBG_OUT("pos=" << pos << " allow_gen=" << allow_gen);
 
 		action = getBlockOrStartGen(pos, allow_gen, &block, &bmdata);
 		if (action == EMERGE_GENERATED) {
@@ -721,13 +723,18 @@ void *EmergeThread::run()
 		if (block)
 			modified_blocks[pos] = block;
 
-		if (!modified_blocks.empty())
-			m_server->SetBlocksNotSent(modified_blocks);
+		if (!modified_blocks.empty()) {
+			MapEditEvent event;
+			event.type = MEET_OTHER;
+			event.setModifiedBlocks(modified_blocks);
+			MutexAutoLock envlock(m_server->m_env_mutex);
+			m_map->dispatchEvent(event);
+		}
 		modified_blocks.clear();
 	}
 	} catch (VersionMismatchException &e) {
 		std::ostringstream err;
-		err << "World data version mismatch in MapBlock " << PP(pos) << std::endl
+		err << "World data version mismatch in MapBlock " << pos << std::endl
 			<< "----" << std::endl
 			<< "\"" << e.what() << "\"" << std::endl
 			<< "See debug.txt." << std::endl
@@ -736,7 +743,7 @@ void *EmergeThread::run()
 		m_server->setAsyncFatalError(err.str());
 	} catch (SerializationError &e) {
 		std::ostringstream err;
-		err << "Invalid data in MapBlock " << PP(pos) << std::endl
+		err << "Invalid data in MapBlock " << pos << std::endl
 			<< "----" << std::endl
 			<< "\"" << e.what() << "\"" << std::endl
 			<< "See debug.txt." << std::endl

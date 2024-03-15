@@ -30,7 +30,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "settings.h"
 #include "wieldmesh.h"
 #include "noise.h"         // easeCurve
-#include "sound.h"
 #include "mtevent.h"
 #include "nodedef.h"
 #include "util/numeric.h"
@@ -38,6 +37,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "fontengine.h"
 #include "script/scripting_client.h"
 #include "gettext.h"
+#include <SViewFrustum.h>
 
 #define CAMERA_OFFSET_STEP 200
 #define WIELDMESH_OFFSET_X 55.0f
@@ -52,7 +52,7 @@ Camera::Camera(MapDrawControl &draw_control, Client *client, RenderingEngine *re
 {
 	auto smgr = rendering_engine->get_scene_manager();
 	// note: making the camera node a child of the player node
-	// would lead to unexpected behaviour, so we don't do that.
+	// would lead to unexpected behavior, so we don't do that.
 	m_playernode = smgr->addEmptySceneNode(smgr->getRootSceneNode());
 	m_headnode = smgr->addEmptySceneNode(m_playernode);
 	m_cameranode = smgr->addCameraSceneNode(smgr->getRootSceneNode());
@@ -75,11 +75,11 @@ Camera::Camera(MapDrawControl &draw_control, Client *client, RenderingEngine *re
 	 *       (as opposed to the this local caching). This can be addressed in
 	 *       a later release.
 	 */
-	m_cache_fall_bobbing_amount = g_settings->getFloat("fall_bobbing_amount");
-	m_cache_view_bobbing_amount = g_settings->getFloat("view_bobbing_amount");
+	m_cache_fall_bobbing_amount = g_settings->getFloat("fall_bobbing_amount", 0.0f, 100.0f);
+	m_cache_view_bobbing_amount = g_settings->getFloat("view_bobbing_amount", 0.0f, 7.9f);
 	// 45 degrees is the lowest FOV that doesn't cause the server to treat this
 	// as a zoom FOV and load world beyond the set server limits.
-	m_cache_fov                 = std::fmax(g_settings->getFloat("fov"), 45.0f);
+	m_cache_fov                 = g_settings->getFloat("fov", 45.0f, 160.0f);
 	m_arm_inertia               = g_settings->getBool("arm_inertia");
 	m_nametags.clear();
 	m_show_nametag_backgrounds  = g_settings->getBool("show_nametag_backgrounds");
@@ -318,6 +318,9 @@ void Camera::update(LocalPlayer* player, f32 frametime, f32 tool_reload_ratio)
 	v3f old_player_position = m_playernode->getPosition();
 	v3f player_position = player->getPosition();
 
+	f32 yaw = player->getYaw();
+	f32 pitch = player->getPitch();
+
 	// This is worse than `LocalPlayer::getPosition()` but
 	// mods expect the player head to be at the parent's position
 	// plus eye height.
@@ -342,7 +345,7 @@ void Camera::update(LocalPlayer* player, f32 frametime, f32 tool_reload_ratio)
 
 	// Set player node transformation
 	m_playernode->setPosition(player_position);
-	m_playernode->setRotation(v3f(0, -1 * player->getYaw(), 0));
+	m_playernode->setRotation(v3f(0, -1 * yaw, 0));
 	m_playernode->updateAbsolutePosition();
 
 	// Get camera tilt timer (hurt animation)
@@ -371,15 +374,24 @@ void Camera::update(LocalPlayer* player, f32 frametime, f32 tool_reload_ratio)
 	// Calculate and translate the head SceneNode offsets
 	{
 		v3f eye_offset = player->getEyeOffset();
-		if (m_camera_mode == CAMERA_MODE_FIRST)
+		switch(m_camera_mode) {
+		case CAMERA_MODE_FIRST:
 			eye_offset += player->eye_offset_first;
-		else
+			break;
+		case CAMERA_MODE_THIRD:
 			eye_offset += player->eye_offset_third;
+			break;
+		case CAMERA_MODE_THIRD_FRONT:
+			eye_offset.X += player->eye_offset_third_front.X;
+			eye_offset.Y += player->eye_offset_third_front.Y;
+			eye_offset.Z -= player->eye_offset_third_front.Z;
+			break;
+		}
 
 		// Set head node transformation
 		eye_offset.Y += cameratilt * -player->hurt_tilt_strength + fall_bobbing;
 		m_headnode->setPosition(eye_offset);
-		m_headnode->setRotation(v3f(player->getPitch(), 0,
+		m_headnode->setRotation(v3f(pitch, 0,
 			cameratilt * player->hurt_tilt_strength));
 		m_headnode->updateAbsolutePosition();
 	}
@@ -414,7 +426,7 @@ void Camera::update(LocalPlayer* player, f32 frametime, f32 tool_reload_ratio)
 	v3f abs_cam_up;
 	m_headnode->getAbsoluteTransformation().rotateVect(abs_cam_up, rel_cam_up);
 
-	// Seperate camera position for calculation
+	// Separate camera position for calculation
 	v3f my_cp = m_camera_position;
 
 	// Reposition the camera for third person view
@@ -463,6 +475,7 @@ void Camera::update(LocalPlayer* player, f32 frametime, f32 tool_reload_ratio)
 
 	// Set camera node transformation
 	m_cameranode->setPosition(my_cp-intToFloat(m_camera_offset, BS));
+	m_cameranode->updateAbsolutePosition();
 	m_cameranode->setUpVector(abs_cam_up);
 	// *100.0 helps in large map coordinates
 	m_cameranode->setTarget(my_cp-intToFloat(m_camera_offset, BS) + 100 * m_camera_direction);
@@ -511,8 +524,11 @@ void Camera::update(LocalPlayer* player, f32 frametime, f32 tool_reload_ratio)
 	m_cameranode->setAspectRatio(m_aspect);
 	m_cameranode->setFOV(m_fov_y);
 
+	// Make new matrices and frustum
+	m_cameranode->updateMatrices();
+
 	if (m_arm_inertia)
-		addArmInertia(player->getYaw());
+		addArmInertia(yaw);
 
 	// Position the wielded item
 	//v3f wield_position = v3f(45, -35, 65);
@@ -560,7 +576,6 @@ void Camera::update(LocalPlayer* player, f32 frametime, f32 tool_reload_ratio)
 
 	m_player_light_color = player->light_color;
 	m_wieldnode->setNodeLightColor(m_player_light_color);
-	
 	// Set render distance
 	updateViewingRange();
 
@@ -591,13 +606,7 @@ void Camera::updateViewingRange()
 {
 	f32 viewing_range = g_settings->getFloat("viewing_range");
 
-	// Ignore near_plane setting on all other platforms to prevent abuse
-#if ENABLE_GLES
-	m_cameranode->setNearValue(rangelim(
-		g_settings->getFloat("near_plane"), 0.0f, 0.25f) * BS);
-#else
 	m_cameranode->setNearValue(0.1f * BS);
-#endif
 
 	m_draw_control.wanted_range = std::fmin(adjustDist(viewing_range, getFovMax()), 4000);
 	if (m_draw_control.range_all) {
@@ -646,6 +655,7 @@ void Camera::drawWieldedTool(irr::core::matrix4* translation)
 		irr::core::vector3df camera_pos =
 				(startMatrix * *translation).getTranslation();
 		cam->setPosition(camera_pos);
+		cam->updateAbsolutePosition();
 		cam->setTarget(focusPoint);
 	}
 	m_wieldmgr->drawAll();
@@ -679,11 +689,12 @@ void Camera::drawNametags()
 			screen_pos.Y = screensize.Y *
 				(0.5 - transformed_pos[1] * zDiv * 0.5) - textsize.Height / 2;
 			core::rect<s32> size(0, 0, textsize.Width, textsize.Height);
-			core::rect<s32> bg_size(-2, 0, textsize.Width+2, textsize.Height);
 
 			auto bgcolor = nametag->getBgColor(m_show_nametag_backgrounds);
-			if (bgcolor.getAlpha() != 0)
+			if (bgcolor.getAlpha() != 0) {
+				core::rect<s32> bg_size(-2, 0, textsize.Width + 2, textsize.Height);
 				driver->draw2DRectangle(bgcolor, bg_size + screen_pos);
+			}
 
 			font->draw(
 				translate_string(utf8_to_wide(nametag->text)).c_str(),
@@ -694,7 +705,7 @@ void Camera::drawNametags()
 
 Nametag *Camera::addNametag(scene::ISceneNode *parent_node,
 		const std::string &text, video::SColor textcolor,
-		Optional<video::SColor> bgcolor, const v3f &pos)
+		std::optional<video::SColor> bgcolor, const v3f &pos)
 {
 	Nametag *nametag = new Nametag(parent_node, text, textcolor, bgcolor, pos);
 	m_nametags.push_back(nametag);
@@ -705,4 +716,16 @@ void Camera::removeNametag(Nametag *nametag)
 {
 	m_nametags.remove(nametag);
 	delete nametag;
+}
+
+std::array<core::plane3d<f32>, 4> Camera::getFrustumCullPlanes() const
+{
+	using irr::scene::SViewFrustum;
+	const auto &frustum_planes = m_cameranode->getViewFrustum()->planes;
+	return {
+		frustum_planes[SViewFrustum::VF_LEFT_PLANE],
+		frustum_planes[SViewFrustum::VF_RIGHT_PLANE],
+		frustum_planes[SViewFrustum::VF_BOTTOM_PLANE],
+		frustum_planes[SViewFrustum::VF_TOP_PLANE],
+	};
 }

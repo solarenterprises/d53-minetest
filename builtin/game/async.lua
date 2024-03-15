@@ -19,3 +19,4 @@ function core.handle_async(func, callback, ...)
 
 	return true
 end
+

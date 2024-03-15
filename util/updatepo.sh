@@ -48,7 +48,8 @@ cd ..
 # directory at the top level. You a recent enough xgettext that supports
 # --package-name
 potfile=po/minetest.pot
-xgettext --package-name=district53 \
+echo "updating pot"
+xgettext --package-name=minetest \
 	--add-comments='~' \
 	--sort-by-file \
 	--add-location=file \
@@ -67,10 +68,14 @@ xgettext --package-name=district53 \
 	`find src/ -name '*.cpp' -o -name '*.h'` \
 	`find builtin/ -name '*.lua'`
 
+# Gettext collects a bunch of bogus comments for the "Available commands: " string
+# I couldn't figure out how to avoid that so get rid of them afterwards
+sed '/^#\. ~<number>.*relative_to/,/^#: /{ /^#: /!d; }' -i $potfile
+
 # Now iterate on all languages and create the po file if missing, or update it
 # if it exists already
 for lang in $langs ; do # note the missing quotes around $langs
-	pofile=po/$lang/district53.po
+	pofile=po/$lang/minetest.po
 	if test -e $pofile; then
 		echo "[$lang]: updating strings"
 		msgmerge --update --sort-by-file $pofile $potfile
@@ -79,4 +84,5 @@ for lang in $langs ; do # note the missing quotes around $langs
 		echo "[$lang]: NEW strings"
 		msginit --locale=$lang --output-file=$pofile --input=$potfile
 	fi
+
 done

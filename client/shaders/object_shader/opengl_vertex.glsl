@@ -146,9 +146,9 @@ void main(void)
 		float pFactor = getPerspectiveFactor(getRelativePosition(m_ShadowViewProj * mWorld * inVertexPosition));
 		if (f_normal_length > 0.0) {
 			nNormal = normalize(vNormal);
-			cosLight = dot(nNormal, -v_LightDirection);
+			cosLight = max(1e-5, dot(nNormal, -v_LightDirection));
 			float sinLight = pow(1 - pow(cosLight, 2.0), 0.5);
-			normalOffsetScale = 0.1 * pFactor * pFactor * sinLight * min(f_shadowfar, 500.0) / 
+			normalOffsetScale = 0.1 * pFactor * pFactor * sinLight * min(f_shadowfar, 500.0) /
 					xyPerspectiveBias1 / f_textureresolution;
 			z_bias = 1e3 * sinLight / cosLight * (0.5 + f_textureresolution / 1024.0);
 		}
@@ -164,7 +164,7 @@ void main(void)
 		shadow_position = applyPerspectiveDistortion(m_ShadowViewProj * mWorld * (inVertexPosition + vec4(normalOffsetScale * nNormal, 0.0))).xyz;
 		shadow_position.z -= z_bias;
 		perspective_factor = pFactor;
-		
+
 		if (f_timeofday < 0.2) {
 			adj_shadow_strength = f_shadow_strength * 0.5 *
 				(1.0 - mtsmoothstep(0.18, 0.2, f_timeofday));

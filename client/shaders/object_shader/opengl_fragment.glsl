@@ -1,9 +1,9 @@
 uniform sampler2D baseTexture;
 
-uniform vec4 emissiveColor;
 uniform vec3 dayLight;
 uniform vec4 skyBgColor;
 uniform float fogDistance;
+uniform float fogShadingParameter;
 uniform vec3 eyePosition;
 
 // The cameraOffset is the current center of the visible world.
@@ -21,7 +21,7 @@ uniform float animationTimer;
 	uniform vec4 CameraPos;
 	uniform float xyPerspectiveBias0;
 	uniform float xyPerspectiveBias1;
-	
+
 	varying float adj_shadow_strength;
 	varying float cosLight;
 	varying float f_normal_length;
@@ -48,9 +48,6 @@ varying vec3 eyeVec;
 varying float nightRatio;
 
 varying float vIDiff;
-
-const float fogStart = FOG_START;
-const float fogShadingParameter = 1.0 / (1.0 - fogStart);
 
 #ifdef ENABLE_DYNAMIC_SHADOWS
 
@@ -362,39 +359,6 @@ float getShadow(sampler2D shadowsampler, vec2 smTexCoord, float realDistance)
 #endif
 #endif
 
-#if ENABLE_TONE_MAPPING
-
-/* Hable's UC2 Tone mapping parameters
-	A = 0.22;
-	B = 0.30;
-	C = 0.10;
-	D = 0.20;
-	E = 0.01;
-	F = 0.30;
-	W = 11.2;
-	equation used:  ((x * (A * x + C * B) + D * E) / (x * (A * x + B) + D * F)) - E / F
-*/
-
-vec3 uncharted2Tonemap(vec3 x)
-{
-	return ((x * (0.22 * x + 0.03) + 0.002) / (x * (0.22 * x + 0.3) + 0.06)) - 0.03333;
-}
-
-vec4 applyToneMapping(vec4 color)
-{
-	color = vec4(pow(color.rgb, vec3(2.2)), color.a);
-	const float gamma = 1.6;
-	const float exposureBias = 5.5;
-	color.rgb = uncharted2Tonemap(exposureBias * color.rgb);
-	// Precalculated white_scale from
-	//vec3 whiteScale = 1.0 / uncharted2Tonemap(vec3(W));
-	vec3 whiteScale = vec3(1.036015346);
-	color.rgb *= whiteScale;
-	return vec4(pow(color.rgb, vec3(1.0 / gamma)), color.a);
-}
-#endif
-
-
 
 void main(void)
 {
@@ -427,7 +391,7 @@ void main(void)
 		float distance_rate = (1.0 - pow(clamp(2.0 * length(posLightSpace.xy - 0.5),0.0,1.0), 10.0));
 		if (max(abs(posLightSpace.x - 0.5), abs(posLightSpace.y - 0.5)) > 0.5)
 			distance_rate = 0.0;
-		float f_adj_shadow_strength = max(adj_shadow_strength-mtsmoothstep(0.9,1.1,  posLightSpace.z),0.0);
+		float f_adj_shadow_strength = max(adj_shadow_strength - mtsmoothstep(0.9, 1.1, posLightSpace.z),0.0);
 
 		if (distance_rate > 1e-7) {
 
@@ -441,7 +405,6 @@ void main(void)
 			shadow_color = visibility.gba;
 #else
 			if (cosLight > 0.0 || f_normal_length < 1e-3)
-			if (cosLight > 0.0)
 				shadow_int = getShadow(ShadowMapSampler, posLightSpace.xy, posLightSpace.z);
 			else
 				shadow_int = 1.0;
@@ -475,10 +438,6 @@ void main(void)
 	}
 #endif
 
-#if ENABLE_TONE_MAPPING
-	col = applyToneMapping(col);
-#endif
-
 	// Due to a bug in some (older ?) graphics stacks (possibly in the glsl compiler ?),
 	// the fog will only be rendered correctly if the last operation before the
 	// clamp() is an addition. Else, the clamp() seems to be ignored.
@@ -492,6 +451,6 @@ void main(void)
 		- fogShadingParameter * length(eyeVec) / fogDistance, 0.0, 1.0);
 	col = mix(skyBgColor, col, clarity);
 	col = vec4(col.rgb, base.a);
-	
-	gl_FragColor = col;
+
+	gl_FragData[0] = col;
 }

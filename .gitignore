@@ -55,6 +55,14 @@ build/.cmake/
 /clientmods/*
 !/clientmods/preview/
 /client/mod_storage/
+/minetest-build
+/.plastic/
+/builtin/
+/client/
+/games/
+/lib/
+/po/
+
 
 ## Configuration/log files
 minetest.conf

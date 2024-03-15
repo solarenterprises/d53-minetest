@@ -25,6 +25,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include <string>
 #include <cstring>
 #include <vector>
+#include <limits>
 #include <map>
 #include <sstream>
 #include <iomanip>
@@ -40,6 +41,15 @@ class Translations;
 #define IS_ASCII_PRINTABLE_CHAR(x)   \
 	(((unsigned int)(x) >= 0x20) &&  \
 	( (unsigned int)(x) <= 0x7e))
+
+// Checks whether a value is in a Unicode private use area
+#define IS_PRIVATE_USE_CHAR(x)    \
+	(((wchar_t)(x) >= 0xE000 &&   \
+	  (wchar_t)(x) <= 0xF8FF) ||  \
+	 ((wchar_t)(x) >= 0xF0000 &&  \
+	  (wchar_t)(x) <= 0xFFFFD) || \
+	 ((wchar_t)(x) >= 0x100000 && \
+	  (wchar_t)(x) <= 0x10FFFD))  \
 
 // Checks whether a byte is an inner byte for an utf-8 multibyte sequence
 #define IS_UTF8_MULTB_INNER(x)       \
@@ -69,16 +79,12 @@ struct FlagDesc {
 std::wstring utf8_to_wide(const std::string &input);
 std::string wide_to_utf8(const std::wstring &input);
 
-// You must free the returned string!
-// The returned string is allocated using new[]
-wchar_t *utf8_to_wide_c(const char *str);
-
 std::string urlencode(const std::string &str);
 std::string urldecode(const std::string &str);
 u32 readFlagString(std::string str, const FlagDesc *flagdesc, u32 *flagmask);
 std::string writeFlagString(u32 flags, const FlagDesc *flagdesc, u32 flagmask);
-size_t mystrlcpy(char *dst, const char *src, size_t size);
-char *mystrtok_r(char *s, const char *sep, char **lasts);
+size_t mystrlcpy(char *dst, const char *src, size_t size) noexcept;
+char *mystrtok_r(char *s, const char *sep, char **lasts) noexcept;
 u64 read_seed(const char *str);
 bool parseColorString(const std::string &value, video::SColor &color, bool quiet,
 		unsigned char default_alpha = 0xff);
@@ -420,14 +426,11 @@ inline std::string itos(s32 i) { return std::to_string(i); }
 /// Returns a string representing the decimal value of the 64-bit value \p i.
 inline std::string i64tos(s64 i) { return std::to_string(i); }
 
-// std::to_string uses the '%.6f' conversion, which is inconsistent with
-// std::ostream::operator<<() and impractical too.  ftos() uses the
-// more generic and std::ostream::operator<<()-compatible '%G' format.
-/// Returns a string representing the decimal value of the float value \p f.
+/// Returns a string representing the exact decimal value of the float value \p f.
 inline std::string ftos(float f)
 {
 	std::ostringstream oss;
-	oss << f;
+	oss << std::setprecision(std::numeric_limits<float>::max_digits10) << f;
 	return oss.str();
 }
 
@@ -450,7 +453,7 @@ inline void str_replace(std::string &str, const std::string &pattern,
 }
 
 /**
- * Escapes characters [ ] \ , ; that can not be used in formspecs
+ * Escapes characters [ ] \ , ; that cannot be used in formspecs
  */
 inline void str_formspec_escape(std::string &str)
 {
@@ -459,6 +462,7 @@ inline void str_formspec_escape(std::string &str)
 	str_replace(str, "[", "\\[");
 	str_replace(str, ";", "\\;");
 	str_replace(str, ",", "\\,");
+	str_replace(str, "$", "\\$");
 }
 
 /**
@@ -610,7 +614,7 @@ std::vector<std::basic_string<T> > split(const std::basic_string<T> &s, T delim)
 		} else {
 			if (si == delim) {
 				tokens.push_back(current);
-				current = std::basic_string<T>();
+				current.clear();
 				last_was_escape = false;
 			} else if (si == '\\') {
 				last_was_escape = true;
@@ -729,7 +733,7 @@ inline std::string str_join(const std::vector<std::string> &list,
 }
 
 /**
- * Create a UTF8 std::string from a irr::core::stringw.
+ * Create a UTF8 std::string from an irr::core::stringw.
  */
 inline std::string stringw_to_utf8(const irr::core::stringw &input)
 {
@@ -738,7 +742,7 @@ inline std::string stringw_to_utf8(const irr::core::stringw &input)
 }
 
  /**
-  * Create a irr::core:stringw from a UTF8 std::string.
+  * Create an irr::core:stringw from a UTF8 std::string.
   */
 inline irr::core::stringw utf8_to_stringw(const std::string &input)
 {
@@ -761,3 +765,11 @@ std::string sanitizeDirName(const std::string &str, const std::string &optional_
  * brackets (e.g. "a\x1eb" -> "a<1e>b").
  */
 void safe_print_string(std::ostream &os, const std::string &str);
+
+/**
+ * Parses a string of form `(1, 2, 3)` to a v3f
+ *
+ * @param str String
+ * @return
+ */
+v3f str_to_v3f(const std::string &str);

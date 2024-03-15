@@ -47,7 +47,7 @@ struct MainMenuData {
 	// new auth stuff added by mike
 	std::string alias;
 	std::time_t timestamp;
-	Ark::Crypto::Message message;
+	//Ark::Crypto::Message message;
 
 
 	// Whether to reconnect

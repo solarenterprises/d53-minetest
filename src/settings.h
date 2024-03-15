@@ -147,7 +147,7 @@ public:
 	bool updateConfigFile(const char *filename);
 	// NOTE: Types of allowed_options are ignored.  Returns success.
 	bool parseCommandLine(int argc, char *argv[],
-			std::map<std::string, ValueSpec> &allowed_options);
+			const std::map<std::string, ValueSpec> &allowed_options);
 	bool parseConfigLines(std::istream &is);
 	void writeLines(std::ostream &os, u32 tab_depth=0) const;
 
@@ -164,6 +164,7 @@ public:
 	s32 getS32(const std::string &name) const;
 	u64 getU64(const std::string &name) const;
 	float getFloat(const std::string &name) const;
+	float getFloat(const std::string &name, float min, float max) const;
 	v2f getV2F(const std::string &name) const;
 	v3f getV3F(const std::string &name) const;
 	u32 getFlagStr(const std::string &name, const FlagDesc *flagdesc,

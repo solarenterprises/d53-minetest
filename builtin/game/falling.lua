@@ -150,7 +150,12 @@ core.register_entity(":__builtin:falling_node", {
 
 		-- Rotate entity
 		if def.drawtype == "torchlike" then
-			self.object:set_yaw(math.pi*0.25)
+			if (def.paramtype2 == "wallmounted" or def.paramtype2 == "colorwallmounted")
+					and node.param2 % 8 == 7 then
+				self.object:set_yaw(-math.pi*0.25)
+			else
+				self.object:set_yaw(math.pi*0.25)
+			end
 		elseif ((node.param2 ~= 0 or def.drawtype == "nodebox" or def.drawtype == "mesh")
 				and (def.wield_image == "" or def.wield_image == nil))
 				or def.drawtype == "signlike"
@@ -158,7 +163,14 @@ core.register_entity(":__builtin:falling_node", {
 				or def.drawtype == "normal"
 				or def.drawtype == "nodebox" then
 			if (def.paramtype2 == "facedir" or def.paramtype2 == "colorfacedir") then
-				local fdir = node.param2 % 32
+				local fdir = node.param2 % 32 % 24
+				-- Get rotation from a precalculated lookup table
+				local euler = facedir_to_euler[fdir + 1]
+				if euler then
+					self.object:set_rotation(euler)
+				end
+			elseif (def.paramtype2 == "4dir" or def.paramtype2 == "color4dir") then
+				local fdir = node.param2 % 4
 				-- Get rotation from a precalculated lookup table
 				local euler = facedir_to_euler[fdir + 1]
 				if euler then
@@ -183,6 +195,10 @@ core.register_entity(":__builtin:falling_node", {
 						pitch, yaw = 0, -math.pi/2
 					elseif rot == 4 then
 						pitch, yaw = 0, math.pi
+					elseif rot == 6 then
+						pitch, yaw = math.pi/2, 0
+					elseif rot == 7 then
+						pitch, yaw = -math.pi/2, math.pi
 					end
 				else
 					if rot == 1 then
@@ -195,6 +211,10 @@ core.register_entity(":__builtin:falling_node", {
 						pitch, yaw = math.pi/2, math.pi
 					elseif rot == 5 then
 						pitch, yaw = math.pi/2, 0
+					elseif rot == 6 then
+						pitch, yaw = math.pi, -math.pi/2
+					elseif rot == 7 then
+						pitch, yaw = 0, -math.pi/2
 					end
 				end
 				if def.drawtype == "signlike" then
@@ -203,10 +223,20 @@ core.register_entity(":__builtin:falling_node", {
 						yaw = yaw + math.pi/2
 					elseif rot == 1 then
 						yaw = yaw - math.pi/2
+					elseif rot == 6 then
+						yaw = yaw - math.pi/2
+						pitch = pitch + math.pi
+					elseif rot == 7 then
+						yaw = yaw + math.pi/2
+						pitch = pitch + math.pi
 					end
 				elseif def.drawtype == "mesh" or def.drawtype == "normal" or def.drawtype == "nodebox" then
-					if rot >= 0 and rot <= 1 then
+					if rot == 0 or rot == 1 then
 						roll = roll + math.pi
+					elseif rot == 6 or rot == 7 then
+						if def.drawtype ~= "normal" then
+							roll = roll - math.pi/2
+						end
 					else
 						yaw = yaw + math.pi
 					end
@@ -264,7 +294,7 @@ core.register_entity(":__builtin:falling_node", {
 		end
 
 		-- Decide if we're replacing the node or placing on top
-		local np = vector.new(bcp)
+		local np = vector.copy(bcp)
 		if bcd and bcd.buildable_to and
 				(not self.floats or bcd.liquidtype == "none") then
 			core.remove_node(bcp)
@@ -436,7 +466,7 @@ local function drop_attached_node(p)
 	if def and def.preserve_metadata then
 		local oldmeta = core.get_meta(p):to_table().fields
 		-- Copy pos and node because the callback can modify them.
-		local pos_copy = vector.new(p)
+		local pos_copy = vector.copy(p)
 		local node_copy = {name=n.name, param1=n.param1, param2=n.param2}
 		local drop_stacks = {}
 		for k, v in pairs(drops) do
@@ -459,15 +489,39 @@ local function drop_attached_node(p)
 	end
 end
 
-function builtin_shared.check_attached_node(p, n)
+function builtin_shared.check_attached_node(p, n, group_rating)
 	local def = core.registered_nodes[n.name]
-	local d = vector.new()
-	if def.paramtype2 == "wallmounted" or
+	local d = vector.zero()
+	if group_rating == 3 then
+		-- always attach to floor
+		d.y = -1
+	elseif group_rating == 4 then
+		-- always attach to ceiling
+		d.y = 1
+	elseif group_rating == 2 then
+		-- attach to facedir or 4dir direction
+		if (def.paramtype2 == "facedir" or
+				def.paramtype2 == "colorfacedir") then
+			-- Attach to whatever facedir is "mounted to".
+			-- For facedir, this is where tile no. 5 point at.
+
+			-- The fallback vector here is in case 'facedir to dir' is nil due
+			-- to voxelmanip placing a wallmounted node without resetting a
+			-- pre-existing param2 value that is out-of-range for facedir.
+			-- The fallback vector corresponds to param2 = 0.
+			d = core.facedir_to_dir(n.param2) or vector.new(0, 0, 1)
+		elseif (def.paramtype2 == "4dir" or
+				def.paramtype2 == "color4dir") then
+			-- Similar to facedir handling
+			d = core.fourdir_to_dir(n.param2) or vector.new(0, 0, 1)
+		end
+	elseif def.paramtype2 == "wallmounted" or
 			def.paramtype2 == "colorwallmounted" then
-		-- The fallback vector here is in case 'wallmounted to dir' is nil due
-		-- to voxelmanip placing a wallmounted node without resetting a
-		-- pre-existing param2 value that is out-of-range for wallmounted.
-		-- The fallback vector corresponds to param2 = 0.
+		-- Attach to whatever this node is "mounted to".
+		-- This where tile no. 2 points at.
+
+		-- The fallback vector here is used for the same reason as
+		-- for facedir nodes.
 		d = core.wallmounted_to_dir(n.param2) or vector.new(0, 1, 0)
 	else
 		d.y = -1
@@ -498,22 +552,23 @@ function core.check_single_for_falling(p)
 			if same and d_bottom.paramtype2 == "leveled" and
 					core.get_node_level(p_bottom) <
 					core.get_node_max_level(p_bottom) then
-				convert_to_falling_node(p, n)
-				return true
+				local success, _ = convert_to_falling_node(p, n)
+				return success
 			end
 			-- Otherwise only if the bottom node is considered "fall through"
 			if not same and
 					(not d_bottom.walkable or d_bottom.buildable_to) and
 					(core.get_item_group(n.name, "float") == 0 or
 					d_bottom.liquidtype == "none") then
-				convert_to_falling_node(p, n)
-				return true
+				local success, _ = convert_to_falling_node(p, n)
+				return success
 			end
 		end
 	end
 
-	if core.get_item_group(n.name, "attached_node") ~= 0 then
-		if not builtin_shared.check_attached_node(p, n) then
+	local an = core.get_item_group(n.name, "attached_node")
+	if an ~= 0 then
+		if not builtin_shared.check_attached_node(p, n, an) then
 			drop_attached_node(p)
 			return true
 		end

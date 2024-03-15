@@ -34,7 +34,7 @@ class ClientEnvironment;
 class IGameDef;
 struct collisionMoveResult;
 
-enum LocalPlayerAnimations
+enum class LocalPlayerAnimation
 {
 	NO_ANIM,
 	WALK_ANIM,
@@ -62,13 +62,7 @@ public:
 	bool swimming_vertical = false;
 	bool swimming_pitch = false;
 
-	float physics_override_speed = 1.0f;
-	float physics_override_jump = 1.0f;
-	float physics_override_gravity = 1.0f;
-	bool physics_override_sneak = true;
-	bool physics_override_sneak_glitch = false;
-	// Temporary option for old move code
-	bool physics_override_new_move = true;
+	f32 gravity = 0; // total downwards acceleration
 
 	void move(f32 dtime, Environment *env, f32 pos_max_d);
 	void move(f32 dtime, Environment *env, f32 pos_max_d,
@@ -90,12 +84,13 @@ public:
 	u32 last_keyPressed = 0;
 	u8 last_camera_fov = 0;
 	u8 last_wanted_range = 0;
+	bool last_camera_inverted = false;
 
 	float camera_impact = 0.0f;
 
 	bool makes_footstep_sound = true;
 
-	int last_animation = NO_ANIM;
+	LocalPlayerAnimation last_animation = LocalPlayerAnimation::NO_ANIM;
 	float last_animation_speed = 0.0f;
 
 	std::string hotbar_image = "";
@@ -134,6 +129,11 @@ public:
 		m_position = position;
 		m_sneak_node_exists = false;
 	}
+	inline void addPosition(const v3f &added_pos)
+	{
+		m_position += added_pos;
+		m_sneak_node_exists = false;
+	}
 
 	v3f getPosition() const { return m_position; }
 
@@ -156,7 +156,7 @@ public:
 
 	inline void addVelocity(const v3f &vel)
 	{
-		added_velocity += vel;
+		m_added_velocity += vel;
 	}
 
 	inline Lighting& getLighting() { return m_lighting; }
@@ -196,6 +196,7 @@ private:
 
 	bool m_can_jump = false;
 	bool m_disable_jump = false;
+	bool m_disable_descend = false;
 	u16 m_breath = PLAYER_MAX_BREATH_DEFAULT;
 	f32 m_yaw = 0.0f;
 	f32 m_pitch = 0.0f;
@@ -206,8 +207,7 @@ private:
 	bool m_autojump = false;
 	float m_autojump_time = 0.0f;
 
-	v3f added_velocity = v3f(0.0f); // cleared on each move()
-	// TODO: Rename to adhere to convention: added_velocity --> m_added_velocity
+	v3f m_added_velocity = v3f(0.0f); // in BS-space; cleared on each move()
 
 	GenericCAO *m_cao = nullptr;
 	Client *m_client;

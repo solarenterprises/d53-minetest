@@ -34,7 +34,6 @@ class LuaVoxelManip : public ModApiBase
 private:
 	bool is_mapgen_vm = false;
 
-	static const char className[];
 	static const luaL_Reg methods[];
 
 	static int gc_object(lua_State *L);
@@ -72,11 +71,13 @@ public:
 	// LuaVoxelManip()
 	// Creates a LuaVoxelManip and leaves it on top of stack
 	static int create_object(lua_State *L);
-
-	static LuaVoxelManip *checkobject(lua_State *L, int narg);
+	// Not callable from Lua
+	static void create(lua_State *L, MMVManip *mmvm, bool is_mapgen_vm);
 
 	static void *packIn(lua_State *L, int idx);
 	static void packOut(lua_State *L, void *ptr);
 
 	static void Register(lua_State *L);
+
+	static const char className[];
 };

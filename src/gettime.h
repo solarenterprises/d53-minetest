@@ -45,7 +45,6 @@ inline struct tm mt_localtime()
 
 	struct tm ret;
 	time_t t = time(NULL);
-
 	// TODO we should check if the function returns NULL, which would mean error
 #ifdef _WIN32
 	localtime_s(&ret, &t);

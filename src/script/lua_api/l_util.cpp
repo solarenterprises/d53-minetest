@@ -24,8 +24,10 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "common/c_converter.h"
 #include "common/c_content.h"
 #include "cpp_api/s_async.h"
+#include "network/networkprotocol.h"
 #include "serialization.h"
 #include <json/json.h>
+#include <zstd.h>
 #include "cpp_api/s_security.h"
 #include "porting.h"
 #include "convert_json.h"
@@ -42,6 +44,11 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "util/sha1.h"
 #include "util/png.h"
 #include <cstdio>
+
+// only available in zstd 1.3.5+
+#ifndef ZSTD_CLEVEL_DEFAULT
+#define ZSTD_CLEVEL_DEFAULT 3
+#endif
 
 // log([level,] text)
 // Writes a line to the logger.
@@ -165,8 +172,8 @@ int ModApiUtil::l_get_tool_wear_after_use(lua_State *L)
 	NO_MAP_LOCK_REQUIRED;
 	u32 uses = readParam<int>(L, 1);
 	u16 initial_wear = readParam<int>(L, 2, 0);
-	u16 wear = calculateResultWear(uses, initial_wear);
-	lua_pushnumber(L, wear);
+	u32 add_wear = calculateResultWear(uses, initial_wear);
+	lua_pushnumber(L, add_wear);
 	return 1;
 }
 
@@ -278,6 +285,34 @@ int ModApiUtil::l_get_user_path(lua_State *L)
 	return 1;
 }
 
+enum LuaCompressMethod
+{
+	LUA_COMPRESS_METHOD_DEFLATE,
+	LUA_COMPRESS_METHOD_ZSTD,
+};
+
+static const struct EnumString es_LuaCompressMethod[] =
+{
+	{LUA_COMPRESS_METHOD_DEFLATE, "deflate"},
+	{LUA_COMPRESS_METHOD_ZSTD, "zstd"},
+	{0, nullptr},
+};
+
+static LuaCompressMethod get_compress_method(lua_State *L, int index)
+{
+	if (lua_isnoneornil(L, index))
+		return LUA_COMPRESS_METHOD_DEFLATE;
+	const char *name = luaL_checkstring(L, index);
+	int value;
+	if (!string_to_enum(es_LuaCompressMethod, value, name)) {
+		// Pretend it's deflate if we don't know, for compatibility reasons.
+		log_deprecated(L, "Unknown compression method \"" + std::string(name)
+			+ "\", defaulting to \"deflate\". You should pass a valid value.");
+		return LUA_COMPRESS_METHOD_DEFLATE;
+	}
+	return (LuaCompressMethod) value;
+}
+
 // compress(data, method, level)
 int ModApiUtil::l_compress(lua_State *L)
 {
@@ -286,12 +321,23 @@ int ModApiUtil::l_compress(lua_State *L)
 	size_t size;
 	const char *data = luaL_checklstring(L, 1, &size);
 
-	int level = -1;
-	if (!lua_isnoneornil(L, 3))
-		level = readParam<int>(L, 3);
+	LuaCompressMethod method = get_compress_method(L, 2);
 
 	std::ostringstream os(std::ios_base::binary);
-	compressZlib(reinterpret_cast<const u8 *>(data), size, os, level);
+
+	if (method == LUA_COMPRESS_METHOD_DEFLATE) {
+		int level = -1;
+		if (!lua_isnoneornil(L, 3))
+			level = readParam<int>(L, 3);
+
+		compressZlib(reinterpret_cast<const u8 *>(data), size, os, level);
+	} else if (method == LUA_COMPRESS_METHOD_ZSTD) {
+		int level = ZSTD_CLEVEL_DEFAULT;
+		if (!lua_isnoneornil(L, 3))
+			level = readParam<int>(L, 3);
+
+		compressZstd(reinterpret_cast<const u8 *>(data), size, os, level);
+	}
 
 	std::string out = os.str();
 
@@ -307,9 +353,16 @@ int ModApiUtil::l_decompress(lua_State *L)
 	size_t size;
 	const char *data = luaL_checklstring(L, 1, &size);
 
+	LuaCompressMethod method = get_compress_method(L, 2);
+
 	std::istringstream is(std::string(data, size), std::ios_base::binary);
 	std::ostringstream os(std::ios_base::binary);
-	decompressZlib(is, os);
+
+	if (method == LUA_COMPRESS_METHOD_DEFLATE) {
+		decompressZlib(is, os);
+	} else if (method == LUA_COMPRESS_METHOD_ZSTD) {
+		decompressZstd(is, os);
+	}
 
 	std::string out = os.str();
 
@@ -340,8 +393,10 @@ int ModApiUtil::l_decode_base64(lua_State *L)
 	const char *d = luaL_checklstring(L, 1, &size);
 	const std::string data = std::string(d, size);
 
-	if (!base64_is_valid(data))
-		return 0;
+	if (!base64_is_valid(data)) {
+		lua_pushnil(L);
+		return 1;
+	}
 
 	std::string out = base64_decode(data);
 
@@ -475,11 +530,19 @@ int ModApiUtil::l_get_version(lua_State *L)
 	lua_pushstring(L, g_version_string);
 	lua_setfield(L, table, "string");
 
+	lua_pushnumber(L, SERVER_PROTOCOL_VERSION_MIN);
+	lua_setfield(L, table, "proto_min");
+
+	lua_pushnumber(L, SERVER_PROTOCOL_VERSION_MAX);
+	lua_setfield(L, table, "proto_max");
+
 	if (strcmp(g_version_string, g_version_hash) != 0) {
 		lua_pushstring(L, g_version_hash);
 		lua_setfield(L, table, "hash");
 	}
 
+	lua_pushboolean(L, DEVELOPMENT_BUILD);
+	lua_setfield(L, table, "is_dev");
 	return 1;
 }
 
@@ -588,6 +651,16 @@ int ModApiUtil::l_set_last_run_mod(lua_State *L)
 	return 0;
 }
 
+// urlencode(value)
+int ModApiUtil::l_urlencode(lua_State *L)
+{
+	NO_MAP_LOCK_REQUIRED;
+
+	const char *value = luaL_checkstring(L, 1);
+	lua_pushstring(L, urlencode(value).c_str());
+	return 1;
+}
+
 void ModApiUtil::Initialize(lua_State *L, int top)
 {
 	API_FCT(log);
@@ -634,6 +707,8 @@ void ModApiUtil::Initialize(lua_State *L, int top)
 	API_FCT(get_last_run_mod);
 	API_FCT(set_last_run_mod);
 
+	API_FCT(urlencode);
+
 	LuaSettings::create(L, g_settings, g_settings_path);
 	lua_setfield(L, top, "settings");
 }
@@ -659,6 +734,11 @@ void ModApiUtil::InitializeClient(lua_State *L, int top)
 	API_FCT(sha1);
 	API_FCT(colorspec_to_colorstring);
 	API_FCT(colorspec_to_bytes);
+
+	API_FCT(urlencode);
+
+	LuaSettings::create(L, g_settings, g_settings_path);
+	lua_setfield(L, top, "settings");
 }
 
 void ModApiUtil::InitializeAsync(lua_State *L, int top)
@@ -699,6 +779,8 @@ void ModApiUtil::InitializeAsync(lua_State *L, int top)
 
 	API_FCT(get_last_run_mod);
 	API_FCT(set_last_run_mod);
+
+	API_FCT(urlencode);
 
 	LuaSettings::create(L, g_settings, g_settings_path);
 	lua_setfield(L, top, "settings");

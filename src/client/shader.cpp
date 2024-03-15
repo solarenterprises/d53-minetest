@@ -35,6 +35,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include <IShaderConstantSetCallBack.h>
 #include "client/renderingengine.h"
 #include "EShaderTypes.h"
+#include "gettext.h"
 #include "log.h"
 #include "gamedef.h"
 #include "client/tile.h"
@@ -184,7 +185,7 @@ public:
 	ShaderCallback(const Factories &factories)
 	{
 		for (auto &&factory : factories)
-			m_setters.push_back(std::unique_ptr<IShaderConstantSetter>(factory->create()));
+			m_setters.emplace_back(factory->create());
 	}
 
 	virtual void OnSetConstants(video::IMaterialRendererServices *services, s32 userData) override
@@ -210,58 +211,36 @@ public:
 
 class MainShaderConstantSetter : public IShaderConstantSetter
 {
-	CachedVertexShaderSetting<f32, 16> m_world_view_proj;
-	CachedVertexShaderSetting<f32, 16> m_world;
+	CachedVertexShaderSetting<f32, 16> m_world_view_proj{"mWorldViewProj"};
+	CachedVertexShaderSetting<f32, 16> m_world{"mWorld"};
 
 	// Shadow-related
-	CachedPixelShaderSetting<f32, 16> m_shadow_view_proj;
-	CachedPixelShaderSetting<f32, 3> m_light_direction;
-	CachedPixelShaderSetting<f32> m_texture_res;
-	CachedPixelShaderSetting<f32> m_shadow_strength;
-	CachedPixelShaderSetting<f32> m_time_of_day;
-	CachedPixelShaderSetting<f32> m_shadowfar;
-	CachedPixelShaderSetting<f32, 4> m_camera_pos;
-	CachedPixelShaderSetting<s32> m_shadow_texture;
-	CachedVertexShaderSetting<f32> m_perspective_bias0_vertex;
-	CachedPixelShaderSetting<f32> m_perspective_bias0_pixel;
-	CachedVertexShaderSetting<f32> m_perspective_bias1_vertex;
-	CachedPixelShaderSetting<f32> m_perspective_bias1_pixel;
-	CachedVertexShaderSetting<f32> m_perspective_zbias_vertex;
-	CachedPixelShaderSetting<f32> m_perspective_zbias_pixel;
+	CachedPixelShaderSetting<f32, 16> m_shadow_view_proj{"m_ShadowViewProj"};
+	CachedPixelShaderSetting<f32, 3> m_light_direction{"v_LightDirection"};
+	CachedPixelShaderSetting<f32> m_texture_res{"f_textureresolution"};
+	CachedPixelShaderSetting<f32> m_shadow_strength{"f_shadow_strength"};
+	CachedPixelShaderSetting<f32> m_time_of_day{"f_timeofday"};
+	CachedPixelShaderSetting<f32> m_shadowfar{"f_shadowfar"};
+	CachedPixelShaderSetting<f32, 4> m_camera_pos{"CameraPos"};
+	CachedPixelShaderSetting<s32> m_shadow_texture{"ShadowMapSampler"};
+	CachedVertexShaderSetting<f32>
+		m_perspective_bias0_vertex{"xyPerspectiveBias0"};
+	CachedPixelShaderSetting<f32>
+		m_perspective_bias0_pixel{"xyPerspectiveBias0"};
+	CachedVertexShaderSetting<f32>
+		m_perspective_bias1_vertex{"xyPerspectiveBias1"};
+	CachedPixelShaderSetting<f32>
+		m_perspective_bias1_pixel{"xyPerspectiveBias1"};
+	CachedVertexShaderSetting<f32>
+		m_perspective_zbias_vertex{"zPerspectiveBias"};
+	CachedPixelShaderSetting<f32> m_perspective_zbias_pixel{"zPerspectiveBias"};
 
-#if ENABLE_GLES
 	// Modelview matrix
-	CachedVertexShaderSetting<float, 16> m_world_view;
+	CachedVertexShaderSetting<float, 16> m_world_view{"mWorldView"};
 	// Texture matrix
-	CachedVertexShaderSetting<float, 16> m_texture;
-	// Normal matrix
-	CachedVertexShaderSetting<float, 9> m_normal;
-#endif
+	CachedVertexShaderSetting<float, 16> m_texture{"mTexture"};
 
 public:
-	MainShaderConstantSetter() :
-		  m_world_view_proj("mWorldViewProj")
-		, m_world("mWorld")
-		, m_shadow_view_proj("m_ShadowViewProj")
-		, m_light_direction("v_LightDirection")
-		, m_texture_res("f_textureresolution")
-		, m_shadow_strength("f_shadow_strength")
-		, m_time_of_day("f_timeofday")
-		, m_shadowfar("f_shadowfar")
-		, m_camera_pos("CameraPos")
-		, m_shadow_texture("ShadowMapSampler")
-		, m_perspective_bias0_vertex("xyPerspectiveBias0")
-		, m_perspective_bias0_pixel("xyPerspectiveBias0")
-		, m_perspective_bias1_vertex("xyPerspectiveBias1")
-		, m_perspective_bias1_pixel("xyPerspectiveBias1")
-		, m_perspective_zbias_vertex("zPerspectiveBias")
-		, m_perspective_zbias_pixel("zPerspectiveBias")
-#if ENABLE_GLES
-		, m_world_view("mWorldView")
-		, m_texture("mTexture")
-		, m_normal("mNormal")
-#endif
-	{}
 	~MainShaderConstantSetter() = default;
 
 	virtual void onSetConstants(video::IMaterialRendererServices *services) override
@@ -283,21 +262,11 @@ public:
 		worldViewProj *= worldView;
 		m_world_view_proj.set(*reinterpret_cast<float(*)[16]>(worldViewProj.pointer()), services);
 
-#if ENABLE_GLES
-		core::matrix4 texture = driver->getTransform(video::ETS_TEXTURE_0);
-		m_world_view.set(*reinterpret_cast<float(*)[16]>(worldView.pointer()), services);
-		m_texture.set(*reinterpret_cast<float(*)[16]>(texture.pointer()), services);
-
-		core::matrix4 normal;
-		worldView.getTransposed(normal);
-		sanity_check(normal.makeInverse());
-		float m[9] = {
-			normal[0], normal[1], normal[2],
-			normal[4], normal[5], normal[6],
-			normal[8], normal[9], normal[10],
-		};
-		m_normal.set(m, services);
-#endif
+		if (driver->getDriverType() == video::EDT_OGLES2 || driver->getDriverType() == video::EDT_OPENGL3) {
+			core::matrix4 texture = driver->getTransform(video::ETS_TEXTURE_0);
+			m_world_view.set(*reinterpret_cast<float(*)[16]>(worldView.pointer()), services);
+			m_texture.set(*reinterpret_cast<float(*)[16]>(texture.pointer()), services);
+		}
 
 		// Set uniforms for Shadow shader
 		if (ShadowRenderer *shadow = RenderingEngine::get_shadow_renderer()) {
@@ -327,7 +296,7 @@ public:
 			shadowViewProj.transformVect(cam_pos, light.getPlayerPos());
 			m_camera_pos.set(cam_pos, services);
 
-			// I dont like using this hardcoded value. maybe something like
+			// I don't like using this hardcoded value. maybe something like
 			// MAX_TEXTURE - 1 or somthing like that??
 			s32 TextureLayerID = 3;
 			m_shadow_texture.set(&TextureLayerID, services);
@@ -402,7 +371,7 @@ public:
 
 	void addShaderConstantSetterFactory(IShaderConstantSetterFactory *setter) override
 	{
-		m_setter_factories.push_back(std::unique_ptr<IShaderConstantSetterFactory>(setter));
+		m_setter_factories.emplace_back(setter);
 	}
 
 private:
@@ -492,8 +461,6 @@ u32 ShaderSource::getShader(const std::string &name,
 u32 ShaderSource::getShaderIdDirect(const std::string &name,
 		MaterialType material_type, NodeDrawType drawtype)
 {
-	//infostream<<"getShaderIdDirect(): name=\""<<name<<"\""<<std::endl;
-
 	// Empty name means shader 0
 	if (name.empty()) {
 		infostream<<"getShaderIdDirect(): name is empty"<<std::endl;
@@ -622,33 +589,31 @@ ShaderInfo ShaderSource::generateShader(const std::string &name,
 
 	video::IVideoDriver *driver = RenderingEngine::get_video_driver();
 	if (!driver->queryFeature(video::EVDF_ARB_GLSL)) {
-		errorstream << "Shaders are enabled but GLSL is not supported by the driver\n";
-		return shaderinfo;
+		throw ShaderException(gettext("Shaders are enabled but GLSL is not "
+			"supported by the driver."));
 	}
 	video::IGPUProgrammingServices *gpu = driver->getGPUProgrammingServices();
 
 	// Create shaders header
-	bool use_gles = false;
-#if ENABLE_GLES
-	use_gles = driver->getDriverType() == video::EDT_OGLES2;
-#endif
+	bool fully_programmable = driver->getDriverType() == video::EDT_OGLES2 || driver->getDriverType() == video::EDT_OPENGL3;
 	std::stringstream shaders_header;
 	shaders_header
 		<< std::noboolalpha
 		<< std::showpoint // for GLSL ES
 		;
 	std::string vertex_header, fragment_header, geometry_header;
-	if (use_gles) {
-		shaders_header << R"(
-			#version 100
-		)";
+	if (fully_programmable) {
+		if (driver->getDriverType() == video::EDT_OPENGL3) {
+			shaders_header << "#version 150\n";
+		} else {
+			shaders_header << "#version 100\n";
+		}
 		vertex_header = R"(
 			precision mediump float;
 
 			uniform highp mat4 mWorldView;
 			uniform highp mat4 mWorldViewProj;
 			uniform mediump mat4 mTexture;
-			uniform mediump mat3 mNormal;
 
 			attribute highp vec4 inVertexPosition;
 			attribute lowp vec4 inVertexColor;
@@ -671,7 +636,6 @@ ShaderInfo ShaderSource::generateShader(const std::string &name,
 			#define mWorldView gl_ModelViewMatrix
 			#define mWorldViewProj gl_ModelViewProjectionMatrix
 			#define mTexture (gl_TextureMatrix[0])
-			#define mNormal gl_NormalMatrix
 
 			#define inVertexPosition gl_Vertex
 			#define inVertexColor gl_Color
@@ -682,6 +646,13 @@ ShaderInfo ShaderSource::generateShader(const std::string &name,
 		)";
 	}
 
+	// map legacy semantic texture names to texture identifiers
+	fragment_header += R"(
+		#define baseTexture texture0
+		#define normalTexture texture1
+		#define textureFlags texture2
+	)";
+
 	// Since this is the first time we're using the GL bindings be extra careful.
 	// This should be removed before 5.6.0 or similar.
 	if (!GL.GetString) {
@@ -690,7 +661,7 @@ ShaderInfo ShaderSource::generateShader(const std::string &name,
 		abort();
 	}
 
-	bool use_discard = use_gles;
+	bool use_discard = fully_programmable;
 	// For renderers that should use discard instead of GL_ALPHA_TEST
 	const char *renderer = reinterpret_cast<const char*>(GL.GetString(GL.RENDERER));
 	if (strstr(renderer, "GC7000"))
@@ -752,8 +723,6 @@ ShaderInfo ShaderSource::generateShader(const std::string &name,
 	shaders_header << "#define ENABLE_WAVING_PLANTS " << g_settings->getBool("enable_waving_plants") << "\n";
 	shaders_header << "#define ENABLE_TONE_MAPPING " << g_settings->getBool("tone_mapping") << "\n";
 
-	shaders_header << "#define FOG_START " << core::clamp(g_settings->getFloat("fog_start"), 0.0f, 0.99f) << "\n";
-
 	if (g_settings->getBool("enable_dynamic_shadows")) {
 		shaders_header << "#define ENABLE_DYNAMIC_SHADOWS 1\n";
 		if (g_settings->getBool("shadow_map_color"))
@@ -771,8 +740,30 @@ ShaderInfo ShaderSource::generateShader(const std::string &name,
 		shaders_header << "#define SOFTSHADOWRADIUS " << shadow_soft_radius << "\n";
 	}
 
+	if (g_settings->getBool("enable_bloom")) {
+		shaders_header << "#define ENABLE_BLOOM 1\n";
+		if (g_settings->getBool("enable_bloom_debug"))
+			shaders_header << "#define ENABLE_BLOOM_DEBUG 1\n";
+	}
+
+	if (g_settings->getBool("enable_auto_exposure"))
+		shaders_header << "#define ENABLE_AUTO_EXPOSURE 1\n";
+
+	if (g_settings->get("antialiasing") == "ssaa") {
+		shaders_header << "#define ENABLE_SSAA 1\n";
+		u16 ssaa_scale = MYMAX(2, g_settings->getU16("fsaa"));
+		shaders_header << "#define SSAA_SCALE " << ssaa_scale << ".\n";
+	}
+
+	if (g_settings->getBool("debanding"))
+		shaders_header << "#define ENABLE_DITHERING 1\n";
+
+	if (g_settings->getBool("enable_volumetric_lighting")) {
+		shaders_header << "#define VOLUMETRIC_LIGHT 1\n";
+	}
+
 	shaders_header << "#line 0\n"; // reset the line counter for meaningful diagnostics
-	
+
 	std::string common_header = shaders_header.str();
 
 	std::string vertex_shader = m_sourcecache.getOrLoad(name, "opengl_vertex.glsl");
@@ -802,7 +793,9 @@ ShaderInfo ShaderSource::generateShader(const std::string &name,
 		dumpShaderProgram(warningstream, "Vertex", vertex_shader);
 		dumpShaderProgram(warningstream, "Fragment", fragment_shader);
 		dumpShaderProgram(warningstream, "Geometry", geometry_shader);
-		return shaderinfo;
+		throw ShaderException(
+			fmtgettext("Failed to compile the \"%s\" shader.", name.c_str()) +
+			strgettext("\nCheck debug.txt for details."));
 	}
 
 	// Apply the newly created material type

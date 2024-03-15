@@ -47,14 +47,15 @@ Clouds::Clouds(scene::ISceneManager* mgr,
 	scene::ISceneNode(mgr->getRootSceneNode(), mgr, id),
 	m_seed(seed)
 {
-	m_material.setFlag(video::EMF_LIGHTING, false);
-	//m_material.setFlag(video::EMF_BACK_FACE_CULLING, false);
-	m_material.setFlag(video::EMF_BACK_FACE_CULLING, true);
-	m_material.setFlag(video::EMF_BILINEAR_FILTER, false);
-	m_material.setFlag(video::EMF_FOG_ENABLE, true);
-	m_material.setFlag(video::EMF_ANTI_ALIASING, true);
-	//m_material.MaterialType = video::EMT_TRANSPARENT_VERTEX_ALPHA;
+	m_material.Lighting = false;
+	m_material.BackfaceCulling = true;
+	m_material.FogEnable = true;
+	m_material.AntiAliasing = video::EAAM_SIMPLE;
 	m_material.MaterialType = video::EMT_TRANSPARENT_ALPHA_CHANNEL;
+	m_material.forEachTexture([] (auto &tex) {
+		tex.MinFilter = video::ETMINF_NEAREST_MIPMAP_NEAREST;
+		tex.MagFilter = video::ETMAGF_NEAREST;
+	});
 
 	m_params.height        = 120;
 	m_params.density       = 0.4f;
@@ -103,7 +104,7 @@ void Clouds::render()
 
 	int num_faces_to_draw = m_enable_3d ? 6 : 1;
 
-	m_material.setFlag(video::EMF_BACK_FACE_CULLING, m_enable_3d);
+	m_material.BackfaceCulling = m_enable_3d;
 
 	driver->setTransform(video::ETS_WORLD, AbsoluteTransformation);
 	driver->setMaterial(m_material);
@@ -164,9 +165,11 @@ void Clouds::render()
 	driver->getFog(fog_color, fog_type, fog_start, fog_end, fog_density,
 			fog_pixelfog, fog_rangefog);
 
-	// Set our own fog
-	driver->setFog(fog_color, fog_type, cloud_full_radius * 0.5,
+	// Set our own fog, unless it was already disabled
+	if (fog_start < FOG_RANGE_ALL) {
+		driver->setFog(fog_color, fog_type, cloud_full_radius * 0.5,
 			cloud_full_radius*1.2, fog_density, fog_pixelfog, fog_rangefog);
+	}
 
 	// Read noise
 
@@ -366,7 +369,8 @@ void Clouds::update(const v3f &camera_p, const video::SColorf &color_diffuse)
 
 void Clouds::readSettings()
 {
-	m_cloud_radius_i = g_settings->getU16("cloud_radius");
+	// Upper limit was chosen due to posible render bugs
+	m_cloud_radius_i = rangelim(g_settings->getU16("cloud_radius"), 1, 62);
 	m_enable_3d = g_settings->getBool("enable_3d_clouds");
 }
 

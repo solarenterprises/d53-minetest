@@ -53,95 +53,6 @@ void MapNode::getColor(const ContentFeatures &f, video::SColor *color) const
 	*color = f.color;
 }
 
-void MapNode::setLight(LightBank bank, u8 a_light, const ContentFeatures &f) noexcept
-{
-	// If node doesn't contain light data, ignore this
-	if(f.param_type != CPT_LIGHT)
-		return;
-	if(bank == LIGHTBANK_DAY)
-	{
-		param1 &= 0xf0;
-		param1 |= a_light & 0x0f;
-	}
-	else if(bank == LIGHTBANK_NIGHT)
-	{
-		param1 &= 0x0f;
-		param1 |= (a_light & 0x0f)<<4;
-	}
-	else
-		assert("Invalid light bank" == NULL);
-}
-
-void MapNode::setLight(LightBank bank, u8 a_light, const NodeDefManager *nodemgr)
-{
-	setLight(bank, a_light, nodemgr->get(*this));
-}
-
-bool MapNode::isLightDayNightEq(const NodeDefManager *nodemgr) const
-{
-	const ContentFeatures &f = nodemgr->get(*this);
-	bool isEqual;
-
-	if (f.param_type == CPT_LIGHT) {
-		u8 day   = MYMAX(f.light_source, param1 & 0x0f);
-		u8 night = MYMAX(f.light_source, (param1 >> 4) & 0x0f);
-		isEqual = day == night;
-	} else {
-		isEqual = true;
-	}
-
-	return isEqual;
-}
-
-u8 MapNode::getLight(LightBank bank, const NodeDefManager *nodemgr) const
-{
-	// Select the brightest of [light source, propagated light]
-	const ContentFeatures &f = nodemgr->get(*this);
-
-	u8 light;
-	if(f.param_type == CPT_LIGHT)
-		light = bank == LIGHTBANK_DAY ? param1 & 0x0f : (param1 >> 4) & 0x0f;
-	else
-		light = 0;
-
-	return MYMAX(f.light_source, light);
-}
-
-u8 MapNode::getLightRaw(LightBank bank, const ContentFeatures &f) const noexcept
-{
-	if(f.param_type == CPT_LIGHT)
-		return bank == LIGHTBANK_DAY ? param1 & 0x0f : (param1 >> 4) & 0x0f;
-	return 0;
-}
-
-u8 MapNode::getLightNoChecks(LightBank bank, const ContentFeatures *f) const noexcept
-{
-	return MYMAX(f->light_source,
-	             bank == LIGHTBANK_DAY ? param1 & 0x0f : (param1 >> 4) & 0x0f);
-}
-
-bool MapNode::getLightBanks(u8 &lightday, u8 &lightnight,
-	const NodeDefManager *nodemgr) const
-{
-	// Select the brightest of [light source, propagated light]
-	const ContentFeatures &f = nodemgr->get(*this);
-	if(f.param_type == CPT_LIGHT)
-	{
-		lightday = param1 & 0x0f;
-		lightnight = (param1>>4)&0x0f;
-	}
-	else
-	{
-		lightday = 0;
-		lightnight = 0;
-	}
-	if(f.light_source > lightday)
-		lightday = f.light_source;
-	if(f.light_source > lightnight)
-		lightnight = f.light_source;
-	return f.param_type == CPT_LIGHT || f.light_source != 0;
-}
-
 u8 MapNode::getFaceDir(const NodeDefManager *nodemgr,
 	bool allow_wallmounted) const
 {
@@ -149,9 +60,14 @@ u8 MapNode::getFaceDir(const NodeDefManager *nodemgr,
 	if (f.param_type_2 == CPT2_FACEDIR ||
 			f.param_type_2 == CPT2_COLORED_FACEDIR)
 		return (getParam2() & 0x1F) % 24;
+	if (f.param_type_2 == CPT2_4DIR ||
+			f.param_type_2 == CPT2_COLORED_4DIR)
+		return getParam2() & 0x03;
 	if (allow_wallmounted && (f.param_type_2 == CPT2_WALLMOUNTED ||
-			f.param_type_2 == CPT2_COLORED_WALLMOUNTED))
-		return wallmounted_to_facedir[getParam2() & 0x07];
+			f.param_type_2 == CPT2_COLORED_WALLMOUNTED)) {
+		u8 wmountface = MYMIN(getParam2() & 0x07, DWM_COUNT - 1);
+		return wallmounted_to_facedir[wmountface];
+	}
 	return 0;
 }
 
@@ -159,9 +75,9 @@ u8 MapNode::getWallMounted(const NodeDefManager *nodemgr) const
 {
 	const ContentFeatures &f = nodemgr->get(*this);
 	if (f.param_type_2 == CPT2_WALLMOUNTED ||
-			f.param_type_2 == CPT2_COLORED_WALLMOUNTED) {
-		return getParam2() & 0x07;
-	} else if (f.drawtype == NDT_SIGNLIKE || f.drawtype == NDT_TORCHLIKE ||
+			f.param_type_2 == CPT2_COLORED_WALLMOUNTED)
+		return MYMIN(getParam2() & 0x07, DWM_COUNT - 1);
+	else if (f.drawtype == NDT_SIGNLIKE || f.drawtype == NDT_TORCHLIKE ||
 			f.drawtype == NDT_PLANTLIKE ||
 			f.drawtype == NDT_PLANTLIKE_ROOTED) {
 		return 1;
@@ -179,6 +95,8 @@ v3s16 MapNode::getWallMountedDir(const NodeDefManager *nodemgr) const
 	case 3: return v3s16(-1,0,0);
 	case 4: return v3s16(0,0,1);
 	case 5: return v3s16(0,0,-1);
+	case 6: return v3s16(0,1,0);
+	case 7: return v3s16(0,-1,0);
 	}
 }
 
@@ -196,7 +114,8 @@ void MapNode::rotateAlongYAxis(const NodeDefManager *nodemgr, Rotation rot)
 {
 	ContentParamType2 cpt2 = nodemgr->get(*this).param_type_2;
 
-	if (cpt2 == CPT2_FACEDIR || cpt2 == CPT2_COLORED_FACEDIR) {
+	if (cpt2 == CPT2_FACEDIR || cpt2 == CPT2_COLORED_FACEDIR ||
+			cpt2 == CPT2_4DIR || cpt2 == CPT2_COLORED_4DIR) {
 		static const u8 rotate_facedir[24 * 4] = {
 			// Table value = rotated facedir
 			// Columns: 0, 90, 180, 270 degrees rotation around vertical axis
@@ -232,13 +151,20 @@ void MapNode::rotateAlongYAxis(const NodeDefManager *nodemgr, Rotation rot)
 			22, 21, 20, 23,
 			23, 22, 21, 20
 		};
-		u8 facedir = (param2 & 31) % 24;
-		u8 index = facedir * 4 + rot;
-		param2 &= ~31;
-		param2 |= rotate_facedir[index];
+		if (cpt2 == CPT2_FACEDIR || cpt2 == CPT2_COLORED_FACEDIR) {
+			u8 facedir = (param2 & 31) % 24;
+			u8 index = facedir * 4 + rot;
+			param2 &= ~31;
+			param2 |= rotate_facedir[index];
+		} else if (cpt2 == CPT2_4DIR || cpt2 == CPT2_COLORED_4DIR) {
+			u8 fourdir = param2 & 3;
+			u8 index = fourdir * 4 + rot;
+			param2 &= ~3;
+			param2 |= rotate_facedir[index];
+		}
 	} else if (cpt2 == CPT2_WALLMOUNTED ||
 			cpt2 == CPT2_COLORED_WALLMOUNTED) {
-		u8 wmountface = (param2 & 7);
+		u8 wmountface = MYMIN(param2 & 0x07, DWM_COUNT - 1);
 		if (wmountface <= 1)
 			return;
 
@@ -399,16 +325,45 @@ void transformNodeBox(const MapNode &n, const NodeBox &nodebox,
 	else if(nodebox.type == NODEBOX_WALLMOUNTED)
 	{
 		v3s16 dir = n.getWallMountedDir(nodemgr);
+		u8 wall = n.getWallMounted(nodemgr);
 
 		// top
 		if(dir == v3s16(0,1,0))
 		{
-			boxes.push_back(nodebox.wall_top);
+			if (wall == DWM_S1) {
+				v3f vertices[2] =
+				{
+					nodebox.wall_top.MinEdge,
+					nodebox.wall_top.MaxEdge
+				};
+				for (v3f &vertex : vertices) {
+					vertex.rotateXZBy(90);
+				}
+				aabb3f box = aabb3f(vertices[0]);
+				box.addInternalPoint(vertices[1]);
+				boxes.push_back(box);
+			} else {
+				boxes.push_back(nodebox.wall_top);
+			}
 		}
 		// bottom
 		else if(dir == v3s16(0,-1,0))
 		{
-			boxes.push_back(nodebox.wall_bottom);
+			if (wall == DWM_S2) {
+				v3f vertices[2] =
+				{
+					nodebox.wall_bottom.MinEdge,
+					nodebox.wall_bottom.MaxEdge
+				};
+				for (v3f &vertex : vertices) {
+					vertex.rotateXZBy(-90);
+				}
+				aabb3f box = aabb3f(vertices[0]);
+				box.addInternalPoint(vertices[1]);
+				boxes.push_back(box);
+			} else {
+				boxes.push_back(nodebox.wall_bottom);
+			}
 		}
 		// side
 		else
@@ -626,7 +581,7 @@ u8 MapNode::getLevel(const NodeDefManager *nodemgr) const
 		return LIQUID_LEVEL_SOURCE;
 	if (f.param_type_2 == CPT2_FLOWINGLIQUID)
 		return getParam2() & LIQUID_LEVEL_MASK;
-	if(f.liquid_type == LIQUID_FLOWING) // can remove if all param_type_2 setted
+	if(f.liquid_type == LIQUID_FLOWING) // can remove if all param_type_2 set
 		return getParam2() & LIQUID_LEVEL_MASK;
 	if (f.param_type_2 == CPT2_LEVELED) {
 		u8 level = getParam2() & LEVELED_MASK;

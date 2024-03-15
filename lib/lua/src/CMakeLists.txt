@@ -35,10 +35,7 @@ set(LUA_CORE_SRC
 # Lua library
 add_library(lua STATIC ${LUA_CORE_SRC})
 target_link_libraries(lua ${LIBS})
-set_target_properties(lua PROPERTIES
-	VERSION ${LUA_VERSION}
-	CLEAN_DIRECT_OUTPUT 1
-)
+set_target_properties(lua PROPERTIES VERSION "${LUA_VERSION}")
 
 # Compile code as C++
 set_source_files_properties(${LUA_CORE_SRC} PROPERTIES LANGUAGE CXX)

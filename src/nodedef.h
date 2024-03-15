@@ -31,10 +31,11 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 class Client;
 #endif
 #include "itemgroup.h"
-#include "sound.h" // SimpleSoundSpec
+#include "sound.h" // SoundSpec
 #include "constants.h" // BS
 #include "texture_override.h" // TextureOverride
 #include "tileanimation.h"
+#include "util/pointabilities.h"
 
 class IItemDefManager;
 class ITextureSource;
@@ -45,20 +46,21 @@ class NodeResolver;
 class TestSchematic;
 #endif
 
-enum ContentParamType
+enum ContentParamType : u8
 {
 	CPT_NONE,
 	CPT_LIGHT,
+	ContentParamType_END // Dummy for validity check
 };
 
-enum ContentParamType2
+enum ContentParamType2 : u8
 {
 	CPT2_NONE,
 	// Need 8-bit param2
 	CPT2_FULL,
 	// Flowing liquid properties
 	CPT2_FLOWINGLIQUID,
-	// Direction for chests and furnaces and such
+	// Direction for chests and furnaces and such (with axis rotation)
 	CPT2_FACEDIR,
 	// Direction for signs, torches and such
 	CPT2_WALLMOUNTED,
@@ -78,16 +80,23 @@ enum ContentParamType2
 	CPT2_GLASSLIKE_LIQUID_LEVEL,
 	// 3 bits of palette index, then degrotate
 	CPT2_COLORED_DEGROTATE,
+	// Simplified direction for chests and furnaces and such (4 directions)
+	CPT2_4DIR,
+	// 6 bits of palette index, then 4dir
+	CPT2_COLORED_4DIR,
+	// Dummy for validity check
+	ContentParamType2_END
 };
 
-enum LiquidType
+enum LiquidType : u8
 {
 	LIQUID_NONE,
 	LIQUID_FLOWING,
 	LIQUID_SOURCE,
+	LiquidType_END // Dummy for validity check
 };
 
-enum NodeBoxType
+enum NodeBoxType : u8
 {
 	NODEBOX_REGULAR, // Regular block; allows buildable_to
 	NODEBOX_FIXED, // Static separately defined box(es)
@@ -185,7 +194,7 @@ public:
 	void readSettings();
 };
 
-enum NodeDrawType
+enum NodeDrawType : u8
 {
 	// A basic solid block
 	NDT_NORMAL,
@@ -209,10 +218,10 @@ enum NodeDrawType
 	// paramtype2 = "meshoptions" allows various forms, sizes and
 	// vertical and horizontal random offsets.
 	NDT_PLANTLIKE,
-	// Fenceposts that connect to neighbouring fenceposts with horizontal bars
+	// Fenceposts that connect to neighboring fenceposts with horizontal bars
 	NDT_FENCELIKE,
 	// Selects appropriate junction texture to connect like rails to
-	// neighbouring raillikes.
+	// neighboring raillikes.
 	NDT_RAILLIKE,
 	// Custom Lua-definable structure of multiple cuboids
 	NDT_NODEBOX,
@@ -221,7 +230,7 @@ enum NodeDrawType
 	// Uses 3 textures, one for frames, second for faces,
 	// optional third is a 'special tile' for the liquid.
 	NDT_GLASSLIKE_FRAMED,
-	// Draw faces slightly rotated and only on neighbouring nodes
+	// Draw faces slightly rotated and only on neighboring nodes
 	NDT_FIRELIKE,
 	// Enabled -> ndt_glasslike_framed, disabled -> ndt_glasslike
 	NDT_GLASSLIKE_FRAMED_OPTIONAL,
@@ -229,6 +238,8 @@ enum NodeDrawType
 	NDT_MESH,
 	// Combined plantlike-on-solid
 	NDT_PLANTLIKE_ROOTED,
+	// Dummy for validity check
+	NodeDrawType_END
 };
 
 // Mesh options for NDT_PLANTLIKE with CPT2_MESHOPTIONS
@@ -248,13 +259,15 @@ enum AlignStyle : u8 {
 	ALIGN_STYLE_NODE,
 	ALIGN_STYLE_WORLD,
 	ALIGN_STYLE_USER_DEFINED,
+	AlignStyle_END // Dummy for validity check
 };
 
 enum AlphaMode : u8 {
 	ALPHAMODE_BLEND,
 	ALPHAMODE_CLIP,
 	ALPHAMODE_OPAQUE,
-	ALPHAMODE_LEGACY_COMPAT, /* means either opaque or clip */
+	ALPHAMODE_LEGACY_COMPAT, /* only sent by old servers, equals OPAQUE */
+	AlphaMode_END // Dummy for validity check
 };
 
 
@@ -318,6 +331,9 @@ struct ContentFeatures
 	bool has_on_destruct;
 	bool has_after_destruct;
 
+	// "float" group
+	bool floats;
+
 	/*
 		Actual data
 	 */
@@ -357,6 +373,7 @@ struct ContentFeatures
 	std::vector<content_t> connects_to_ids;
 	// Post effect color, drawn when the camera is inside the node.
 	video::SColor post_effect_color;
+	bool post_effect_color_shaded;
 	// Flowing liquid or leveled nodebox, value = default level
 	u8 leveled;
 	// Maximum value for leveled nodes
@@ -379,8 +396,8 @@ struct ContentFeatures
 	// This is used for collision detection.
 	// Also for general solidness queries.
 	bool walkable;
-	// Player can point to these
-	bool pointable;
+	// Player can point to these, point through or it is blocking
+	PointabilityType pointable;
 	// Player can dig these
 	bool diggable;
 	// Player can climb these
@@ -427,9 +444,9 @@ struct ContentFeatures
 
 	// --- SOUND PROPERTIES ---
 
-	SimpleSoundSpec sound_footstep;
-	SimpleSoundSpec sound_dig;
-	SimpleSoundSpec sound_dug;
+	SoundSpec sound_footstep;
+	SoundSpec sound_dig;
+	SoundSpec sound_dug;
 
 	// --- LEGACY ---
 
@@ -458,11 +475,9 @@ struct ContentFeatures
 		case NDT_NORMAL:
 		case NDT_LIQUID:
 		case NDT_FLOWINGLIQUID:
-			alpha = ALPHAMODE_OPAQUE;
-			break;
 		case NDT_NODEBOX:
 		case NDT_MESH:
-			alpha = ALPHAMODE_LEGACY_COMPAT; // this should eventually be OPAQUE
+			alpha = ALPHAMODE_OPAQUE;
 			break;
 		default:
 			alpha = ALPHAMODE_CLIP;
@@ -489,15 +504,25 @@ struct ContentFeatures
 	bool isLiquid() const{
 		return (liquid_type != LIQUID_NONE);
 	}
-	bool sameLiquid(const ContentFeatures &f) const{
-		if(!isLiquid() || !f.isLiquid()) return false;
-		return (liquid_alternative_flowing_id == f.liquid_alternative_flowing_id);
+
+	bool isLiquidRender() const {
+		return (drawtype == NDT_LIQUID || drawtype == NDT_FLOWINGLIQUID);
 	}
 
-	bool lightingEquivalent(const ContentFeatures &other) const {
-		return light_propagates == other.light_propagates
-				&& sunlight_propagates == other.sunlight_propagates
-				&& light_source == other.light_source;
+	bool sameLiquidRender(const ContentFeatures &f) const {
+		if (!isLiquidRender() || !f.isLiquidRender())
+			return false;
+		return liquid_alternative_flowing_id == f.liquid_alternative_flowing_id &&
+			liquid_alternative_source_id == f.liquid_alternative_source_id;
+	}
+
+	ContentLightingFlags getLightingFlags() const {
+		ContentLightingFlags flags;
+		flags.has_light = param_type == CPT_LIGHT;
+		flags.light_propagates = light_propagates;
+		flags.sunlight_propagates = sunlight_propagates;
+		flags.light_source = light_source;
+		return flags;
 	}
 
 	int getGroup(const std::string &group) const
@@ -511,16 +536,6 @@ struct ContentFeatures
 #endif
 
 private:
-#ifndef SERVER
-	/*
-	 * Checks if any tile texture has any transparent pixels.
-	 * Prints a warning and returns true if that is the case, false otherwise.
-	 * This is supposed to be used for use_texture_alpha backwards compatibility.
-	 */
-	bool textureAlphaCheck(ITextureSource *tsrc, const TileDef *tiles,
-		int length);
-#endif
-
 	void setAlphaFromLegacy(u8 legacy_alpha);
 
 	u8 getAlphaForLegacy() const;
@@ -567,6 +582,15 @@ public:
 	 */
 	inline const ContentFeatures& get(const MapNode &n) const {
 		return get(n.getContent());
+	}
+
+	inline ContentLightingFlags getLightingFlags(content_t c) const {
+		// No bound check is necessary, since the array's length is CONTENT_MAX + 1.
+		return m_content_lighting_flag_cache[c];
+	}
+
+	inline ContentLightingFlags getLightingFlags(const MapNode &n) const {
+		return getLightingFlags(n.getContent());
 	}
 
 	/*!
@@ -815,6 +839,11 @@ private:
 	 * Even constant NodeDefManager instances can register listeners.
 	 */
 	mutable std::vector<NodeResolver *> m_pending_resolve_callbacks;
+
+	/*!
+	 * Fast cache of content lighting flags.
+	 */
+	ContentLightingFlags m_content_lighting_flag_cache[CONTENT_MAX + 1L];
 };
 
 NodeDefManager *createNodeDefManager();

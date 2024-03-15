@@ -145,7 +145,7 @@ local function get_formspec(tabview, name, tabdata)
 	retval = retval .. "container_end[]" ..
 
 		"container[9.75,0]" ..
-		"box[0,0;5.75,7;#666666]" ..
+		"box[0,0;5.75,7.1;#666666]" ..
 
 		-- Address / Port
 		"label[0.25,0.35;" .. fgettext("Server Address") .. "]" ..
@@ -169,6 +169,10 @@ local function get_formspec(tabview, name, tabdata)
 		-- Connect
 		"button[3,6;2.5,0.75;btn_mp_connect;" .. fgettext("Connect") .. "]"
 
+	-- if core.settings:get_bool("enable_split_login_register") then
+	-- 	retval = retval .. "button[0.25,6;2.5,0.75;btn_mp_register;" .. fgettext("Register") .. "]"
+	-- end
+
 
 	if tabdata.selected then
 		if gamedata.fav then
@@ -176,7 +180,7 @@ local function get_formspec(tabview, name, tabdata)
 				fgettext("Remove Favorite") .. "]"
 		end
 		if gamedata.serverdescription then
-			retval = retval .. "textarea[0.25,3;5.25,2.75;;;" ..
+			retval = retval .. "textarea[0.25,1.85;5.25,2.7;;;" ..
 				core.formspec_escape(gamedata.serverdescription) .. "]"
 		end
 	end
@@ -242,7 +246,7 @@ local function get_formspec(tabview, name, tabdata)
 		retval = retval .. ";0]"
 	end
 
-	return retval, "size[15.5,7,false]real_coordinates[true]"
+	return retval
 end
 
 
@@ -392,6 +396,9 @@ local function main_button_handler(tabview, fields, name, tabdata)
 						core.settings:set("remote_port", gamedata.port)
 						core.start()
 					end
+
+					core.log(dump(gamedata))
+
 					return true
 
 				end
@@ -628,12 +635,33 @@ local function main_button_handler(tabview, fields, name, tabdata)
 		return true
 	end
 
+	if fields.btn_mp_register and host_filled then
+		local idx = core.get_table_index("servers")
+		local server = idx and tabdata.lookup[idx]
+		if server and (server.address ~= fields.te_address or server.port ~= te_port_number) then
+			server = nil
+		end
+
+		if server and not is_server_protocol_compat_or_error(
+					server.proto_min, server.proto_max) then
+			return true
+		end
+
+		local dlg = create_register_dialog(fields.te_address, te_port_number, server)
+		dlg:set_parent(tabview)
+		tabview:hide()
+		dlg:show()
+		return true
+	end
+
 	return false
 end
 
-local function on_change(type, old_tab, new_tab)
-	if type == "LEAVE" then return end
-	serverlistmgr.sync()
+local function on_change(type)
+	if type == "ENTER" then
+		mm_game_theme.set_engine()
+		serverlistmgr.sync()
+	end
 end
 
 return {

@@ -231,6 +231,6 @@ private:
 	bool popBlockEmergeData(v3s16 pos, BlockEmergeData *bedata);
 
 	void reportCompletedEmerge(EmergeAction action);
-	
+
 	friend class EmergeThread;
 };

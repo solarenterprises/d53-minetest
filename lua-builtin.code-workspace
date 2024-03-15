@@ -1,0 +1,14 @@
+{
+	"folders": [
+		{
+			"path": "builtin"
+		},
+		{
+			"path": "mods"
+		},
+		{
+			"path": "games"
+		}
+	],
+	"settings": {}
+}
