@@ -20,10 +20,15 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #pragma once
 
 #include "irrlichttypes.h"
-#include <string>
-#include <iostream>
 #include "itemgroup.h"
 #include "json-forwards.h"
+#include "common/c_types.h"
+#include <json/json.h>
+#include <SColor.h>
+
+#include <string>
+#include <iostream>
+#include <optional>
 
 struct ItemDefinition;
 
@@ -35,7 +40,7 @@ struct ToolGroupCap
 
 	ToolGroupCap() = default;
 
-	bool getTime(int rating, float *time) const
+	bool getTime(int rating, float* time) const
 	{
 		std::unordered_map<int, float>::const_iterator i = times.find(rating);
 		if (i == times.end()) {
@@ -46,8 +51,8 @@ struct ToolGroupCap
 		return true;
 	}
 
-	void toJson(Json::Value &object) const;
-	void fromJson(const Json::Value &json);
+	void toJson(Json::Value& object) const;
+	void fromJson(const Json::Value& json);
 };
 
 
@@ -63,12 +68,12 @@ struct ToolCapabilities
 	int punch_attack_uses;
 
 	ToolCapabilities(
-			float full_punch_interval_ = 1.4f,
-			int max_drop_level_ = 1,
-			const ToolGCMap &groupcaps_ = ToolGCMap(),
-			const DamageGroup &damageGroups_ = DamageGroup(),
-			int punch_attack_uses_ = 0
-	):
+		float full_punch_interval_ = 1.4f,
+		int max_drop_level_ = 1,
+		const ToolGCMap& groupcaps_ = ToolGCMap(),
+		const DamageGroup& damageGroups_ = DamageGroup(),
+		int punch_attack_uses_ = 0
+	) :
 		full_punch_interval(full_punch_interval_),
 		max_drop_level(max_drop_level_),
 		groupcaps(groupcaps_),
@@ -76,10 +81,41 @@ struct ToolCapabilities
 		punch_attack_uses(punch_attack_uses_)
 	{}
 
-	void serialize(std::ostream &os, u16 version) const;
-	void deSerialize(std::istream &is);
-	void serializeJson(std::ostream &os) const;
-	void deserializeJson(std::istream &is);
+	void serialize(std::ostream& os, u16 version) const;
+	void deSerialize(std::istream& is);
+	void serializeJson(std::ostream& os) const;
+	void deserializeJson(std::istream& is);
+};
+
+struct WearBarParams
+{
+	std::map<f32, video::SColor> colorStops;
+	enum BlendMode : u8 {
+		BLEND_MODE_CONSTANT,
+		BLEND_MODE_LINEAR,
+		BlendMode_END // Dummy for validity check
+	};
+	constexpr const static EnumString es_BlendMode[3] = {
+		{WearBarParams::BLEND_MODE_CONSTANT, "constant"},
+		{WearBarParams::BLEND_MODE_LINEAR, "linear"},
+		{0, NULL}
+	};
+	BlendMode blend;
+
+	WearBarParams(const std::map<f32, video::SColor>& colorStops, BlendMode blend) :
+		colorStops(colorStops),
+		blend(blend)
+	{}
+
+	WearBarParams(const video::SColor color) :
+		WearBarParams({ {0.0, color} }, WearBarParams::BLEND_MODE_CONSTANT)
+	{};
+
+	void serialize(std::ostream& os) const;
+	static WearBarParams deserialize(std::istream& is);
+	void serializeJson(std::ostream& os) const;
+	static std::optional<WearBarParams> deserializeJson(std::istream& is);
+	video::SColor getWearBarColor(f32 durabilityPercent);
 };
 
 struct DigParams
@@ -92,7 +128,7 @@ struct DigParams
 	std::string main_group;
 
 	DigParams(bool a_diggable = false, float a_time = 0.0f, u32 a_wear = 0,
-			const std::string &a_main_group = ""):
+		const std::string& a_main_group = "") :
 		diggable(a_diggable),
 		time(a_time),
 		wear(a_wear),
@@ -100,9 +136,9 @@ struct DigParams
 	{}
 };
 
-DigParams getDigParams(const ItemGroupList &groups,
-		const ToolCapabilities *tp,
-		const u16 initial_wear = 0);
+DigParams getDigParams(const ItemGroupList& groups,
+	const ToolCapabilities* tp,
+	const u16 initial_wear = 0);
 
 struct HitParams
 {
@@ -110,18 +146,18 @@ struct HitParams
 	// Caused wear
 	u32 wear; // u32 because wear could be 65536 (single-use weapon)
 
-	HitParams(s32 hp_ = 0, u32 wear_ = 0):
+	HitParams(s32 hp_ = 0, u32 wear_ = 0) :
 		hp(hp_),
 		wear(wear_)
 	{}
 };
 
-HitParams getHitParams(const ItemGroupList &armor_groups,
-		const ToolCapabilities *tp, float time_from_last_punch,
-		u16 initial_wear = 0);
+HitParams getHitParams(const ItemGroupList& armor_groups,
+	const ToolCapabilities* tp, float time_from_last_punch,
+	u16 initial_wear = 0);
 
-HitParams getHitParams(const ItemGroupList &armor_groups,
-		const ToolCapabilities *tp);
+HitParams getHitParams(const ItemGroupList& armor_groups,
+	const ToolCapabilities* tp);
 
 struct PunchDamageResult
 {
@@ -135,12 +171,12 @@ struct PunchDamageResult
 struct ItemStack;
 
 PunchDamageResult getPunchDamage(
-		const ItemGroupList &armor_groups,
-		const ToolCapabilities *toolcap,
-		const ItemStack *punchitem,
-		float time_from_last_punch,
-		u16 initial_wear = 0
+	const ItemGroupList& armor_groups,
+	const ToolCapabilities* toolcap,
+	const ItemStack* punchitem,
+	float time_from_last_punch,
+	u16 initial_wear = 0
 );
 
 u32 calculateResultWear(const u32 uses, const u16 initial_wear);
-f32 getToolRange(const ItemDefinition &def_selected, const ItemDefinition &def_hand);
+f32 getToolRange(const ItemDefinition& def_selected, const ItemDefinition& def_hand);

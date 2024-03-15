@@ -30,33 +30,33 @@ class IItemDefManager;
 class ItemStackMetadata : public SimpleMetadata
 {
 public:
-	ItemStackMetadata():
-			toolcaps_overridden(false)
+	ItemStackMetadata() :
+		toolcaps_overridden(false)
 	{}
 
 	// Overrides
 	void clear() override;
-	bool setString(const std::string &name, std::string_view var) override;
+	bool setString(const std::string& name, std::string_view var) override;
 
-	void serialize(std::ostream &os) const;
-	void deSerialize(std::istream &is);
+	void serialize(std::ostream& os) const;
+	void deSerialize(std::istream& is);
 
-	const ToolCapabilities &getToolCapabilities(
-			const ToolCapabilities &default_caps) const
+	const ToolCapabilities& getToolCapabilities(
+		const ToolCapabilities& default_caps) const
 	{
 		return toolcaps_overridden ? toolcaps_override : default_caps;
 	}
 
-	void setToolCapabilities(const ToolCapabilities &caps);
+	void setToolCapabilities(const ToolCapabilities& caps);
 	void clearToolCapabilities();
 
-	const std::optional<WearBarParams> &getWearBarParamOverride() const
+	const std::optional<WearBarParams>& getWearBarParamOverride() const
 	{
 		return wear_bar_override;
 	}
 
 
-	void setWearBarParams(const WearBarParams &params);
+	void setWearBarParams(const WearBarParams& params);
 	void clearWearBarParams();
 
 private:

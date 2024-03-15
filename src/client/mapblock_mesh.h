@@ -263,12 +263,6 @@ public:
 	video::ITexture* getBufferMainTexture(u32 layer, u32 bufferIndex);
 
 private:
-	struct AnimationInfo {
-		int frame; // last animation frame
-		int frame_offset;
-		TileLayer tile;
-	};
-
 	scene::IMesh *m_mesh[MAX_TILE_LAYERS];
 	std::vector<MinimapMapblock*> m_minimap_mapblocks;
 	ITextureSource *m_tsrc;
