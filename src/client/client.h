@@ -121,18 +121,18 @@ public:
 	*/
 
 	Client(
-		const char* playername,
-		const std::string& password,
-		MapDrawControl& control,
-		IWritableTextureSource* tsrc,
-		IWritableShaderSource* shsrc,
-		IWritableItemDefManager* itemdef,
-		NodeDefManager* nodedef,
-		ISoundManager* sound,
-		MtEventManager* event,
-		RenderingEngine* rendering_engine,
-		GameUI* game_ui,
-		ELoginRegister allow_login_or_register
+			const char *playername,
+			const std::string &password,
+			MapDrawControl &control,
+			IWritableTextureSource *tsrc,
+			IWritableShaderSource *shsrc,
+			IWritableItemDefManager *itemdef,
+			NodeDefManager *nodedef,
+			ISoundManager *sound,
+			MtEventManager *event,
+			RenderingEngine *rendering_engine,
+			GameUI *game_ui,
+			ELoginRegister allow_login_or_register
 	);
 
 	~Client();
@@ -154,7 +154,7 @@ public:
 
 	bool isShutdown();
 
-	void connect(const Address& address, const std::string& address_name,
+	void connect(const Address &address, const std::string &address_name,
 		bool is_local_server);
 
 	/*
@@ -250,8 +250,8 @@ public:
 	void sendDamage(u16 damage);
 	void sendRespawn();
 	void sendReady();
-	void sendHaveMedia(const std::vector<u32>& tokens);
-	void sendUpdateClientInfo(const ClientDynamicInfo& info);
+	void sendHaveMedia(const std::vector<u32> &tokens);
+	void sendUpdateClientInfo(const ClientDynamicInfo &info);
 
 	ClientEnvironment& getEnv() { return m_env; }
 	ITextureSource* tsrc() { return getTextureSource(); }
@@ -285,7 +285,7 @@ public:
 	// Send the item number 'item' as player item to the server
 	void setPlayerItem(u16 item);
 
-	const std::set<std::string>& getConnectedPlayerNames()
+	const std::set<std::string> &getConnectedPlayerNames()
 	{
 		return m_env.getPlayerNames();
 	}
@@ -360,9 +360,7 @@ public:
 	}
 
 	u16 getProtoVersion() const
-	{
-		return m_proto_ver;
-	}
+	{ return m_proto_ver; }
 
 	bool m_simple_singleplayer_mode;
 
@@ -384,8 +382,6 @@ public:
 	Camera* getCamera() { return m_camera; }
 	scene::ISceneManager* getSceneManager();
 
-	bool shouldShowMinimap() const;
-
 	// IGameDef interface
 	IItemDefManager* getItemDefManager() override;
 	const NodeDefManager* getNodeDefManager() override;
@@ -402,7 +398,7 @@ public:
 	}
 	virtual scene::IAnimatedMesh* getMesh(const std::string& filename, bool cache = false);
 	const std::string* getModFile(std::string filename);
-	ModStorageDatabase* getModStorageDatabase() override { return m_mod_storage_database; }
+	ModStorageDatabase *getModStorageDatabase() override { return m_mod_storage_database; }
 
 	// Migrates away old files-based mod storage if necessary
 	void migrateModStorage();
@@ -424,18 +420,16 @@ public:
 		m_chat_queue.push(cec);
 	}
 
-	ClientScripting* getScript() { return m_script; }
+	ClientScripting *getScript() { return m_script; }
 	bool modsLoaded() const { return m_mods_loaded; }
 
 	void pushToEventQueue(ClientEvent* event);
-
-	void showMinimap(bool show = true);
 
 	// IP and port we're connected to
 	const Address getServerAddress();
 
 	// Hostname of the connected server (but can also be a numerical IP)
-	const std::string& getAddressName() const
+	const std::string &getAddressName() const
 	{
 		return m_address_name;
 	}
@@ -456,7 +450,7 @@ public:
 		const std::string& message) override;
 	ModChannel* getModChannel(const std::string& channel) override;
 
-	const std::string& getFormspecPrepend() const;
+	const std::string &getFormspecPrepend() const;
 
 	inline MeshGrid getMeshGrid()
 	{
@@ -488,11 +482,11 @@ private:
 	// helper method shared with clientpackethandler
 	static AuthMechanism choseAuthMech(const u32 mechs);
 
-	void sendInit(const std::string& playerName);
+	void sendInit(const std::string &playerName);
 	void startAuth(AuthMechanism chosen_auth_mechanism);
-	void sendDeletedBlocks(std::vector<v3s16>& blocks);
-	void sendGotBlocks(const std::vector<v3s16>& blocks);
-	void sendRemovedSounds(const std::vector<s32>& soundList);
+	void sendDeletedBlocks(std::vector<v3s16> &blocks);
+	void sendGotBlocks(const std::vector<v3s16> &blocks);
+	void sendRemovedSounds(const std::vector<s32> &soundList);
 
 	bool canSendChatMessage() const;
 
@@ -517,9 +511,8 @@ private:
 	std::unique_ptr<con::Connection> m_con;
 	std::string m_address_name;
 	ELoginRegister m_allow_login_or_register = ELoginRegister::Any;
-	Camera* m_camera = nullptr;
-	Minimap* m_minimap = nullptr;
-	bool m_minimap_disabled_by_server = false;
+	Camera *m_camera = nullptr;
+	Minimap *m_minimap = nullptr;
 
 	// Server serialization version
 	u8 m_server_ser_ver;
@@ -573,7 +566,7 @@ private:
 
 	std::vector<std::string> m_remote_media_servers;
 	// Media downloader, only exists during init
-	ClientMediaDownloader* m_media_downloader;
+	ClientMediaDownloader *m_media_downloader;
 	// Pending downloads of dynamic media (key: token)
 	std::vector<std::pair<u32, std::shared_ptr<SingleMediaDownloader>>> m_pending_media_downloads;
 
@@ -616,8 +609,8 @@ private:
 	u16 m_cache_save_interval;
 
 	// Client modding
-	ClientScripting* m_script = nullptr;
-	ModStorageDatabase* m_mod_storage_database = nullptr;
+	ClientScripting *m_script = nullptr;
+	ModStorageDatabase *m_mod_storage_database = nullptr;
 	float m_mod_storage_save_timer = 10.0f;
 	std::vector<ModSpec> m_mods;
 	StringMap m_mod_vfs;

@@ -64,120 +64,55 @@ local function get_formspec(tabview, name, tabdata)
 		tabdata.search_for = ""
 	end
 
-	if not tabdata.sxpaddressinfo then
-		tabdata.sxpaddressinfo = ""
-	end
-
-	local addresses = addresslistmgr.get_addresses()
-
-	local address_labels = ""
-	local delimiter = ","
-
-	if #addresses > 0 then
-		address_labels = address_labels .. fgettext(addresses[1].address)
-		for i = 2, #addresses do
-			address_labels = address_labels .. delimiter .. fgettext(addresses[i].address)
-		end
-	end
-
-	local getSettingIndex = {
-		Address = function()
-			--local style = core.settings:get("sxpaddress")
-			--for idx, addr in addresses do
-			--	if style == addr.address then return idx end
-			--end
-			return 1
-		end
-	}
-
 	local retval =
 		-- Search
-		"container[0,0]" ..
-		"box[0,0;9.75,7;#666666]" ..
-		"label[0.25,0.35;" .. fgettext("Select SXP Address") .. "]" ..
-		"label[7.25,0.35;" .. fgettext("Password") .. "]" ..
-		"button[3,0.15;2,0.32;btn_mp_copyaddress;" .. fgettext("copy address") .. "]" ..
-
-		--"field[0.25,0.5;7,0.75;te_address;;" ..
-		--	core.formspec_escape(core.settings:get("address")) .. "]" ..
-
-		"dropdown[0.25,0.5;7,0.75;te_sxpaddress;" .. address_labels .. ";" .. getSettingIndex.Address() .. "]" ..
-
-		"pwdfield[7.25,0.5;2.5,0.75;te_pwd;]" 
-		--"field[0.25,0.25;7,0.75;te_search;;" .. core.formspec_escape(core.settings:get("sxpaddress")) .. "]" ..
-		--"container[7.25,0.25]" ..
-		--"image_button[0,0;0.75,0.75;" .. core.formspec_escape(defaulttexturedir .. "search.png") .. ";btn_mp_search;]" ..
-		--"image_button[0.75,0;0.75,0.75;" .. core.formspec_escape(defaulttexturedir .. "clear.png") .. ";btn_mp_clear;]" ..
-		--"image_button[1.5,0;0.75,0.75;" .. core.formspec_escape(defaulttexturedir .. "refresh.png") .. ";btn_mp_refresh;]" ..
-		--"tooltip[btn_mp_clear;" .. fgettext("Clear") .. "]" ..
-		--"tooltip[btn_mp_search;" .. fgettext("Search") .. "]" ..
-		--"tooltip[btn_mp_refresh;" .. fgettext("Refresh") .. "]" ..
-
-	if tabdata.restore then
-
-		retval = retval .. "label[0.25,4.75;" .. fgettext("Enter Mnemonic of Address to Restore") .. "]" ..
-			"label[7.25,4.75;" .. fgettext("Create Password") .. "]" ..
-			"field[0.25,4.9;7,0.75;te_rmnemonic;;]" ..
-			"pwdfield[7.25,4.9;2.5,0.75;te_rpwd;]" ..
-			"button[3,6;2.5,0.75;btn_mp_dorestore;" .. fgettext("Do Restore") .. "]" ..
-			"button[5.75,6;2.5,0.75;btn_mp_cancelrestore;" .. fgettext("Cancel") .. "]"
-
-	elseif tabdata.generate then
-
-		retval = retval .. "label[4.25,4.75;" .. fgettext("Create A Password") .. "]" ..
-			"pwdfield[4.25,4.9;2.5,0.75;create_pwd;]" ..
-			"button[3,6;2.5,0.75;btn_mp_dogenerate;" .. fgettext("Generate Address") .. "]" ..
-			"button[5.75,6;2.5,0.75;btn_mp_cancelgenerate;" .. fgettext("Cancel") .. "]"
-
-	else
-
-		retval = retval .. "label[0.25,4.45;" .. fgettext("SXP Address Info") .. "]" ..
-			"button[3,4.27;2,0.32;btn_mp_copyinfo;" .. fgettext("copy info") .. "]" ..
-			"box[0.25,4.6;9.5,1.15;#999999]"..
-			"textarea[0.25,4.6;9.5,1.15;;;" .. core.formspec_escape(tabdata.sxpaddressinfo) .. "]" ..
-			"button[0.25,6;2.3,0.75;btn_mp_generate;" .. fgettext("New Address") .. "]" ..
-			"button[2.8,6;2.3,0.75;btn_mp_restore;" .. fgettext("Restore Address") .. "]" ..
-			"button[5.3,6;2.3,0.75;btn_mp_viewmnemonic;" .. fgettext("View Mnemonic") .. "]" ..
-			"button[7.8,6;2,0.75;btn_mp_deleteaddress;" .. fgettext("Delete") .. "]"
-
-	end
-
-	retval = retval .. "container_end[]" ..
+		"field[0.25,0.25;7,0.75;te_search;;" .. core.formspec_escape(tabdata.search_for) .. "]" ..
+		"field_enter_after_edit[te_search;true]" ..
+		"container[7.25,0.25]" ..
+		"image_button[0,0;0.75,0.75;" .. core.formspec_escape(defaulttexturedir .. "search.png") .. ";btn_mp_search;]" ..
+		"image_button[0.75,0;0.75,0.75;" .. core.formspec_escape(defaulttexturedir .. "clear.png") .. ";btn_mp_clear;]" ..
+		"image_button[1.5,0;0.75,0.75;" .. core.formspec_escape(defaulttexturedir .. "refresh.png") .. ";btn_mp_refresh;]" ..
+		"tooltip[btn_mp_clear;" .. fgettext("Clear") .. "]" ..
+		"tooltip[btn_mp_search;" .. fgettext("Search") .. "]" ..
+		"tooltip[btn_mp_refresh;" .. fgettext("Refresh") .. "]" ..
+		"container_end[]" ..
 
 		"container[9.75,0]" ..
 		"box[0,0;5.75,7.1;#666666]" ..
 
 		-- Address / Port
-		"label[0.25,0.35;" .. fgettext("Server Address") .. "]" ..
+		"label[0.25,0.35;" .. fgettext("Address") .. "]" ..
 		"label[4.25,0.35;" .. fgettext("Port") .. "]" ..
 		"field[0.25,0.5;4,0.75;te_address;;" ..
 			core.formspec_escape(core.settings:get("address")) .. "]" ..
 		"field[4.25,0.5;1.25,0.75;te_port;;" ..
 			core.formspec_escape(core.settings:get("remote_port")) .. "]" ..
 
-		-- Name / Password
-		--"label[0.25,1.55;" .. fgettext("Player Name") .. "]" ..
-		--"label[3,1.55;" .. fgettext("Password") .. "]" ..
-		--"field[0.25,1.75;5.25,0.75;te_name;;" ..
-		--	core.formspec_escape(core.settings:get("name")) .. "]" ..
-		--"pwdfield[3,1.75;2.5,0.75;te_pwd;]" ..
-
 		-- Description Background
-		"label[0.25,2.75;" .. fgettext("Server Info") .. "]" ..
-		"box[0.25,3;5.25,2.75;#999999]"..
+		"label[0.25,1.6;" .. fgettext("Server Description") .. "]" ..
+		"box[0.25,1.85;5.25,2.7;#999999]"..
+
+		-- Name / Password
+		"container[0,4.8]" ..
+		"label[0.25,0;" .. fgettext("Name") .. "]" ..
+		"label[2.875,0;" .. fgettext("Password") .. "]" ..
+		"field[0.25,0.2;2.625,0.75;te_name;;" .. core.formspec_escape(core.settings:get("name")) .. "]" ..
+		"pwdfield[2.875,0.2;2.625,0.75;te_pwd;]" ..
+		"container_end[]" ..
 
 		-- Connect
-		"button[3,6;2.5,0.75;btn_mp_connect;" .. fgettext("Connect") .. "]"
+		"button[3,6;2.5,0.75;btn_mp_login;" .. fgettext("Login") .. "]"
 
-	-- if core.settings:get_bool("enable_split_login_register") then
-	-- 	retval = retval .. "button[0.25,6;2.5,0.75;btn_mp_register;" .. fgettext("Register") .. "]"
-	-- end
-
+	if core.settings:get_bool("enable_split_login_register") then
+		retval = retval .. "button[0.25,6;2.5,0.75;btn_mp_register;" .. fgettext("Register") .. "]"
+	end
 
 	if tabdata.selected then
 		if gamedata.fav then
-			retval = retval .. "button[0.25,6;2.5,0.75;btn_delete_favorite;" ..
-				fgettext("Remove Favorite") .. "]"
+			retval = retval .. "tooltip[btn_delete_favorite;" .. fgettext("Remove favorite") .. "]"
+			retval = retval .. "style[btn_delete_favorite;padding=6]"
+			retval = retval .. "image_button[5,1.3;0.5,0.5;" .. core.formspec_escape(defaulttexturedir ..
+				"server_favorite_delete.png") .. ";btn_delete_favorite;]"
 		end
 		if gamedata.serverdescription then
 			retval = retval .. "textarea[0.25,1.85;5.25,2.7;;;" ..
@@ -214,7 +149,7 @@ local function get_formspec(tabview, name, tabdata)
 		"align=inline,padding=0.25,width=1.5;" ..
 		"color,align=inline,span=1;" ..
 		"text,align=inline,padding=1]" ..
-		"table[0.25,1.5;9.5,2.75;servers;"
+		"table[0.25,1;9.25,5.8;servers;"
 
 	local servers = get_sorted_servers()
 
@@ -249,11 +184,6 @@ local function get_formspec(tabview, name, tabdata)
 	return retval
 end
 
-
-	--	retval = retval .. "textarea[0.25,4.65;9.5,1.1;;;" ..
-	--		core.formspec_escape(fields["te_sxpaddress"]) .. "]"
-
-	--end
 --------------------------------------------------------------------------------
 
 local function search_server_list(input)
@@ -340,15 +270,6 @@ local function set_selected_server(tabdata, idx, server)
 	tabdata.selected = idx
 end
 
-local function split(str, sep)
-	local result = {}
-	local regex = ("([^%s]+)"):format(sep)
-	for each in str:gmatch(regex) do
-	   table.insert(result, each)
-	end
-	return result
- end
-
 local function main_button_handler(tabview, fields, name, tabdata)
 	if fields.te_name then
 		gamedata.playername = fields.te_name
@@ -366,45 +287,24 @@ local function main_button_handler(tabview, fields, name, tabdata)
 					return true
 				end
 
-				core.settings:set("sxpaddress", fields.te_sxpaddress)
+				gamedata.address    = server.address
+				gamedata.port       = server.port
+				gamedata.playername = fields.te_name
+				gamedata.selected_world = 0
 
-				local addressinfo = addresslistmgr.get_address(fields.te_sxpaddress)
-				--tabdata.sxpaddressinfo = addressinfo.address .. "--" .. addressinfo.encrypted_key .. "--" .. addressinfo.iv  .. "--" .. fields.te_pwd
-		
-				local sxpaddrvalidate = core.validate_sxp_password(addressinfo.encrypted_key, addressinfo.address, addressinfo.iv, fields.te_pwd)
-				if sxpaddrvalidate == 1 then
-
-
-					gamedata.address    = server.address
-					gamedata.port       = server.port
-					gamedata.playername = fields.te_sxpaddress
-					gamedata.aliasname = fields.te_name
-					gamedata.encrypted_key = addressinfo.encrypted_key
-					gamedata.iv = addressinfo.iv
-
-					gamedata.selected_world = 0
-
-					if fields.te_pwd then
-						gamedata.password = fields.te_pwd
-					end
-
-					gamedata.servername        = server.name
-					gamedata.serverdescription = server.description
-
-					if gamedata.address and gamedata.port then
-						core.settings:set("address", gamedata.address)
-						core.settings:set("remote_port", gamedata.port)
-						core.start()
-					end
-
-					core.log(dump(gamedata))
-
-					return true
-
+				if fields.te_pwd then
+					gamedata.password = fields.te_pwd
 				end
-				tabdata.sxpaddressinfo = "Invalid Password"
-				return true
 
+				gamedata.servername        = server.name
+				gamedata.serverdescription = server.description
+
+				if gamedata.address and gamedata.port then
+					core.settings:set("address", gamedata.address)
+					core.settings:set("remote_port", gamedata.port)
+					core.start()
+				end
+				return true
 			end
 			if event.type == "CHG" then
 				set_selected_server(tabdata, event.row, server)
@@ -425,139 +325,10 @@ local function main_button_handler(tabview, fields, name, tabdata)
 		return true
 	end
 
-	if fields.btn_mp_copyaddress then
-		local reply = core.copy_to_clipboard(fields.te_sxpaddress)
-		return true
-	end
-
-	if fields.btn_mp_copyinfo then
-		local reply = core.copy_to_clipboard(tabdata.sxpaddressinfo)
-		return true
-	end
-
 	if fields.btn_mp_clear then
 		tabdata.search_for = ""
 		menudata.search_result = nil
 		return true
-	end
-
-	if fields.btn_mp_restore then
-		tabdata.restore = true
-		return true
-	end
-
-	if fields.btn_mp_dorestore then
-
-		if not fields.te_rpwd or fields.te_rpwd == "" then
-			tabdata.sxpaddressinfo = "Enter Password to Restore Address"
-			return true
-		end
-
-		if not fields.te_rmnemonic or fields.te_rmnemonic == "" then
-			tabdata.sxpaddressinfo = "Enter Mnemonic Phrase to Restore"
-			return true
-		end
-
-		local sxpaddr = core.get_restore_sxpaddress(fields.te_rmnemonic, fields.te_rpwd)
-
-		local result = split(sxpaddr, "|")
-
-		addresslistmgr.add_address({
-			address = result[1],
-			iv = result[3],
-			encrypted_key = result[4]
-		})
-
-		tabdata.sxpaddressinfo = "Your Address: " .. result[1] .. "\nYour Mnemonic: " .. result[2]
-
-		tabdata.restore = false
-		return true
-	end
-
-	if fields.btn_mp_generate then
-		tabdata.generate = true
-		return true
-	end
-
-	if fields.btn_mp_dogenerate then
-
-		if not fields.create_pwd or fields.create_pwd == "" then
-			tabdata.sxpaddressinfo = "Enter Password to view Mnemonic"
-			return true
-		end
-
-		local sxpaddr = core.get_new_sxpaddress(fields.create_pwd)
-
-		local result = split(sxpaddr, "|")
-
-		addresslistmgr.add_address({
-			address = result[1],
-			iv = result[3],
-			encrypted_key = result[4]
-		})
-
-		tabdata.sxpaddressinfo = "Your Address: " .. result[1] .. "\nYour Mnemonic: " .. result[2]
-
-		tabdata.generate = false
-		return true
-
-	end
-
-	if fields.btn_mp_cancelrestore then
-		tabdata.restore = false
-		return true
-	end
-
-	if fields.btn_mp_cancelgenerate then
-		tabdata.generate = false
-		return true
-	end
-
-	if fields.btn_mp_viewmnemonic then
-		if not fields.te_pwd or fields.te_pwd == "" then
-			tabdata.sxpaddressinfo = "Enter Password to view Mnemonic"
-			return true
-		end
-
-		if fields.te_sxpaddress then
-			core.settings:set("sxpaddress", fields.te_sxpaddress)
-
-			local addressinfo = addresslistmgr.get_address(fields.te_sxpaddress)
-			--tabdata.sxpaddressinfo = addressinfo.address .. "--" .. addressinfo.encrypted_key .. "--" .. addressinfo.iv  .. "--" .. fields.te_pwd
-
-			local sxpaddrvalidate = core.validate_sxp_password(addressinfo.encrypted_key, addressinfo.address, addressinfo.iv, fields.te_pwd)
-			if sxpaddrvalidate == 1 then
-				local mnemonic = core.get_sxp_mnemonic(addressinfo.encrypted_key, addressinfo.address, addressinfo.iv, fields.te_pwd)
-				tabdata.sxpaddressinfo = "Your mnemonic phrase is: " .. mnemonic
-				return true
-			end
-
-			tabdata.sxpaddressinfo = "Error.  Check Password."
-			return true
-		end
-	end
-
-	if fields.btn_mp_deleteaddress then
-		if not fields.te_pwd or fields.te_pwd == "" then
-			tabdata.sxpaddressinfo = "Enter Password to delete selected address"
-			return true
-		end
-
-		if fields.te_sxpaddress then
-
-			local addressinfo = addresslistmgr.get_address(fields.te_sxpaddress)
-
-			local sxpaddrvalidate = core.validate_sxp_password(addressinfo.encrypted_key, addressinfo.address, addressinfo.iv, fields.te_pwd)
-
-			if sxpaddrvalidate == 1 then
-				addresslistmgr.delete_address(fields.te_sxpaddress)
-				tabdata.sxpaddressinfo = "Address " .. addressinfo.address .. " has been removed"
-				return true
-			end
-
-			tabdata.sxpaddressinfo = "Invalid password"
-			return true
-		end
 	end
 
 	if fields.btn_mp_search or fields.key_enter_field == "te_search" then
@@ -576,62 +347,50 @@ local function main_button_handler(tabview, fields, name, tabdata)
 		return true
 	end
 
-	if (fields.btn_mp_connect or fields.key_enter)
-			and fields.te_address ~= "" and fields.te_port then
+	local host_filled = (fields.te_address ~= "") and fields.te_port:match("^%s*[1-9][0-9]*%s*$")
+	local te_port_number = tonumber(fields.te_port)
 
+	if (fields.btn_mp_login or fields.key_enter) and host_filled then
+		gamedata.playername = fields.te_name
+		gamedata.password   = fields.te_pwd
+		gamedata.address    = fields.te_address
+		gamedata.port       = te_port_number
 
-		core.settings:set("sxpaddress", fields.te_sxpaddress)
+		local enable_split_login_register = core.settings:get_bool("enable_split_login_register")
+		gamedata.allow_login_or_register = enable_split_login_register and "login" or "any"
+		gamedata.selected_world = 0
 
-		local addressinfo = addresslistmgr.get_address(fields.te_sxpaddress)
-		--tabdata.sxpaddressinfo = addressinfo.address .. "--" .. addressinfo.encrypted_key .. "--" .. addressinfo.iv  .. "--" .. fields.te_pwd
+		local idx = core.get_table_index("servers")
+		local server = idx and tabdata.lookup[idx]
 
-		local sxpaddrvalidate = core.validate_sxp_password(addressinfo.encrypted_key, addressinfo.address, addressinfo.iv, fields.te_pwd)
-		if sxpaddrvalidate == 1 then
+		set_selected_server(tabdata)
 
-			gamedata.playername = fields.te_sxpaddress
-			gamedata.aliasname = fields.te_name
-			gamedata.password   = fields.te_pwd
-			gamedata.address    = fields.te_address
-			gamedata.port       = tonumber(fields.te_port)
-			gamedata.selected_world = 0
-			gamedata.encrypted_key = addressinfo.encrypted_key
-			gamedata.iv = addressinfo.iv
-	
-			local idx = core.get_table_index("servers")
-			local server = idx and tabdata.lookup[idx]
-	
-			set_selected_server(tabdata)
-	
-			if server and server.address == gamedata.address and
-					server.port == gamedata.port then
-	
-				serverlistmgr.add_favorite(server)
-	
-				gamedata.servername        = server.name
-				gamedata.serverdescription = server.description
-	
-				if not is_server_protocol_compat_or_error(
-							server.proto_min, server.proto_max) then
-					return true
-				end
-			else
-				gamedata.servername        = ""
-				gamedata.serverdescription = ""
-	
-				serverlistmgr.add_favorite({
-					address = gamedata.address,
-					port = gamedata.port,
-				})
+		if server and server.address == gamedata.address and
+				server.port == gamedata.port then
+
+			serverlistmgr.add_favorite(server)
+
+			gamedata.servername        = server.name
+			gamedata.serverdescription = server.description
+
+			if not is_server_protocol_compat_or_error(
+						server.proto_min, server.proto_max) then
+				return true
 			end
-	
-			core.settings:set("address",     gamedata.address)
-			core.settings:set("remote_port", gamedata.port)
-	
-			core.start()
-			return true
+		else
+			gamedata.servername        = ""
+			gamedata.serverdescription = ""
+
+			serverlistmgr.add_favorite({
+				address = gamedata.address,
+				port = gamedata.port,
+			})
 		end
 
-		tabdata.sxpaddressinfo = "Invalid password"
+		core.settings:set("address",     gamedata.address)
+		core.settings:set("remote_port", gamedata.port)
+
+		core.start()
 		return true
 	end
 

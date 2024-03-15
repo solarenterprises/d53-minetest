@@ -28,7 +28,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "client/renderingengine.h"
 #include "debug.h"
 #include "log.h"
-#include "client/tile.h"
+#include "client/texturesource.h"
 #include "gettime.h"
 #include "util/string.h"
 #include "util/numeric.h"
@@ -210,7 +210,7 @@ void GUITable::setTable(const TableOptions &options,
 	s32 colcount = columns.size();
 	assert(colcount >= 1);
 	// rowcount = ceil(cellcount / colcount) but use integer arithmetic
-	s32 rowcount = (content.size() + colcount - 1) / colcount;
+	s32 rowcount = std::min(((u32)content.size() + colcount - 1) / colcount, (u32)S32_MAX);
 	assert(rowcount >= 0);
 	// Append empty strings to content if there is an incomplete row
 	s32 cellcount = rowcount * colcount;

@@ -32,7 +32,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "client/gameui.h"
 #include "client/renderingengine.h"
 #include "client/sound.h"
-#include "client/tile.h"
+#include "client/texturepaths.h"
 #include "client/mesh_generator_thread.h"
 #include "client/particles.h"
 #include "client/localplayer.h"
@@ -82,7 +82,7 @@ u32 PacketCounter::sum() const
 
 void PacketCounter::print(std::ostream& o) const
 {
-	for (const auto& it : m_packets) {
+	for (const auto &it : m_packets) {
 		auto name = it.first >= TOCLIENT_NUM_MSG_TYPES ? nullptr
 			: toClientCommandTable[it.first].name;
 		if (!name)
@@ -97,19 +97,19 @@ void PacketCounter::print(std::ostream& o) const
 */
 
 Client::Client(
-	const char* playername,
-	const std::string& password,
-	MapDrawControl& control,
-	IWritableTextureSource* tsrc,
-	IWritableShaderSource* shsrc,
-	IWritableItemDefManager* itemdef,
-	NodeDefManager* nodedef,
-	ISoundManager* sound,
-	MtEventManager* event,
-	RenderingEngine* rendering_engine,
-	GameUI* game_ui,
-	ELoginRegister allow_login_or_register
-) :
+		const char *playername,
+		const std::string &password,
+		MapDrawControl &control,
+		IWritableTextureSource *tsrc,
+		IWritableShaderSource *shsrc,
+		IWritableItemDefManager *itemdef,
+		NodeDefManager *nodedef,
+		ISoundManager *sound,
+		MtEventManager *event,
+		RenderingEngine *rendering_engine,
+		GameUI *game_ui,
+		ELoginRegister allow_login_or_register
+):
 	m_tsrc(tsrc),
 	m_shsrc(shsrc),
 	m_itemdef(itemdef),
@@ -138,7 +138,7 @@ Client::Client(
 
 	// Make the mod storage database and begin the save for later
 	m_mod_storage_database =
-		new ModStorageDatabaseSQLite3(porting::path_user + DIR_DELIM + "client");
+			new ModStorageDatabaseSQLite3(porting::path_user + DIR_DELIM + "client");
 	m_mod_storage_database->beginSave();
 
 	if (g_settings->getBool("enable_minimap")) {
@@ -375,12 +375,12 @@ Client::~Client()
 	delete m_mod_storage_database;
 
 	// Free sound ids
-	for (auto& csp : m_sounds_client_to_server)
+	for (auto &csp : m_sounds_client_to_server)
 		m_sound->freeId(csp.first);
 	m_sounds_client_to_server.clear();
 }
 
-void Client::connect(const Address& address, const std::string& address_name,
+void Client::connect(const Address &address, const std::string &address_name,
 	bool is_local_server)
 {
 	if (m_con) {
@@ -447,8 +447,8 @@ void Client::step(float dtime)
 	if (initial_step) {
 		initial_step = false;
 	}
-	else if (m_state == LC_Created) {
-		float& counter = m_connection_reinit_timer;
+	else if(m_state == LC_Created) {
+		float &counter = m_connection_reinit_timer;
 		counter -= dtime;
 		if (counter <= 0.0) {
 			counter = 2.0;
@@ -588,9 +588,9 @@ void Client::step(float dtime)
 			std::vector<MinimapMapblock*> minimap_mapblocks;
 			bool do_mapper_update = true;
 
-			MapSector* sector = m_env.getMap().emergeSector(v2s16(r.p.X, r.p.Z));
+			MapSector *sector = m_env.getMap().emergeSector(v2s16(r.p.X, r.p.Z));
 
-			MapBlock* block = sector->getBlockNoCreateNoEx(r.p.Y);
+			MapBlock *block = sector->getBlockNoCreateNoEx(r.p.Y);
 
 			// The block in question is not visible (perhaps it is culled at the server),
 			// create a blank block just to hold the chunk's mesh.
@@ -638,12 +638,12 @@ void Client::step(float dtime)
 
 				// See also mapblock_mesh.cpp for the code that creates the array of minimap blocks.
 				for (ofs.Z = 0; ofs.Z < m_mesh_grid.cell_size; ofs.Z++)
-					for (ofs.Y = 0; ofs.Y < m_mesh_grid.cell_size; ofs.Y++)
-						for (ofs.X = 0; ofs.X < m_mesh_grid.cell_size; ofs.X++) {
-							size_t i = m_mesh_grid.getOffsetIndex(ofs);
-							if (i < minimap_mapblocks.size() && minimap_mapblocks[i])
-								m_minimap->addBlock(r.p + ofs, minimap_mapblocks[i]);
-						}
+				for (ofs.Y = 0; ofs.Y < m_mesh_grid.cell_size; ofs.Y++)
+				for (ofs.X = 0; ofs.X < m_mesh_grid.cell_size; ofs.X++) {
+					size_t i = m_mesh_grid.getOffsetIndex(ofs);
+					if (i < minimap_mapblocks.size() && minimap_mapblocks[i])
+						m_minimap->addBlock(r.p + ofs, minimap_mapblocks[i]);
+				}
 			}
 
 			for (auto p : r.ack_list) {
@@ -733,14 +733,14 @@ void Client::step(float dtime)
 		Update positions of sounds attached to objects
 	*/
 	{
-		for (auto& m_sounds_to_object : m_sounds_to_objects) {
+		for (auto &m_sounds_to_object : m_sounds_to_objects) {
 			sound_handle_t client_id = m_sounds_to_object.first;
 			u16 object_id = m_sounds_to_object.second;
 			ClientActiveObject* cao = m_env.getActiveObject(object_id);
 			if (!cao)
 				continue;
-			m_sound->updateSoundPosVel(client_id, cao->getPosition() * (1.0f / BS),
-				cao->getVelocity() * (1.0f / BS));
+			m_sound->updateSoundPosVel(client_id, cao->getPosition() * (1.0f/BS),
+					cao->getVelocity() * (1.0f/BS));
 		}
 	}
 
@@ -834,7 +834,7 @@ bool Client::loadMedia(const std::string& data, const std::string& filename,
 	name = removeStringEnd(filename, sound_ext);
 	if (!name.empty()) {
 		TRACESTREAM(<< "Client: Attempting to load sound file \""
-			<< filename << "\"" << std::endl);
+				<< filename << "\"" << std::endl);
 		if (!m_sound->loadSoundData(filename, std::string(data)))
 			return false;
 		// "name[.num].ogg" is in group "name"
@@ -842,7 +842,7 @@ bool Client::loadMedia(const std::string& data, const std::string& filename,
 		return true;
 	}
 
-	const char* model_ext[] = {
+	const char *model_ext[] = {
 		".x", ".b3d", ".obj",
 		NULL
 	};
@@ -882,7 +882,7 @@ void Client::peerAdded(con::Peer* peer)
 		<< peer->id << std::endl;
 }
 
-void Client::deletingPeer(con::Peer* peer, bool timeout)
+void Client::deletingPeer(con::Peer *peer, bool timeout)
 {
 	infostream << "Client::deletingPeer(): "
 		"Server Peer is getting deleted "
@@ -967,7 +967,7 @@ void Client::ReceiveAll()
 	const u64 budget = 10;
 
 	FATAL_ERROR_IF(!m_con, "Networking not initialized");
-	for (;;) {
+	for(;;) {
 		// Limit time even if there would be huge amounts of data to
 		// process
 		if (porting::getTimeMs() > start_ms + budget) {
@@ -1001,7 +1001,7 @@ inline void Client::handleCommand(NetworkPacket* pkt)
 */
 void Client::ProcessData(NetworkPacket* pkt)
 {
-	ToClientCommand command = (ToClientCommand)pkt->getCommand();
+	ToClientCommand command = (ToClientCommand) pkt->getCommand();
 
 	m_packetcounter.add(static_cast<u16>(command));
 	g_profiler->graphAdd("client_received_packets", 1);
@@ -1036,8 +1036,8 @@ void Client::ProcessData(NetworkPacket* pkt)
 
 	if (m_server_ser_ver == SER_FMT_VER_INVALID) {
 		infostream << "Client: Server serialization"
-			" format invalid. Skipping incoming command "
-			<< static_cast<unsigned>(command) << std::endl;
+				" format invalid. Skipping incoming command "
+				<< static_cast<unsigned>(command) << std::endl;
 		return;
 	}
 
@@ -1046,13 +1046,13 @@ void Client::ProcessData(NetworkPacket* pkt)
 
 void Client::Send(NetworkPacket* pkt)
 {
-	auto& scf = serverCommandFactoryTable[pkt->getCommand()];
+	auto &scf = serverCommandFactoryTable[pkt->getCommand()];
 	FATAL_ERROR_IF(!scf.name, "packet type missing in table");
 	m_con->Send(PEER_ID_SERVER, scf.channel, pkt, scf.reliable);
 }
 
 // Will fill up 12 + 12 + 4 + 4 + 4 + 1 + 1 + 1 bytes
-void writePlayerPos(LocalPlayer* myplayer, ClientMap* clientMap, NetworkPacket* pkt, bool camera_inverted)
+void writePlayerPos(LocalPlayer *myplayer, ClientMap *clientMap, NetworkPacket *pkt, bool camera_inverted)
 {
 	v3f pf = myplayer->getPosition() * 100;
 	v3f sf = myplayer->getSpeed() * 100;
@@ -1060,9 +1060,9 @@ void writePlayerPos(LocalPlayer* myplayer, ClientMap* clientMap, NetworkPacket* 
 	s32 yaw = myplayer->getYaw() * 100;
 	u32 keyPressed = myplayer->control.getKeysPressed();
 	// scaled by 80, so that pi can fit into a u8
-	u8 fov = std::fmin(255.0f, clientMap->getCameraFov() * 80.0f);
-	u8 wanted_range = std::fmin(255.0f,
-		std::ceil(clientMap->getWantedRange() * (1.0f / MAP_BLOCKSIZE)));
+	u8 fov           = std::fmin(255.0f, clientMap->getCameraFov() * 80.0f);
+	u8 wanted_range  = std::fmin(255.0f,
+			std::ceil(clientMap->getWantedRange() * (1.0f / MAP_BLOCKSIZE)));
 
 	v3s32 position(pf.X, pf.Y, pf.Z);
 	v3s32 speed(sf.X, sf.Y, sf.Z);
@@ -1175,12 +1175,12 @@ void Client::startAuth(AuthMechanism chosen_auth_mechanism)
 	std::string playername = m_env.getLocalPlayer()->getName();
 
 	switch (chosen_auth_mechanism) {
-	case AUTH_MECHANISM_FIRST_SRP: {
-		// send srp verifier to server
-		std::string verifier;
-		std::string salt;
-		generate_srp_verifier_and_salt(playername, m_password,
-			&verifier, &salt);
+		case AUTH_MECHANISM_FIRST_SRP: {
+			// send srp verifier to server
+			std::string verifier;
+			std::string salt;
+			generate_srp_verifier_and_salt(playername, m_password,
+				&verifier, &salt);
 
 		NetworkPacket resp_pkt(TOSERVER_FIRST_SRP, 0);
 		resp_pkt << salt << verifier << (u8)((m_password.empty()) ? 1 : 0);
@@ -1197,25 +1197,30 @@ void Client::startAuth(AuthMechanism chosen_auth_mechanism)
 			based_on = 0;
 		}
 
-		std::string playername_u = lowercase(playername);
-		m_auth_data = srp_user_new(SRP_SHA256, SRP_NG_2048,
-			playername.c_str(), playername_u.c_str(),
-			(const unsigned char*)m_password.c_str(),
-			m_password.length(), NULL, NULL);
-		char* bytes_A = 0;
-		size_t len_A = 0;
-		SRP_Result res = srp_user_start_authentication(
-			(struct SRPUser*)m_auth_data, NULL, NULL, 0,
-			(unsigned char**)&bytes_A, &len_A);
-		FATAL_ERROR_IF(res != SRP_OK, "Creating local SRP user failed.");
+			if (chosen_auth_mechanism == AUTH_MECHANISM_LEGACY_PASSWORD) {
+				m_password = translate_password(playername, m_password);
+				based_on = 0;
+			}
 
-		NetworkPacket resp_pkt(TOSERVER_SRP_BYTES_A, 0);
-		resp_pkt << std::string(bytes_A, len_A) << based_on;
-		Send(&resp_pkt);
-		break;
-	}
-	case AUTH_MECHANISM_NONE:
-		break; // not handled in this method
+			std::string playername_u = lowercase(playername);
+			m_auth_data = srp_user_new(SRP_SHA256, SRP_NG_2048,
+				playername.c_str(), playername_u.c_str(),
+				(const unsigned char *) m_password.c_str(),
+				m_password.length(), NULL, NULL);
+			char *bytes_A = 0;
+			size_t len_A = 0;
+			SRP_Result res = srp_user_start_authentication(
+				(struct SRPUser *) m_auth_data, NULL, NULL, 0,
+				(unsigned char **) &bytes_A, &len_A);
+			FATAL_ERROR_IF(res != SRP_OK, "Creating local SRP user failed.");
+
+			NetworkPacket resp_pkt(TOSERVER_SRP_BYTES_A, 0);
+			resp_pkt << std::string(bytes_A, len_A) << based_on;
+			Send(&resp_pkt);
+			break;
+		}
+		case AUTH_MECHANISM_NONE:
+			break; // not handled in this method
 	}
 }
 
@@ -1242,7 +1247,7 @@ void Client::sendGotBlocks(const std::vector<v3s16>& blocks)
 	Send(&pkt);
 }
 
-void Client::sendRemovedSounds(const std::vector<s32>& soundList)
+void Client::sendRemovedSounds(const std::vector<s32> &soundList)
 {
 	size_t server_ids = soundList.size();
 	assert(server_ids <= 0xFFFF);
@@ -1345,8 +1350,7 @@ void Client::sendChatMessage(const std::wstring& message)
 		NetworkPacket pkt(TOSERVER_CHAT_MESSAGE, 2 + message.size() * sizeof(u16));
 		pkt << message;
 		Send(&pkt);
-	}
-	else if (m_out_chat_queue.size() < (u16)max_queue_size || max_queue_size < 0) {
+	} else if (m_out_chat_queue.size() < (u16) max_queue_size || max_queue_size < 0) {
 		m_out_chat_queue.push(message);
 	}
 	else {
@@ -1412,33 +1416,33 @@ void Client::sendPlayerPos()
 	if (m_activeobjects_received && player->isDead())
 		return;
 
-	ClientMap& map = m_env.getClientMap();
-	u8 camera_fov = std::fmin(255.0f, map.getCameraFov() * 80.0f);
+	ClientMap &map = m_env.getClientMap();
+	u8 camera_fov   = std::fmin(255.0f, map.getCameraFov() * 80.0f);
 	u8 wanted_range = std::fmin(255.0f,
-		std::ceil(map.getWantedRange() * (1.0f / MAP_BLOCKSIZE)));
+			std::ceil(map.getWantedRange() * (1.0f / MAP_BLOCKSIZE)));
 
 	u32 keyPressed = player->control.getKeysPressed();
 	bool camera_inverted = m_camera->getCameraMode() == CAMERA_MODE_THIRD_FRONT;
 
 	if (
-		player->last_position == player->getPosition() &&
-		player->last_speed == player->getSpeed() &&
-		player->last_pitch == player->getPitch() &&
-		player->last_yaw == player->getYaw() &&
-		player->last_keyPressed == keyPressed &&
-		player->last_camera_fov == camera_fov &&
-		player->last_camera_inverted == camera_inverted &&
-		player->last_wanted_range == wanted_range)
+			player->last_position        == player->getPosition() &&
+			player->last_speed           == player->getSpeed()    &&
+			player->last_pitch           == player->getPitch()    &&
+			player->last_yaw             == player->getYaw()      &&
+			player->last_keyPressed      == keyPressed            &&
+			player->last_camera_fov      == camera_fov            &&
+			player->last_camera_inverted == camera_inverted       &&
+			player->last_wanted_range    == wanted_range)
 		return;
 
-	player->last_position = player->getPosition();
-	player->last_speed = player->getSpeed();
-	player->last_pitch = player->getPitch();
-	player->last_yaw = player->getYaw();
-	player->last_keyPressed = keyPressed;
-	player->last_camera_fov = camera_fov;
+	player->last_position        = player->getPosition();
+	player->last_speed           = player->getSpeed();
+	player->last_pitch           = player->getPitch();
+	player->last_yaw             = player->getYaw();
+	player->last_keyPressed      = keyPressed;
+	player->last_camera_fov      = camera_fov;
 	player->last_camera_inverted = camera_inverted;
-	player->last_wanted_range = wanted_range;
+	player->last_wanted_range    = wanted_range;
 
 	NetworkPacket pkt(TOSERVER_PLAYERPOS, 12 + 12 + 4 + 4 + 4 + 1 + 1 + 1);
 
@@ -1462,7 +1466,7 @@ void Client::sendHaveMedia(const std::vector<u32>& tokens)
 
 void Client::sendUpdateClientInfo(const ClientDynamicInfo& info)
 {
-	NetworkPacket pkt(TOSERVER_UPDATE_CLIENT_INFO, 4 * 2 + 4 + 4 + 4 * 2);
+	NetworkPacket pkt(TOSERVER_UPDATE_CLIENT_INFO, 4*2 + 4 + 4 + 4*2);
 	pkt << (u32)info.render_target_size.X << (u32)info.render_target_size.Y;
 	pkt << info.real_gui_scaling;
 	pkt << info.real_hud_scaling;
@@ -1783,7 +1787,7 @@ void Client::updateCameraOffset(v3s16 camera_offset)
 	m_mesh_update_manager->m_camera_offset = camera_offset;
 }
 
-ClientEvent* Client::getClientEvent()
+ClientEvent *Client::getClientEvent()
 {
 	FATAL_ERROR_IF(m_client_event_queue.empty(),
 		"Cannot getClientEvent, queue is empty.");
@@ -1811,31 +1815,31 @@ struct TextureUpdateArgs {
 	u64 last_time_ms;
 	u16 last_percent;
 	std::wstring text_base;
-	ITextureSource* tsrc;
+	ITextureSource *tsrc;
 };
 
 void Client::showUpdateProgressTexture(void* args, u32 progress, u32 max_progress)
 {
-	TextureUpdateArgs* targs = (TextureUpdateArgs*)args;
-	u16 cur_percent = ceil(progress / (double)max_progress * 100.);
+		TextureUpdateArgs* targs = (TextureUpdateArgs*) args;
+		u16 cur_percent = std::ceil(progress / max_progress * 100.f);
 
-	// update the loading menu -- if necessary
-	bool do_draw = false;
-	u64 time_ms = targs->last_time_ms;
-	if (cur_percent != targs->last_percent) {
-		targs->last_percent = cur_percent;
-		time_ms = porting::getTimeMs();
-		// only draw when the user will notice something:
-		do_draw = (time_ms - targs->last_time_ms > 100);
-	}
+		// update the loading menu -- if necessary
+		bool do_draw = false;
+		u64 time_ms = targs->last_time_ms;
+		if (cur_percent != targs->last_percent) {
+			targs->last_percent = cur_percent;
+			time_ms = porting::getTimeMs();
+			// only draw when the user will notice something:
+			do_draw = (time_ms - targs->last_time_ms > 100);
+		}
 
-	if (do_draw) {
-		targs->last_time_ms = time_ms;
-		std::wostringstream strm;
-		strm << targs->text_base << L" " << targs->last_percent << L"%...";
-		m_rendering_engine->draw_load_screen(strm.str(), targs->guienv, targs->tsrc, 0,
-			72 + (u16)((18. / 100.) * (double)targs->last_percent));
-	}
+		if (do_draw) {
+			targs->last_time_ms = time_ms;
+			std::wostringstream strm;
+			strm << targs->text_base << L" " << targs->last_percent << L"%...";
+			m_rendering_engine->draw_load_screen(strm.str(), targs->guienv, targs->tsrc, 0,
+				72 + (u16) ((18. / 100.) * (double) targs->last_percent));
+		}
 }
 
 void Client::afterContentReceived()
@@ -1851,21 +1855,21 @@ void Client::afterContentReceived()
 	guiScalingCacheClear();
 
 	// Rebuild inherited images and recreate textures
-	infostream << "- Rebuilding images and textures" << std::endl;
+	infostream<<"- Rebuilding images and textures"<<std::endl;
 	m_rendering_engine->draw_load_screen(wstrgettext("Loading textures..."),
-		guienv, m_tsrc, 0, 70);
+			guienv, m_tsrc, 0, 70);
 	m_tsrc->rebuildImagesAndTextures();
 
 	// Rebuild shaders
-	infostream << "- Rebuilding shaders" << std::endl;
+	infostream<<"- Rebuilding shaders"<<std::endl;
 	m_rendering_engine->draw_load_screen(wstrgettext("Rebuilding shaders..."),
-		guienv, m_tsrc, 0, 71);
+			guienv, m_tsrc, 0, 71);
 	m_shsrc->rebuildShaders();
 
 	// Update node aliases
-	infostream << "- Updating node aliases" << std::endl;
+	infostream<<"- Updating node aliases"<<std::endl;
 	m_rendering_engine->draw_load_screen(wstrgettext("Initializing nodes..."),
-		guienv, m_tsrc, 0, 72);
+			guienv, m_tsrc, 0, 72);
 	m_nodedef->updateAliases(m_itemdef);
 	for (const auto& path : getTextureDirs()) {
 		TextureOverrideSource override_source(path + DIR_DELIM + "override.txt");
@@ -1886,7 +1890,7 @@ void Client::afterContentReceived()
 	m_nodedef->updateTextures(this, &tu_args);
 
 	// Start mesh update thread after setting up content definitions
-	infostream << "- Starting mesh update thread" << std::endl;
+	infostream<<"- Starting mesh update thread"<<std::endl;
 	m_mesh_update_manager->start();
 
 	m_state = LC_Ready;
@@ -1896,13 +1900,13 @@ void Client::afterContentReceived()
 		m_script->on_client_ready(m_env.getLocalPlayer());
 
 	m_rendering_engine->draw_load_screen(wstrgettext("Done!"), guienv, m_tsrc, 0, 100);
-	infostream << "Client::afterContentReceived() done" << std::endl;
+	infostream<<"Client::afterContentReceived() done"<<std::endl;
 }
 
 float Client::getRTT()
 {
 	assert(m_con);
-	return m_con->getPeerStat(PEER_ID_SERVER, con::AVG_RTT);
+	return m_con->getPeerStat(PEER_ID_SERVER,con::AVG_RTT);
 }
 
 float Client::getCurRate()
@@ -1984,19 +1988,9 @@ void Client::makeScreenshot()
 	raw_image->drop();
 }
 
-bool Client::shouldShowMinimap() const
-{
-	return !m_minimap_disabled_by_server;
-}
-
-void Client::pushToEventQueue(ClientEvent* event)
+void Client::pushToEventQueue(ClientEvent *event)
 {
 	m_client_event_queue.push(event);
-}
-
-void Client::showMinimap(const bool show)
-{
-	m_game_ui->showMinimap(show);
 }
 
 // IGameDef interface
@@ -2142,7 +2136,7 @@ ModChannel* Client::getModChannel(const std::string& channel)
 	return m_modchannel_mgr->getModChannel(channel);
 }
 
-const std::string& Client::getFormspecPrepend() const
+const std::string &Client::getFormspecPrepend() const
 {
 	return m_env.getLocalPlayer()->formspec_prepend;
 }

@@ -644,7 +644,7 @@ std::string ModApiMainMenu::getTextData(lua_State* L, const std::string& name)
 
 
 /******************************************************************************/
-int ModApiMainMenu::getIntegerData(lua_State* L, const std::string& name, bool& valid)
+int ModApiMainMenu::getIntegerData(lua_State *L, const std::string &name, bool& valid)
 {
 	lua_getglobal(L, "gamedata");
 
@@ -660,7 +660,7 @@ int ModApiMainMenu::getIntegerData(lua_State* L, const std::string& name, bool& 
 }
 
 /******************************************************************************/
-int ModApiMainMenu::getBoolData(lua_State* L, const std::string& name, bool& valid)
+int ModApiMainMenu::getBoolData(lua_State *L, const std::string &name, bool& valid)
 {
 	lua_getglobal(L, "gamedata");
 
@@ -754,11 +754,18 @@ int ModApiMainMenu::l_start(lua_State *L)
 	data->selected_world = getIntegerData(L, "selected_world",valid) -1;
 	data->do_reconnect = getBoolData(L, "do_reconnect", valid);
 	if (!data->do_reconnect) {
-		data->name     	= playername;
-		data->alias     = getTextData(L,"aliasname");
-		data->password  = userpass;
-		data->address   = getTextData(L,"address");
-		data->port      = getTextData(L,"port");
+		data->name     = getTextData(L,"playername");
+		data->password = userpass;
+		data->address  = getTextData(L,"address");
+		data->port     = getTextData(L,"port");
+
+		const auto val = getTextData(L, "allow_login_or_register");
+		if (val == "login")
+			data->allow_login_or_register = ELoginRegister::Login;
+		else if (val == "register")
+			data->allow_login_or_register = ELoginRegister::Register;
+		else
+			data->allow_login_or_register = ELoginRegister::Any;
 	}
 	data->serverdescription = getTextData(L,"serverdescription");
 	data->servername        = getTextData(L,"servername");
@@ -1159,6 +1166,9 @@ int ModApiMainMenu::l_get_content_info(lua_State *L)
 	lua_pushstring(L, spec.name.c_str());
 	lua_setfield(L, -2, "name");
 
+	lua_pushstring(L, spec.title.c_str());
+	lua_setfield(L, -2, "title");
+
 	lua_pushstring(L, spec.type.c_str());
 	lua_setfield(L, -2, "type");
 
@@ -1169,7 +1179,6 @@ int ModApiMainMenu::l_get_content_info(lua_State *L)
 		lua_pushstring(L, spec.title.c_str());
 		lua_setfield(L, -2, "title");
 	}
-	
 	lua_pushinteger(L, spec.release);
 	lua_setfield(L, -2, "release");
 
@@ -1178,6 +1187,9 @@ int ModApiMainMenu::l_get_content_info(lua_State *L)
 
 	lua_pushstring(L, spec.path.c_str());
 	lua_setfield(L, -2, "path");
+
+	lua_pushstring(L, spec.textdomain.c_str());
+	lua_setfield(L, -2, "textdomain");
 
 	if (spec.type == "mod") {
 		ModSpec spec;
@@ -1207,7 +1219,7 @@ int ModApiMainMenu::l_get_content_info(lua_State *L)
 }
 
 /******************************************************************************/
-int ModApiMainMenu::l_check_mod_configuration(lua_State* L)
+int ModApiMainMenu::l_check_mod_configuration(lua_State *L)
 {
 	std::string worldpath = luaL_checkstring(L, 1);
 
@@ -1228,8 +1240,7 @@ int ModApiMainMenu::l_check_mod_configuration(lua_State* L)
 		// Ignore non-string keys
 		if (lua_type(L, -2) != LUA_TSTRING) {
 			throw LuaError(
-				"Unexpected non-string key in table passed to "
-				"core.check_mod_configuration");
+				"Unexpected non-string key in table passed to core.check_mod_configuration");
 		}
 
 		std::string modpath = luaL_checkstring(L, -1);
@@ -1237,7 +1248,7 @@ int ModApiMainMenu::l_check_mod_configuration(lua_State* L)
 		std::string virtual_path = lua_tostring(L, -1);
 
 		modSpecs.emplace_back();
-		ModSpec& spec = modSpecs.back();
+		ModSpec &spec = modSpecs.back();
 		spec.name = fs::GetFilenameFromPath(modpath.c_str());
 		spec.path = modpath;
 		spec.virtual_path = virtual_path;
@@ -1249,8 +1260,7 @@ int ModApiMainMenu::l_check_mod_configuration(lua_State* L)
 	modmgr.addMods(modSpecs);
 	try {
 		modmgr.checkConflictsAndDeps();
-	}
-	catch (const ModError& err) {
+	} catch (const ModError &err) {
 		errorstream << err.what() << std::endl;
 
 		lua_newtable(L);
@@ -1269,7 +1279,6 @@ int ModApiMainMenu::l_check_mod_configuration(lua_State* L)
 		return 1;
 	}
 
-
 	lua_newtable(L);
 
 	lua_pushboolean(L, modmgr.isConsistent());
@@ -1278,7 +1287,7 @@ int ModApiMainMenu::l_check_mod_configuration(lua_State* L)
 	lua_newtable(L);
 	int top = lua_gettop(L);
 	unsigned int index = 1;
-	for (const auto& spec : modmgr.getUnsatisfiedMods()) {
+	for (const auto &spec : modmgr.getUnsatisfiedMods()) {
 		lua_pushnumber(L, index);
 		push_mod_spec(L, spec, true);
 		lua_settable(L, top);
@@ -1290,30 +1299,47 @@ int ModApiMainMenu::l_check_mod_configuration(lua_State* L)
 	lua_newtable(L);
 	top = lua_gettop(L);
 	index = 1;
-	for (const auto& spec : modmgr.getMods()) {
+	for (const auto &spec : modmgr.getMods()) {
 		lua_pushnumber(L, index);
 		push_mod_spec(L, spec, false);
 		lua_settable(L, top);
 		index++;
 	}
 	lua_setfield(L, -2, "satisfied_mods");
-
 	return 1;
 }
 
-
 /******************************************************************************/
-int ModApiMainMenu::l_show_keys_menu(lua_State* L)
+int ModApiMainMenu::l_get_content_translation(lua_State *L)
 {
 	GUIEngine* engine = getGuiEngine(L);
 	sanity_check(engine != NULL);
 
-	GUIKeyChangeMenu* kmenu = new GUIKeyChangeMenu(
-		engine->m_rendering_engine->get_gui_env(),
-		engine->m_parent,
-		-1,
-		engine->m_menumanager,
-		engine->m_texture_source.get());
+	std::string path = luaL_checkstring(L, 1);
+	std::string domain = luaL_checkstring(L, 2);
+	std::string string = luaL_checkstring(L, 3);
+	std::string lang = gettext("LANG_CODE");
+	if (lang == "LANG_CODE")
+		lang = "";
+
+	auto *translations = engine->getContentTranslations(path, domain, lang);
+	string = wide_to_utf8(translate_string(utf8_to_wide(string), translations));
+	lua_pushstring(L, string.c_str());
+	return 1;
+}
+
+/******************************************************************************/
+int ModApiMainMenu::l_show_keys_menu(lua_State *L)
+{
+	GUIEngine *engine = getGuiEngine(L);
+	sanity_check(engine != NULL);
+
+	GUIKeyChangeMenu *kmenu = new GUIKeyChangeMenu(
+			engine->m_rendering_engine->get_gui_env(),
+			engine->m_parent,
+			-1,
+			engine->m_menumanager,
+			engine->m_texture_source.get());
 	kmenu->drop();
 	return 0;
 }
@@ -1321,8 +1347,8 @@ int ModApiMainMenu::l_show_keys_menu(lua_State* L)
 /******************************************************************************/
 int ModApiMainMenu::l_create_world(lua_State *L)
 {
-	const char* name = luaL_checkstring(L, 1);
-	const char* gameid = luaL_checkstring(L, 2);
+	const char *name   = luaL_checkstring(L, 1);
+	const char *gameid = luaL_checkstring(L, 2);
 
 	StringMap use_settings;
 	luaL_checktype(L, 3, LUA_TTABLE);
@@ -1339,9 +1365,9 @@ int ModApiMainMenu::l_create_world(lua_State *L)
 		+ sanitizeDirName(name, "world_");
 
 	std::vector<SubgameSpec> games = getAvailableGames();
-	auto game_it = std::find_if(games.begin(), games.end(), [gameid](const SubgameSpec& spec) {
+	auto game_it = std::find_if(games.begin(), games.end(), [gameid] (const SubgameSpec &spec) {
 		return spec.id == gameid;
-		});
+	});
 	if (game_it == games.end()) {
 		lua_pushstring(L, "Game ID not found");
 		return 1;
@@ -1350,7 +1376,7 @@ int ModApiMainMenu::l_create_world(lua_State *L)
 	// Set the settings for world creation
 	// this is a bad hack but the best we have right now..
 	StringMap backup;
-	for (auto& it : use_settings) {
+	for (auto &it : use_settings) {
 		if (g_settings->existsLocal(it.first))
 			backup[it.first] = g_settings->get(it.first);
 		g_settings->set(it.first, it.second);
@@ -1367,7 +1393,7 @@ int ModApiMainMenu::l_create_world(lua_State *L)
 	}
 
 	// Restore previous settings
-	for (auto& it : use_settings) {
+	for (auto &it : use_settings) {
 		auto it2 = backup.find(it.first);
 		if (it2 == backup.end())
 			g_settings->remove(it.first); // wasn't set before
@@ -1683,7 +1709,7 @@ int ModApiMainMenu::l_download_file(lua_State *L)
 		}
 	} else {
 		errorstream << "DOWNLOAD denied: " << absolute_destination
-				<< " isn't a allowed path" << std::endl;
+				<< " isn't an allowed path" << std::endl;
 	}
 	lua_pushboolean(L,false);
 	return 1;
@@ -1692,7 +1718,7 @@ int ModApiMainMenu::l_download_file(lua_State *L)
 /******************************************************************************/
 int ModApiMainMenu::l_get_video_drivers(lua_State *L)
 {
-	std::vector<irr::video::E_DRIVER_TYPE> drivers = RenderingEngine::getSupportedVideoDrivers();
+	auto drivers = RenderingEngine::getSupportedVideoDrivers();
 
 	lua_newtable(L);
 	for (u32 i = 0; i != drivers.size(); i++) {
@@ -1711,6 +1737,17 @@ int ModApiMainMenu::l_get_video_drivers(lua_State *L)
 }
 
 /******************************************************************************/
+int ModApiMainMenu::l_get_language(lua_State *L)
+{
+	std::string lang = gettext("LANG_CODE");
+	if (lang == "LANG_CODE")
+		lang = "";
+
+	lua_pushstring(L, lang.c_str());
+	return 1;
+}
+
+/******************************************************************************/
 int ModApiMainMenu::l_gettext(lua_State *L)
 {
 	const char *srctext = luaL_checkstring(L, 1);
@@ -1722,7 +1759,7 @@ int ModApiMainMenu::l_gettext(lua_State *L)
 
 
 /******************************************************************************/
-int ModApiMainMenu::l_get_window_info(lua_State* L)
+int ModApiMainMenu::l_get_window_info(lua_State *L)
 {
 	lua_newtable(L);
 	int top = lua_gettop(L);
@@ -1749,6 +1786,43 @@ int ModApiMainMenu::l_get_window_info(lua_State* L)
 	lua_pushboolean(L, info.touch_controls);
 	lua_settable(L, top);
 
+	return 1;
+}
+
+/******************************************************************************/
+int ModApiMainMenu::l_get_active_driver(lua_State *L)
+{
+	auto drivertype = RenderingEngine::get_video_driver()->getDriverType();
+	lua_pushstring(L, RenderingEngine::getVideoDriverInfo(drivertype).name.c_str());
+	return 1;
+}
+
+
+int ModApiMainMenu::l_get_active_renderer(lua_State *L)
+{
+#if IRRLICHT_VERSION_MT_REVISION >= 15
+	lua_pushstring(L, RenderingEngine::get_video_driver()->getName());
+#else
+	auto tmp = wide_to_utf8(RenderingEngine::get_video_driver()->getName());
+	lua_pushstring(L, tmp.c_str());
+#endif
+	return 1;
+}
+
+/******************************************************************************/
+int ModApiMainMenu::l_get_active_irrlicht_device(lua_State *L)
+{
+	const char *device_name = [] {
+		switch (RenderingEngine::get_raw_device()->getType()) {
+		case EIDT_WIN32: return "WIN32";
+		case EIDT_X11: return "X11";
+		case EIDT_OSX: return "OSX";
+		case EIDT_SDL: return "SDL";
+		case EIDT_ANDROID: return "ANDROID";
+		default: return "Unknown";
+		}
+	}();
+	lua_pushstring(L, device_name);
 	return 1;
 }
 
@@ -1839,6 +1913,19 @@ int ModApiMainMenu::l_open_dir(lua_State *L)
 }
 
 /******************************************************************************/
+int ModApiMainMenu::l_share_file(lua_State *L)
+{
+#ifdef __ANDROID__
+	std::string path = luaL_checkstring(L, 1);
+	porting::shareFileAndroid(path);
+	lua_pushboolean(L, true);
+#else
+	lua_pushboolean(L, false);
+#endif
+	return 1;
+}
+
+/******************************************************************************/
 int ModApiMainMenu::l_do_async_callback(lua_State *L)
 {
 	MainMenuScripting *script = getScriptApi<MainMenuScripting>(L);
@@ -1860,6 +1947,44 @@ int ModApiMainMenu::l_do_async_callback(lua_State *L)
 }
 
 /******************************************************************************/
+// this is intentionally a global and not part of MainMenuScripting or such
+namespace {
+	std::unordered_map<std::string, std::string> once_values;
+	std::mutex once_mutex;
+}
+
+int ModApiMainMenu::l_set_once(lua_State *L)
+{
+	std::string key = readParam<std::string>(L, 1);
+	if (lua_isnil(L, 2))
+		return 0;
+	std::string value = readParam<std::string>(L, 2);
+
+	{
+		MutexAutoLock lock(once_mutex);
+		once_values[key] = value;
+	}
+
+	return 0;
+}
+
+int ModApiMainMenu::l_get_once(lua_State *L)
+{
+	std::string key = readParam<std::string>(L, 1);
+
+	{
+		MutexAutoLock lock(once_mutex);
+		auto it = once_values.find(key);
+		if (it == once_values.end())
+			lua_pushnil(L);
+		else
+			lua_pushstring(L, it->second.c_str());
+	}
+
+	return 1;
+}
+
+/******************************************************************************/
 void ModApiMainMenu::Initialize(lua_State *L, int top)
 {
 	API_FCT(update_formspec);
@@ -1875,6 +2000,8 @@ void ModApiMainMenu::Initialize(lua_State *L, int top)
 	API_FCT(get_worlds);
 	API_FCT(get_games);
 	API_FCT(get_content_info);
+	API_FCT(check_mod_configuration);
+	API_FCT(get_content_translation);
 	API_FCT(start);
 	API_FCT(close);
 	API_FCT(show_keys_menu);
@@ -1902,16 +2029,21 @@ void ModApiMainMenu::Initialize(lua_State *L, int top)
 	API_FCT(get_mainmenu_path);
 	API_FCT(show_path_select_dialog);
 	API_FCT(download_file);
+	API_FCT(get_language);
 	API_FCT(gettext);
 	API_FCT(get_video_drivers);
 	API_FCT(get_window_info);
+	API_FCT(get_active_driver);
 	API_FCT(get_active_renderer);
 	API_FCT(get_active_irrlicht_device);
 	API_FCT(get_min_supp_proto);
 	API_FCT(get_max_supp_proto);
 	API_FCT(open_url);
 	API_FCT(open_dir);
+	API_FCT(share_file);
 	API_FCT(do_async_callback);
+	API_FCT(set_once);
+	API_FCT(get_once);
 }
 
 /******************************************************************************/
@@ -1938,5 +2070,6 @@ void ModApiMainMenu::InitializeAsync(lua_State *L, int top)
 	API_FCT(download_file);
 	API_FCT(get_min_supp_proto);
 	API_FCT(get_max_supp_proto);
+	API_FCT(get_language);
 	API_FCT(gettext);
 }

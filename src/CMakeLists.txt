@@ -1,6 +1,4 @@
-project(district53)
-
-set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+project(minetest)
 
 INCLUDE(CheckTypeSize)
 INCLUDE(CheckIncludeFiles)
@@ -111,9 +109,10 @@ if(BUILD_CLIENT AND ENABLE_SOUND)
 	endif()
 endif()
 
-option(ENABLE_TOUCH "Enable Touchscreen support" FALSE)
+option(ENABLE_TOUCH "Enable touchscreen by default" FALSE)
 if(ENABLE_TOUCH)
-	add_definitions(-DHAVE_TOUCHSCREENGUI)
+	message(STATUS "Touchscreen support enabled by default.")
+	add_definitions(-DENABLE_TOUCH)
 endif()
 
 if(BUILD_CLIENT)
@@ -134,7 +133,7 @@ if(ENABLE_CURSES)
 	endif()
 endif(ENABLE_CURSES)
 
-option(ENABLE_POSTGRESQL "Enable PostgreSQL backend" FALSE)
+option(ENABLE_POSTGRESQL "Enable PostgreSQL backend" TRUE)
 set(USE_POSTGRESQL FALSE)
 
 if(ENABLE_POSTGRESQL)
@@ -195,6 +194,7 @@ endif(ENABLE_REDIS)
 
 
 find_package(SQLite3 REQUIRED)
+
 
 OPTION(ENABLE_PROMETHEUS "Enable prometheus client support" FALSE)
 set(USE_PROMETHEUS FALSE)
@@ -512,23 +512,11 @@ include_directories(SYSTEM
 	${ZLIB_INCLUDE_DIR}
 	${ZSTD_INCLUDE_DIR}
 	${SQLITE3_INCLUDE_DIR}
-	# ${LUA_INCLUDE_DIR}
+	${LUA_INCLUDE_DIR}
 	${GMP_INCLUDE_DIR}
-	# ${JSON_INCLUDE_DIR}
+	${JSON_INCLUDE_DIR}
 	${LUA_BIT_INCLUDE_DIR}
 )
-include_directories(
-	${JSON_INCLUDE_DIR}
-	${LUA_INCLUDE_DIR}
-	${MYSQL_INCLUDE}
-)
-
-# include_directories(${MYSQL_INCLUDE})
-if (WIN32)
-	SET(MYSQL_LIB ${MYSQL_LIBDIR}/libmysql.lib)
-else()
-	SET(MYSQL_LIB ${MYSQL_LIBDIR}/libmysqlclient.a)
-endif()
 
 if(USE_GETTEXT)
 	include_directories(${GETTEXT_INCLUDE_DIR})
@@ -552,12 +540,6 @@ if(NOT CMAKE_CROSSCOMPILING)
 	set(EXECUTABLE_OUTPUT_PATH "${CMAKE_SOURCE_DIR}/bin")
 endif()
 
-# if (NOT WIN32)
-# 	find_package(OpenSSL REQUIRED)
-# endif()
-
-find_package(OpenSSL REQUIRED)
-
 if(BUILD_CLIENT)
 	if(ANDROID)
 		add_library(${PROJECT_NAME} SHARED ${client_SRCS})
@@ -565,55 +547,20 @@ if(BUILD_CLIENT)
 		add_executable(${PROJECT_NAME} ${client_SRCS} ${extra_windows_SRCS})
 	endif()
 	add_dependencies(${PROJECT_NAME} GenerateVersion)
-
-	if (WIN32)
-		target_link_libraries(
-			${PROJECT_NAME}
-			${ZLIB_LIBRARIES}
-			IrrlichtMt::IrrlichtMt
-			${ZSTD_LIBRARY}
-			${X11_LIBRARIES}
-			${SOUND_LIBRARIES}
-			${SQLITE3_LIBRARY}
-			# ${LUA_LIBRARY}
-			${GMP_LIBRARY}
-			lua
-			jsoncpp
-			# ${JSON_LIBRARY}
-			${LUA_BIT_LIBRARY}
-			${FREETYPE_LIBRARY}
-			${PLATFORM_LIBS}
-			${MYSQL_LIB}
-			ark_cpp_crypto
-			bip39
-			OpenSSL::SSL
-			OpenSSL::Crypto
-		)
-	else()
-		target_link_libraries(
-			${PROJECT_NAME}
-			${ZLIB_LIBRARIES}
-			IrrlichtMt::IrrlichtMt
-			${ZSTD_LIBRARY}
-			${X11_LIBRARIES}
-			${SOUND_LIBRARIES}
-			${SQLITE3_LIBRARY}
-			# ${LUA_LIBRARY}
-			lua
-			${GMP_LIBRARY}
-			jsoncpp
-			# ${JSON_LIBRARY}
-			${LUA_BIT_LIBRARY}
-			${FREETYPE_LIBRARY}
-			${PLATFORM_LIBS}
-			${MYSQL_LIB}
-			ark_cpp_crypto
-			bip39
-			OpenSSL::SSL
-			OpenSSL::Crypto
-		)
-	endif()
-
+	target_link_libraries(
+		${PROJECT_NAME}
+		${ZLIB_LIBRARIES}
+		IrrlichtMt::IrrlichtMt
+		${ZSTD_LIBRARY}
+		${SOUND_LIBRARIES}
+		${SQLITE3_LIBRARY}
+		${LUA_LIBRARY}
+		${GMP_LIBRARY}
+		${JSON_LIBRARY}
+		${LUA_BIT_LIBRARY}
+		${FREETYPE_LIBRARY}
+		${PLATFORM_LIBS}
+	)
 	if(NOT USE_LUAJIT)
 		set_target_properties(${PROJECT_NAME} PROPERTIES
 			# This is necessary for dynamic Lua modules
@@ -672,22 +619,17 @@ if(BUILD_SERVER)
 		IRRLICHT_INCLUDES IrrlichtMt::IrrlichtMt INTERFACE_INCLUDE_DIRECTORIES)
 	# Doesn't work without PRIVATE/PUBLIC/INTERFACE mode specified.
 	target_include_directories(${PROJECT_NAME}server PRIVATE ${IRRLICHT_INCLUDES})
-	
 	target_link_libraries(
 		${PROJECT_NAME}server
 		${ZLIB_LIBRARIES}
 		${ZSTD_LIBRARY}
 		${SQLITE3_LIBRARY}
-		jsoncpp
-		lua
-		# ${JSON_LIBRARY}
-		# ${LUA_LIBRARY}
+		${JSON_LIBRARY}
+		${LUA_LIBRARY}
 		${LUA_BIT_LIBRARY}
 		${GMP_LIBRARY}
 		${PLATFORM_LIBS}
-		${MYSQL_LIB}
 	)
-	
 	set_target_properties(${PROJECT_NAME}server PROPERTIES
 		COMPILE_DEFINITIONS "SERVER")
 	if(NOT USE_LUAJIT)
@@ -752,60 +694,60 @@ endif()
 
 include(CheckCSourceCompiles)
 
-# set(CMAKE_REQUIRED_INCLUDES ${LUA_INCLUDE_DIR})
-# if(USE_LUAJIT)
-# 	set(CMAKE_REQUIRED_LIBRARIES ${LUA_LIBRARY})
-# 	# LuaJIT provides exactly zero ways to determine how recent it is (the version
-# 	# is unchanged since 2017), however it happens that string buffers were added
-# 	# after the changes which we care about so that works as an indicator.
-# 	# (https://github.com/LuaJIT/LuaJIT/commit/4c6b669 March 2021)
-# 	unset(HAVE_RECENT_LJ CACHE)
-# 	check_symbol_exists(luaopen_string_buffer "lualib.h" HAVE_RECENT_LJ)
-# 	if(NOT HAVE_RECENT_LJ)
-# 		string(CONCAT explanation_msg
-# 			"You are using a relatively old version of LuaJIT. We recommend "
-# 			"running a recent version (from git) as older ones are known not "
-# 			"to build/work correctly in all cases.\n"
-# 			"THIS APPLIES ESPECIALLY ON macOS OR Linux/aarch64!")
-# 		message(WARNING ${explanation_msg})
-# 	endif()
-# elseif(NOT MSVC)
-# 	set(CMAKE_REQUIRED_LIBRARIES "")
-# 	unset(HAVE_ATCCALL CACHE)
-# 	# Note: we need to check the function without having the library
-# 	#       available for linking, so check_symbol_exists won't work.
-# 	# Incidentally this doesn't seem to work on MSVC...
-# 	check_c_source_compiles("#include <lua.h>\nint main(){return sizeof(lua_atccall);}" HAVE_ATCCALL)
-# 	if(NOT HAVE_ATCCALL)
-# 		string(CONCAT explanation_msg
-# 			"It looks like you're trying to build Minetest using a system-wide "
-# 			"Lua installation. This is no longer supported because PUC Lua "
-# 			"cannot interoperate with C++ correctly. Read src/unittest/test_lua.cpp "
-# 			" for technical details.")
-# 		message(FATAL_ERROR ${explanation_msg})
-# 	endif()
-# endif()	
+set(CMAKE_REQUIRED_INCLUDES ${LUA_INCLUDE_DIR})
+if(USE_LUAJIT)
+	set(CMAKE_REQUIRED_LIBRARIES ${LUA_LIBRARY})
+	# LuaJIT provides exactly zero ways to determine how recent it is (the version
+	# is unchanged since 2017), however it happens that string buffers were added
+	# after the changes which we care about so that works as an indicator.
+	# (https://github.com/LuaJIT/LuaJIT/commit/4c6b669 March 2021)
+	unset(HAVE_RECENT_LJ CACHE)
+	check_symbol_exists(luaopen_string_buffer "lualib.h" HAVE_RECENT_LJ)
+	if(NOT HAVE_RECENT_LJ)
+		string(CONCAT explanation_msg
+			"You are using a relatively old version of LuaJIT. We recommend "
+			"running a recent version (from git) as older ones are known not "
+			"to build/work correctly in all cases.\n"
+			"THIS APPLIES ESPECIALLY ON macOS OR Linux/aarch64!")
+		message(WARNING ${explanation_msg})
+	endif()
+elseif(NOT MSVC)
+	set(CMAKE_REQUIRED_LIBRARIES "")
+	unset(HAVE_ATCCALL CACHE)
+	# Note: we need to check the function without having the library
+	#       available for linking, so check_symbol_exists won't work.
+	# Incidentally this doesn't seem to work on MSVC...
+	check_c_source_compiles("#include <lua.h>\nint main(){return sizeof(lua_atccall);}" HAVE_ATCCALL)
+	if(NOT HAVE_ATCCALL)
+		string(CONCAT explanation_msg
+			"It looks like you're trying to build Minetest using a system-wide "
+			"Lua installation. This is no longer supported because PUC Lua "
+			"cannot interoperate with C++ correctly. Read src/unittest/test_lua.cpp "
+			" for technical details.")
+		message(FATAL_ERROR ${explanation_msg})
+	endif()
+endif()
 
 if(MSVC)
 	# Visual Studio
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /D _WIN32_WINNT=0x0601 /D WIN32_LEAN_AND_MEAN")
 	# EHa enables SEH exceptions (used for catching segfaults)
-	set(CMAKE_CXX_FLAGS_RELEASE "/EHa /Ox /MT /GS- /Zi /fp:fast /D NDEBUG /D _HAS_ITERATOR_DEBUGGING=0")
+	set(CMAKE_CXX_FLAGS_RELEASE "/EHa /Ox /MD /GS- /Zi /fp:fast /D NDEBUG /D _HAS_ITERATOR_DEBUGGING=0")
 	if(CMAKE_SIZEOF_VOID_P EQUAL 4)
 		set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /arch:SSE")
 	endif()
 
 	set(CMAKE_EXE_LINKER_FLAGS_RELEASE "/INCREMENTAL:NO /DEBUG /OPT:REF /OPT:ICF /SUBSYSTEM:WINDOWS /ENTRY:mainCRTStartup")
 
-	set(CMAKE_CXX_FLAGS_SEMIDEBUG "/MTd /Zi /Ob0 /O1 /RTC1")
+	set(CMAKE_CXX_FLAGS_SEMIDEBUG "/MDd /Zi /Ob0 /O1 /RTC1")
 
 	# Debug build doesn't catch exceptions by itself
 	# Add some optimizations because otherwise it's VERY slow
-	set(CMAKE_CXX_FLAGS_DEBUG "/MTd /Zi /Ob0 /Od /RTC1")
+	set(CMAKE_CXX_FLAGS_DEBUG "/MDd /Zi /Ob0 /Od /RTC1")
 
 	# Flags for C files (sqlite)
 	# /MD = dynamically link to MSVCRxxx.dll
-	set(CMAKE_C_FLAGS_RELEASE "/O2 /Ob2 /MT")
+	set(CMAKE_C_FLAGS_RELEASE "/O2 /Ob2 /MD")
 
 	# Flags that cannot be shared between cl and clang-cl
 	# https://clang.llvm.org/docs/UsersManual.html#clang-cl
@@ -822,7 +764,7 @@ if(MSVC)
 else()
 	# GCC or compatible compilers such as Clang
 	set(WARNING_FLAGS "-Wall -Wextra")
-	set(WARNING_FLAGS "${WARNING_FLAGS} -Wno-unused-parameter -Wno-implicit-fallthrough")
+	set(WARNING_FLAGS "${WARNING_FLAGS} -Wno-unused-parameter")
 	if(WARN_ALL)
 		set(RELEASE_WARNING_FLAGS "${WARNING_FLAGS}")
 	else()
@@ -932,9 +874,9 @@ if(WIN32)
 		if(LEVELDB_DLL)
 			install(FILES ${LEVELDB_DLL} DESTINATION ${BINDIR})
 		endif()
-		# if(LUA_DLL)
-		# 	install(FILES ${LUA_DLL} DESTINATION ${BINDIR})
-		# endif()
+		if(LUA_DLL)
+			install(FILES ${LUA_DLL} DESTINATION ${BINDIR})
+		endif()
 		if(BUILD_CLIENT AND USE_GETTEXT AND GETTEXT_DLL)
 			install(FILES ${GETTEXT_DLL} DESTINATION ${BINDIR})
 		endif()
@@ -1005,5 +947,3 @@ elseif (USE_GETTEXT)
 
 	add_custom_target(translations ALL COMMENT "mo update" DEPENDS ${MO_FILES})
 endif()
-
-set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")

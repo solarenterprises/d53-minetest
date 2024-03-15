@@ -240,20 +240,26 @@ void TestUtilities::testPadString()
 
 void TestUtilities::testStartsWith()
 {
-	UASSERT(str_starts_with(std::string(), std::string()) == true);
+	std::string the("the");
+	UASSERT(str_starts_with(std::string(), "") == true);
 	UASSERT(str_starts_with(std::string("the sharp pickaxe"),
 		std::string()) == true);
 	UASSERT(str_starts_with(std::string("the sharp pickaxe"),
-		std::string("the")) == true);
+		std::string_view(the)) == true);
 	UASSERT(str_starts_with(std::string("the sharp pickaxe"),
 		std::string("The")) == false);
 	UASSERT(str_starts_with(std::string("the sharp pickaxe"),
 		std::string("The"), true) == true);
-	UASSERT(str_starts_with(std::string("T"), std::string("The")) == false);
+	UASSERT(str_starts_with(std::string("T"), "The") == false);
 }
 
 void TestUtilities::testStrEqual()
 {
+	std::string foo("foo");
+	UASSERT(str_equal(foo, std::string_view(foo)));
+	UASSERT(!str_equal(foo, std::string("bar")));
+	UASSERT(str_equal(std::string_view(foo), std::string_view(foo)));
+	UASSERT(str_equal(std::wstring(L"FOO"), std::wstring(L"foo"), true));
 	UASSERT(str_equal(utf8_to_wide("abc"), utf8_to_wide("abc")));
 	UASSERT(str_equal(utf8_to_wide("ABC"), utf8_to_wide("abc"), true));
 }
@@ -629,14 +635,80 @@ void TestUtilities::testBase64()
 
 void TestUtilities::testSanitizeDirName()
 {
-	UASSERT(sanitizeDirName("a", "~") == "a");
-	UASSERT(sanitizeDirName("  ", "~") == "__");
-	UASSERT(sanitizeDirName(" a ", "~") == "_a_");
-	UASSERT(sanitizeDirName("COM1", "~") == "~COM1");
-	UASSERT(sanitizeDirName("COM1", ":") == "_COM1");
-	UASSERT(sanitizeDirName("cOm\u00B2", "~") == "~cOm\u00B2");
-	UASSERT(sanitizeDirName("cOnIn$", "~") == "~cOnIn$");
-	UASSERT(sanitizeDirName(" cOnIn$ ", "~") == "_cOnIn$_");
+	UASSERTEQ(auto, sanitizeDirName("a", "~"), "a");
+	UASSERTEQ(auto, sanitizeDirName("  ", "~"), "__");
+	UASSERTEQ(auto, sanitizeDirName(" a ", "~"), "_a_");
+	UASSERTEQ(auto, sanitizeDirName("COM1", "~"), "~COM1");
+	UASSERTEQ(auto, sanitizeDirName("COM1", ":"), "_COM1");
+	UASSERTEQ(auto, sanitizeDirName("cOm\u00B2", "~"), "~cOm\u00B2");
+	UASSERTEQ(auto, sanitizeDirName("cOnIn$", "~"), "~cOnIn$");
+	UASSERTEQ(auto, sanitizeDirName(" cOnIn$ ", "~"), "_cOnIn$_");
+}
+
+template <typename F, typename C>
+C apply_all(const C &co, F functor)
+{
+	C ret;
+	for (auto it = co.begin(); it != co.end(); it++)
+		ret.push_back(functor(*it));
+	return ret;
+}
+
+#define cast_v3(T, other) T((other).X, (other).Y, (other).Z)
+
+void TestUtilities::testIsBlockInSight()
+{
+	const std::vector<v3s16> testdata1 = {
+		{0, 1 * (int)BS, 0}, // camera_pos
+		{1, 0, 0},           // camera_dir
+
+		{ 2, 0, 0},
+		{-2, 0, 0},
+		{0, 0,  3},
+		{0, 0, -3},
+		{0, 0, 0},
+		{6, 0, 0}
+	};
+	auto test1 = [] (const std::vector<v3s16> &data) {
+		float range = BS * MAP_BLOCKSIZE * 4;
+		float fov = 72 * core::DEGTORAD;
+		v3f cam_pos = cast_v3(v3f, data[0]), cam_dir = cast_v3(v3f, data[1]);
+		UASSERT( isBlockInSight(data[2], cam_pos, cam_dir, fov, range));
+		UASSERT(!isBlockInSight(data[3], cam_pos, cam_dir, fov, range));
+		UASSERT(!isBlockInSight(data[4], cam_pos, cam_dir, fov, range));
+		UASSERT(!isBlockInSight(data[5], cam_pos, cam_dir, fov, range));
+
+		// camera block must be visible
+		UASSERT(isBlockInSight(data[6], cam_pos, cam_dir, fov, range));
+
+		// out of range is never visible
+		UASSERT(!isBlockInSight(data[7], cam_pos, cam_dir, fov, range));
+	};
+	// XZ rotations
+	for (int j = 0; j < 4; j++) {
+		auto tmpdata = apply_all(testdata1, [&] (v3s16 v) -> v3s16 {
+			v.rotateXZBy(j*90);
+			return v;
+		});
+		test1(tmpdata);
+	}
+	// just two for XY
+	for (int j = 0; j < 2; j++) {
+		auto tmpdata = apply_all(testdata1, [&] (v3s16 v) -> v3s16 {
+			v.rotateXYBy(90+j*180);
+			return v;
+		});
+		test1(tmpdata);
+	}
+
+	{
+		float range = BS * MAP_BLOCKSIZE * 2;
+		float fov = 72 * core::DEGTORAD;
+		v3f cam_pos(-(MAP_BLOCKSIZE - 1) * BS, 0, 0), cam_dir(1, 0, 0);
+		// we're looking at X+ but are so close to block (-1,0,0) that it
+		// should still be considered visible
+		UASSERT(isBlockInSight({-1, 0, 0}, cam_pos, cam_dir, fov, range));
+	}
 }
 
 template <typename F, typename C>

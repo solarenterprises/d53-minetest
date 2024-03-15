@@ -240,37 +240,6 @@ CGUITTFont* CGUITTFont::createTTFont(IGUIEnvironment *env, const io::path& filen
 	return font;
 }
 
-CGUITTFont* CGUITTFont::createTTFont(IrrlichtDevice *device, const io::path& filename, const u32 size, const bool antialias, const bool transparency)
-{
-	if (!c_libraryLoaded)
-	{
-		if (FT_Init_FreeType(&c_library))
-			return 0;
-		c_libraryLoaded = true;
-	}
-
-	CGUITTFont* font = new CGUITTFont(device->getGUIEnvironment());
-	font->Device = device;
-	bool ret = font->load(filename, size, antialias, transparency);
-	if (!ret)
-	{
-		font->drop();
-		return 0;
-	}
-
-	return font;
-}
-
-CGUITTFont* CGUITTFont::create(IGUIEnvironment *env, const io::path& filename, const u32 size, const bool antialias, const bool transparency)
-{
-	return CGUITTFont::createTTFont(env, filename, size, antialias, transparency);
-}
-
-CGUITTFont* CGUITTFont::create(IrrlichtDevice *device, const io::path& filename, const u32 size, const bool antialias, const bool transparency)
-{
-	return CGUITTFont::createTTFont(device, filename, size, antialias, transparency);
-}
-
 //////////////////////
 
 //! Constructor.
@@ -304,6 +273,7 @@ bool CGUITTFont::load(const io::path& filename, const u32 size, const bool antia
 
 	io::IFileSystem* filesystem = Environment->getFileSystem();
 	irr::ILogger* logger = (Device != 0 ? Device->getLogger() : 0);
+	// FIXME: this is always null ^
 	this->size = size;
 	this->filename = filename;
 
@@ -1076,6 +1046,7 @@ void CGUITTFont::createSharedPlane()
 	buf->append(vertices, 4, indices, 6);
 
 	shared_plane_.addMeshBuffer( buf );
+	shared_plane_.setHardwareMappingHint(EHM_STATIC);
 
 	shared_plane_ptr_ = &shared_plane_;
 	buf->drop(); //the addMeshBuffer method will grab it, so we can drop this ptr.

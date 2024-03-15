@@ -229,11 +229,11 @@ void Map::addNodeAndUpdate(v3s16 p, MapNode n,
 		std::vector<std::pair<v3s16, MapNode> > oldnodes;
 		oldnodes.emplace_back(p, oldnode);
 		voxalgo::update_lighting_nodes(this, oldnodes, modified_blocks);
-
-		for (auto &modified_block : modified_blocks) {
-			modified_block.second->expireDayNightDiff();
-		}
 	}
+
+	if (n.getContent() != oldnode.getContent() &&
+			(oldnode.getContent() == CONTENT_AIR || n.getContent() == CONTENT_AIR))
+		block->expireIsAirCache();
 
 	// Report for rollback
 	if(m_gamedef->rollback())
@@ -1463,14 +1463,14 @@ void ServerMap::finishBlockMake(BlockMakeData *data,
 		if (!block)
 			continue;
 		/*
-			Update day/night difference cache of the MapBlocks
+			Update is air cache of the MapBlocks
 		*/
-		block->expireDayNightDiff();
+		block->expireIsAirCache();
 		/*
 			Set block as modified
 		*/
 		block->raiseModified(MOD_STATE_WRITE_NEEDED,
-			MOD_REASON_EXPIRE_DAYNIGHTDIFF);
+			MOD_REASON_EXPIRE_IS_AIR);
 	}
 
 	/*
@@ -1507,12 +1507,11 @@ MapSector *ServerMap::createSector(v2s16 p2d)
 		Do not create over max mapgen limit
 	*/
 	if (blockpos_over_max_limit(v3s16(p2d.X, 0, p2d.Y)))
-		throw InvalidPositionException("createSector(): pos. over max mapgen limit");
+		throw InvalidPositionException("createSector(): pos over max mapgen limit");
 
 	/*
 		Generate blank sector
 	*/
-
 	sector = new MapSector(this, p2d, m_gamedef);
 
 	/*
@@ -1525,20 +1524,11 @@ MapSector *ServerMap::createSector(v2s16 p2d)
 
 MapBlock * ServerMap::createBlock(v3s16 p)
 {
-	/*
-		Do not create over max mapgen limit
-	*/
-	if (blockpos_over_max_limit(p))
-		throw InvalidPositionException("createBlock(): pos. over max mapgen limit");
-
 	v2s16 p2d(p.X, p.Z);
 	s16 block_y = p.Y;
+
 	/*
 		This will create or load a sector if not found in memory.
-		If block exists on disk, it will be loaded.
-
-		NOTE: On old save formats, this will be slow, as it generates
-		      lighting on blocks for them.
 	*/
 	MapSector *sector;
 	try {
@@ -1553,11 +1543,16 @@ MapBlock * ServerMap::createBlock(v3s16 p)
 	*/
 
 	MapBlock *block = sector->getBlockNoCreateNoEx(block_y);
-	if (block) {
+	if (block)
 		return block;
-	}
+
 	// Create blank
-	block = sector->createBlankBlock(block_y);
+	try {
+		block = sector->createBlankBlock(block_y);
+	} catch (InvalidPositionException &e) {
+		infostream << "createBlock: createBlankBlock() failed" << std::endl;
+		throw e;
+	}
 
 	return block;
 }
@@ -1577,10 +1572,10 @@ MapBlock * ServerMap::emergeBlock(v3s16 p, bool create_blank)
 	}
 
 	if (create_blank) {
-		MapSector *sector = createSector(v2s16(p.X, p.Z));
-		MapBlock *block = sector->createBlankBlock(p.Y);
-
-		return block;
+		try {
+			MapSector *sector = createSector(v2s16(p.X, p.Z));
+			return sector->createBlankBlock(p.Y);
+		} catch (InvalidPositionException &e) {}
 	}
 
 	return NULL;
@@ -1809,6 +1804,7 @@ bool ServerMap::saveBlock(MapBlock *block, MapDatabase *db, int compression_leve
 	o.write((char*) &version, 1);
 	block->serialize(o, version, true, compression_level);
 
+	// FIXME: zero copy possible in c++20 or with custom rdbuf
 	bool ret = db->saveBlock(p3d, o.str());
 	if (ret) {
 		// We just wrote it to the disk so clear modified flag
@@ -2006,9 +2002,7 @@ void MMVManip::initialEmerge(v3s16 blockpos_min, v3s16 blockpos_max,
 		u8 flags = 0;
 		MapBlock *block;
 		v3s16 p(x,y,z);
-		std::map<v3s16, u8>::iterator n;
-		n = m_loaded_blocks.find(p);
-		if(n != m_loaded_blocks.end())
+		if (m_loaded_blocks.count(p) > 0)
 			continue;
 
 		bool block_data_inexistent = false;
@@ -2026,10 +2020,7 @@ void MMVManip::initialEmerge(v3s16 blockpos_min, v3s16 blockpos_max,
 		{
 
 			if (load_if_inexistent && !blockpos_over_max_limit(p)) {
-				ServerMap *svrmap = (ServerMap *)m_map;
-				block = svrmap->emergeBlock(p, false);
-				if (block == NULL)
-					block = svrmap->createBlock(p);
+				block = m_map->emergeBlock(p, true);
 				block->copyTo(*this);
 			} else {
 				flags |= VMANIP_BLOCK_DATA_INEXIST;
@@ -2066,8 +2057,6 @@ void MMVManip::blitBackAll(std::map<v3s16, MapBlock*> *modified_blocks,
 		return;
 	assert(m_map);
 
-	assert(m_map);
-
 	/*
 		Copy data of all blocks
 	*/
@@ -2081,6 +2070,7 @@ void MMVManip::blitBackAll(std::map<v3s16, MapBlock*> *modified_blocks,
 
 		block->copyFrom(*this);
 		block->raiseModified(MOD_STATE_WRITE_NEEDED, MOD_REASON_VMANIP);
+		block->expireIsAirCache();
 
 		if(modified_blocks)
 			(*modified_blocks)[p] = block;

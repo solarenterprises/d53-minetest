@@ -213,3 +213,24 @@ void ServerScripting::InitializeAsync(lua_State *L, int top)
 	script_unpack(L, data);
 	lua_setfield(L, top, "transferred_globals");
 }
+
+void ServerScripting::InitializeAsync(lua_State *L, int top)
+{
+	// classes
+	ItemStackMetaRef::Register(L);
+	LuaAreaStore::Register(L);
+	LuaItemStack::Register(L);
+	LuaPerlinNoise::Register(L);
+	LuaPerlinNoiseMap::Register(L);
+	LuaPseudoRandom::Register(L);
+	LuaPcgRandom::Register(L);
+	LuaSecureRandom::Register(L);
+	LuaVoxelManip::Register(L);
+	LuaSettings::Register(L);
+
+	// globals data
+	auto *data = ModApiBase::getServer(L)->m_lua_globals_data.get();
+	assert(data);
+	script_unpack(L, data);
+	lua_setfield(L, top, "transferred_globals");
+}
