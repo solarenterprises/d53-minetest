@@ -135,6 +135,7 @@ describe("vector", function()
 		assert.equal(vector.new(3, 2, 3), vector.combine(a, b, math.max))
 		assert.equal(vector.new(1, 2, 1), vector.combine(a, b, math.min))
 	end)
+
 	it("equals()", function()
 		local function assertE(a, b)
 			assert.is_true(vector.equals(a, b))

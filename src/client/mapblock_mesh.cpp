@@ -788,7 +788,7 @@ MapBlockMesh::MapBlockMesh(Client *client, MeshMakeData *data, v3s16 camera_offs
 			scene::SMeshBuffer *buf = new scene::SMeshBuffer();
 			buf->Material = material;
 
-			if (!canMeshBufferBeCached(i) || p.layer.isTransparent()) {
+			if (!canMeshBufferBeCached(layer, i) || p.layer.isTransparent()) {
 				buf->append(&p.vertices[0], p.vertices.size(), nullptr, 0);
 
 				MeshTriangle t;
@@ -802,7 +802,7 @@ MapBlockMesh::MapBlockMesh(Client *client, MeshMakeData *data, v3s16 camera_offs
 					m_transparent_triangles.push_back(t);
 				}
 			} else {
-				auto offset = intToFloat(data->m_mesh_grid.getMeshPos(data->m_blockpos) * MAP_BLOCKSIZE, BS);
+				auto offset = intToFloat(mesh_grid.getMeshPos(data->m_blockpos) * MAP_BLOCKSIZE, BS);
 				auto size = p.vertices.size();
 				auto translatedVertices = new irr::video::S3DVertex[size];
 				for (size_t i = 0; i < size; i++) {
@@ -876,9 +876,9 @@ bool MapBlockMesh::isMeshBufferAnimated(u32 layer, u32 index) {
 	return cache_is_buffer_animated[layer][index];
 }
 
-bool MapBlockMesh::canMeshBufferBeCached(u32 index) {
+bool MapBlockMesh::canMeshBufferBeCached(u32 layer, u32 index) {
 	for (auto& crack_material : m_crack_materials) {
-		if (index == crack_material.first.second)
+		if (layer == crack_material.first.first && index == crack_material.first.second)
 			return false;
 	}
 

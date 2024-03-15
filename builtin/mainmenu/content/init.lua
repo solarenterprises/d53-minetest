@@ -18,5 +18,5 @@
 local path = core.get_mainmenu_path() .. DIR_DELIM .. "content"
 
 dofile(path .. DIR_DELIM .. "pkgmgr.lua")
-dofile(path .. DIR_DELIM .. "update_detector.lua")
-dofile(path .. DIR_DELIM .. "dlg_contentstore.lua")
+-- dofile(path .. DIR_DELIM .. "update_detector.lua")
+-- dofile(path .. DIR_DELIM .. "dlg_contentstore.lua")

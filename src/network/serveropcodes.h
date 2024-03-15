@@ -20,12 +20,11 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #pragma once
 
+#include "server.h"
 #include "networkprotocol.h"
 
 class NetworkPacket;
-class Server;
-
-typedef void (Server::* ServerFunctionPtr)(NetworkPacket* pkt);
+// Note: don't forward-declare Server here (#14324)
 
 enum ToServerConnectionState {
 	TOSERVER_STATE_NOT_CONNECTED,
@@ -33,15 +32,12 @@ enum ToServerConnectionState {
 	TOSERVER_STATE_INGAME,
 	TOSERVER_STATE_ALL,
 };
-
-template<typename T> struct TemplateToServerCommandHandler
+struct ToServerCommandHandler
 {
 	const char *name;
 	ToServerConnectionState state;
-	T handler;
+	void (Server::*handler)(NetworkPacket* pkt);
 };
-
-typedef TemplateToServerCommandHandler<ServerFunctionPtr> ToServerCommandHandler;
 
 struct ClientCommandFactory
 {

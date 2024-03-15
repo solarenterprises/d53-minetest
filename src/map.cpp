@@ -56,6 +56,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #if USE_POSTGRESQL
 #include "database/database-postgresql.h"
 #endif
+
 #include "database/database-mysql.h"
 
 
@@ -1751,6 +1752,7 @@ MapDatabase *ServerMap::createDatabase(
 		conf.getNoEx("mysql_connection", connect_string);
 		return new MapDatabaseMySQL(connect_string);
 	}
+
 	if (name == "sqlite3")
 		return new MapDatabaseSQLite3(savedir);
 	if (name == "dummy")

@@ -48,7 +48,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 		Many things
 	PROTOCOL_VERSION 9:
 		ContentFeatures and NodeDefManager use a different serialization
-			format; better for future version cross-compatibility
+		    format; better for future version cross-compatibility
 		Many things
 		Obsolete TOCLIENT_PLAYERITEM
 	PROTOCOL_VERSION 10:
@@ -161,14 +161,14 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 	PROTOCOL VERSION 34:
 		Add sound pitch
 	PROTOCOL VERSION 35:
-		Rename TOCLIENT_CHAT_MESSAGE to TOCLIENT_CHAT_MESSAGE_OLD (0x30)
-		Add TOCLIENT_CHAT_MESSAGE (0x2F)
-			This chat message is a signalisation message containing various
+ 		Rename TOCLIENT_CHAT_MESSAGE to TOCLIENT_CHAT_MESSAGE_OLD (0x30)
+ 		Add TOCLIENT_CHAT_MESSAGE (0x2F)
+ 			This chat message is a signalisation message containing various
 			informations:
-			* timestamp
-			* sender
-			* type (RAW, NORMAL, ANNOUNCE, SYSTEM)
-			* content
+ 			* timestamp
+ 			* sender
+ 			* type (RAW, NORMAL, ANNOUNCE, SYSTEM)
+ 			* content
 		Add TOCLIENT_CSM_RESTRICTION_FLAGS to define which CSM features should be
 			limited
 		Add settable player collisionbox. Breaks compatibility with older
@@ -222,6 +222,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 	PROTOCOL VERSION 44:
 		AO_CMD_SET_BONE_POSITION extended
 		Add TOCLIENT_MOVE_PLAYER_REL
+		Move default minimap from client-side C++ to server-side builtin Lua
 		[scheduled bump for 5.9.0]
 */
 
@@ -233,8 +234,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define SERVER_PROTOCOL_VERSION_MAX LATEST_PROTOCOL_VERSION
 
 // Client's supported network protocol range
-// The minimal version depends on whether
-// send_pre_v25_init is enabled or not
 #define CLIENT_PROTOCOL_VERSION_MIN 37
 #define CLIENT_PROTOCOL_VERSION_MAX LATEST_PROTOCOL_VERSION
 
@@ -242,7 +241,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define PROTOCOL_ID 0x4f457403
 
 #define PASSWORD_SIZE 28    // Maximum password length. Allows for
-							// base64-encoded SHA-1 (27+\0).
+                            // base64-encoded SHA-1 (27+\0).
 
 // See also formspec [Version History] in doc/lua_api.md
 #define FORMSPEC_API_VERSION 7
@@ -271,7 +270,7 @@ enum ToClientCommand : u16
 		u64 map seed
 		f1000 recommended send interval
 		u32 : supported auth methods for sudo mode
-			  (where the user can change their password)
+		      (where the user can change their password)
 	*/
 	TOCLIENT_ACCEPT_SUDO_MODE = 0x04,
 	/*
@@ -596,7 +595,7 @@ enum ToClientCommand : u16
 			tween<v3f>        attractor_origin
 			u16               attractor_origin_attachment_object_id
 			u8                spawner_flags
-				bit 1: attractor_kill (particles dies on contact)
+			    bit 1: attractor_kill (particles dies on contact)
 			if attraction_mode > point {
 				tween<v3f> attractor_angle
 				u16        attractor_origin_attachment_object_id
@@ -752,8 +751,8 @@ enum ToClientCommand : u16
 	*/
 	TOCLIENT_UPDATE_PLAYER_LIST = 0x56,
 	/*
-		u8 type
-		u16 number of players
+	 	u8 type
+	 	u16 number of players
 		for each player
 			u16 len
 			u8[len] player name
@@ -762,18 +761,18 @@ enum ToClientCommand : u16
 	TOCLIENT_MODCHANNEL_MSG = 0x57,
 	/*
 		u16 channel name length
-		std::string channel name
-		u16 channel name sender
-		std::string channel name
-		u16 message length
-		std::string message
+	 	std::string channel name
+	 	u16 channel name sender
+	 	std::string channel name
+	 	u16 message length
+	 	std::string message
 	*/
 
 	TOCLIENT_MODCHANNEL_SIGNAL = 0x58,
 	/*
 		u8 signal id
-		u16 channel name length
-		std::string channel name
+	 	u16 channel name length
+	 	std::string channel name
 	*/
 
 	TOCLIENT_NODEMETA_CHANGED = 0x59,
@@ -875,21 +874,21 @@ enum ToServerCommand : u16
 	TOSERVER_MODCHANNEL_JOIN = 0x17,
 	/*
 		u16 channel name length
-		std::string channel name
+	 	std::string channel name
 	 */
 
 	TOSERVER_MODCHANNEL_LEAVE = 0x18,
 	/*
 		u16 channel name length
-		std::string channel name
+	 	std::string channel name
 	 */
 
 	TOSERVER_MODCHANNEL_MSG = 0x19,
 	/*
 		u16 channel name length
-		std::string channel name
-		u16 message length
-		std::string message
+	 	std::string channel name
+	 	u16 message length
+	 	std::string message
 	 */
 
 	TOSERVER_PLAYERPOS = 0x23,
@@ -1041,8 +1040,8 @@ enum ToServerCommand : u16
 
 		std::string bytes_A
 		u8 current_login_based_on : on which version of the password's
-									hash this login is based on (0 legacy hash,
-									or 1 directly the password)
+		                            hash this login is based on (0 legacy hash,
+		                            or 1 directly the password)
 	*/
 
 	TOSERVER_SRP_BYTES_M = 0x52,

@@ -1015,9 +1015,6 @@ Game::Game() :
 
 Game::~Game()
 {
-	if (smgr)
-		smgr->drop();
-
 	delete client;
 	delete soundmaker;
 	sound_manager.reset();
@@ -1099,7 +1096,6 @@ bool Game::startup(bool *kill,
 
 	driver = device->getVideoDriver();
 	smgr = m_rendering_engine->get_scene_manager();
-	smgr->grab();
 
 	driver->setTextureCreationFlag(video::ETCF_CREATE_MIP_MAPS, g_settings->getBool("mip_map"));
 
@@ -1165,19 +1161,6 @@ void Game::run()
 		//    m_rendering_engine->run() from this iteration
 		//  + Sleep time until the wanted FPS are reached
 		draw_times.limit(device, &dtime, g_menumgr.pausesGame());
-
-		const auto current_dynamic_info = ClientDynamicInfo::getCurrent();
-		if (!current_dynamic_info.equal(client_display_info)) {
-			client_display_info = current_dynamic_info;
-			dynamic_info_send_timer = 0.2f;
-		}
-
-		if (dynamic_info_send_timer > 0.0f) {
-			dynamic_info_send_timer -= dtime;
-			if (dynamic_info_send_timer <= 0.0f) {
-				client->sendUpdateClientInfo(current_dynamic_info);
-			}
-		}
 
 		const auto current_dynamic_info = ClientDynamicInfo::getCurrent();
 		if (!current_dynamic_info.equal(client_display_info)) {
@@ -1463,11 +1446,6 @@ bool Game::createClient(const GameStartData &start_data)
 	if (client->modsLoaded())
 		client->getScript()->on_camera_ready(camera);
 	client->setCamera(camera);
-#ifdef HAVE_TOUCHSCREENGUI
-	if (g_touchscreengui) {
-		g_touchscreengui->setUseCrosshair(!isNoCrosshairAllowed());
-	}
-#endif
 
 	if (g_touchscreengui) {
 		g_touchscreengui->setUseCrosshair(!isTouchCrosshairDisabled());
@@ -1982,9 +1960,6 @@ void Game::processUserInput(f32 dtime)
 			g_touchscreengui->show();
 			g_touchscreengui->step(dtime);
 		}
-
-		m_game_focused = true;
-	}
 
 		m_game_focused = true;
 	}
@@ -4002,11 +3977,6 @@ void Game::updateFrame(ProfilerGraph *graph, RunStats *stats, f32 dtime,
 		runData.fog_range = draw_control->wanted_range * BS;
 	}
 
-//#define CONSTANT_DAYTIME
-#ifdef CONSTANT_DAYTIME
-	client->getEnv().setTimeOfDay(24000 / 2);
-#endif
-
 	/*
 		Calculate general brightness
 	*/
@@ -4120,20 +4090,16 @@ void Game::updateFrame(ProfilerGraph *graph, RunStats *stats, f32 dtime,
 			|| m_camera_offset_changed
 			|| client->getEnv().getClientMap().needsUpdateDrawList()) {
 		runData.update_draw_list_timer = 0;
-		client->getEnv().getClientMap().updateDrawList(this->driver);
+		client->getEnv().getClientMap().updateDrawList();
 		runData.update_draw_list_last_cam_dir = camera_direction;
-
 		client->getEnv().getClientMap().updateCacheBuffers(driver);
 	} else if (runData.touch_blocks_timer > update_draw_list_delta) {
 		client->getEnv().getClientMap().touchMapBlocks();
 		runData.touch_blocks_timer = 0;
-
 		client->getEnv().getClientMap().updateCacheBuffers(driver);
 	} else if (RenderingEngine::get_shadow_renderer()) {
 		updateShadows();
 	}
-
-	
 
 	m_game_ui->update(*stats, client, draw_control, cam, runData.pointed_old, gui_chat_console, dtime);
 

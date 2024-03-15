@@ -201,8 +201,6 @@ end
 
 local function dummy_func() end
 
-local nan = (0/0)^1 -- +nan
-
 function core.deserialize(str, safe)
 	-- Backwards compatibility
 	if str == nil then

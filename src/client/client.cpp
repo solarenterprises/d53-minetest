@@ -622,10 +622,10 @@ void Client::step(float dtime)
 						block->mesh = r.mesh;
 						if (r.urgent)
 							force_update_shadows = true;
-					}
 
-					if (block->mesh)
-						mapBlockMesh_changed.push_back(block);
+						if (block->mesh)
+							mapBlockMesh_changed.push_back(block);
+					}
 				}
 			}
 			else {

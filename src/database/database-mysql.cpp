@@ -276,7 +276,7 @@ void MapDatabaseMySQL::createDatabase() {
 	);
 }
 
-bool MapDatabaseMySQL::saveBlock(const v3s16& pos, const std::string& data) {
+bool MapDatabaseMySQL::saveBlock(const v3s16& pos, std::string_view data) {
 	if (!stmt_save_block) {
 		stmt_save_block = mysql_stmt_init(m_conn);
 
@@ -305,7 +305,7 @@ bool MapDatabaseMySQL::saveBlock(const v3s16& pos, const std::string& data) {
 
 	unsigned long length = data.size();
 	bind[3].buffer_type = MYSQL_TYPE_BLOB;
-	bind[3].buffer = (char*)data.c_str();
+	bind[3].buffer = (char*)data.data();
 	bind[3].buffer_length = data.size();
 	bind[3].length = &length;
 
@@ -933,11 +933,11 @@ bool ModStorageDatabaseMySQL::hasModEntry(const std::string &modname,
 }
 
 bool ModStorageDatabaseMySQL::setModEntry(const std::string &modname,
-	const std::string &key, const std::string &value)
+	const std::string& key, std::string_view value)
 {
 	verifyDatabase();
 
-	std::vector<std::string> args = { modname, key, value };
+	std::vector<std::string> args = { modname, key, value.data() };
 	execWithParam("INSERT INTO mod_storage (modname, id, value) VALUES ($1, $2, $3) "
 		"ON DUPLICATE KEY UPDATE value = $3", args);
 

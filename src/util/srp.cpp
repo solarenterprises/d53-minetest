@@ -937,11 +937,6 @@ SRP_Result srp_user_start_authentication(struct SRPUser *usr, char **username,
 	usr->bytes_A = *bytes_A;
 	if (username) *username = usr->username;
 
-	// Add Message Verification Here
-
-
-
-
 	return SRP_OK;
 
 error_and_exit:

@@ -227,10 +227,3 @@ const ClientCommandFactory clientCommandFactoryTable[TOCLIENT_NUM_MSG_TYPES] =
 	{ "TOCLIENT_MINIMAP_MODES",            0, true }, // 0x62
 	{ "TOCLIENT_SET_LIGHTING",             0, true }, // 0x63
 };
-
-const ToServerCommandHandler* getToServerCommandTable() {
-	return toServerCommandTable;
-}
-const ClientCommandFactory* getClientCommandFactoryTable() {
-	return clientCommandFactoryTable;
-}

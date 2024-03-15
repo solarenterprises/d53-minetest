@@ -76,7 +76,7 @@ public:
 	MapDatabaseMySQL(const std::string &connect_string);
 	virtual ~MapDatabaseMySQL();
 
-	bool saveBlock(const v3s16 &pos, const std::string &data);
+	bool saveBlock(const v3s16& pos, std::string_view data);
 	void loadBlock(const v3s16 &pos, std::string *block);
 	bool deleteBlock(const v3s16 &pos);
 	void listAllLoadableBlocks(std::vector<v3s16> &dst);
@@ -143,7 +143,7 @@ public:
 	bool getModEntry(const std::string &modname, const std::string &key, std::string *value);
 	bool hasModEntry(const std::string &modname, const std::string &key);
 	bool setModEntry(const std::string &modname,
-			const std::string &key, const std::string &value);
+			const std::string &key, std::string_view value);
 	bool removeModEntry(const std::string &modname, const std::string &key);
 	bool removeModEntries(const std::string &modname);
 	void listMods(std::vector<std::string> *res);

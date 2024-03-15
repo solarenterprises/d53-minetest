@@ -153,13 +153,6 @@ ScriptApiBase::ScriptApiBase(ScriptingType type):
 	lua_pushstring(m_luastack, porting::getPlatformName());
 	lua_setglobal(m_luastack, "PLATFORM");
 
-#ifdef HAVE_TOUCHSCREENGUI
-	lua_pushboolean(m_luastack, true);
-#else
-	lua_pushboolean(m_luastack, false);
-#endif
-	lua_setglobal(m_luastack, "TOUCHSCREEN_GUI");
-
 	// Make sure Lua uses the right locale
 	setlocale(LC_NUMERIC, "C");
 }
@@ -262,29 +255,6 @@ std::string ScriptApiBase::getCurrentModName(lua_State *L)
 
 	// at this point we can trust this value:
 	return getCurrentModNameInsecure(L);
-}
-
-void ScriptApiBase::checkSetByBuiltin()
-{
-	lua_State *L = getStack();
-
-	if (m_gamedef) {
-		lua_rawgeti(L, LUA_REGISTRYINDEX, CUSTOM_RIDX_READ_VECTOR);
-		FATAL_ERROR_IF(lua_type(L, -1) != LUA_TFUNCTION, "missing read_vector");
-		lua_pop(L, 1);
-
-		lua_rawgeti(L, LUA_REGISTRYINDEX, CUSTOM_RIDX_PUSH_VECTOR);
-		FATAL_ERROR_IF(lua_type(L, -1) != LUA_TFUNCTION, "missing push_vector");
-		lua_pop(L, 1);
-
-		lua_rawgeti(L, LUA_REGISTRYINDEX, CUSTOM_RIDX_READ_NODE);
-		FATAL_ERROR_IF(lua_type(L, -1) != LUA_TFUNCTION, "missing read_node");
-		lua_pop(L, 1);
-
-		lua_rawgeti(L, LUA_REGISTRYINDEX, CUSTOM_RIDX_PUSH_NODE);
-		FATAL_ERROR_IF(lua_type(L, -1) != LUA_TFUNCTION, "missing push_node");
-		lua_pop(L, 1);
-	}
 }
 
 void ScriptApiBase::loadMod(const std::string &script_path,

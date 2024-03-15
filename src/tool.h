@@ -108,7 +108,7 @@ struct WearBarParams
 	{}
 
 	WearBarParams(const video::SColor color) :
-		WearBarParams({ {0.0, color} }, WearBarParams::BLEND_MODE_CONSTANT)
+		WearBarParams({ {0.0f, color} }, WearBarParams::BLEND_MODE_CONSTANT)
 	{};
 
 	void serialize(std::ostream& os) const;

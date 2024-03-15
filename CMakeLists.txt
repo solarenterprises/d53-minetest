@@ -1,8 +1,16 @@
-cmake_minimum_required(VERSION 3.12)
+cmake_minimum_required(VERSION 3.5)
+
+# Set policies up to 3.9 since we want to enable the IPO option
+if(${CMAKE_VERSION} VERSION_LESS 3.9)
+	cmake_policy(VERSION ${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION})
+else()
+	cmake_policy(VERSION 3.9)
+endif()
 
 # This can be read from ${PROJECT_NAME} after project() is called
-project(minetest)
-set(PROJECT_NAME_CAPITALIZED "Minetest")
+#project(minetest)
+project(district53)
+set(PROJECT_NAME_CAPITALIZED "district53")
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
@@ -36,25 +44,6 @@ set(BUILD_SERVER FALSE CACHE BOOL "Build server")
 set(BUILD_UNITTESTS TRUE CACHE BOOL "Build unittests")
 set(BUILD_BENCHMARKS FALSE CACHE BOOL "Build benchmarks")
 set(BUILD_DOCUMENTATION TRUE CACHE BOOL "Build documentation")
-
-set(DEFAULT_ENABLE_LTO TRUE)
-# by default don't enable on Debug builds to get faster builds
-if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-  set(DEFAULT_ENABLE_LTO FALSE)
-endif()
-#### LTO testing list ####
-# - Linux: seems to work always
-# - win32/msvc: works
-# - win32/gcc: fails to link
-# - win32/clang: works
-# - macOS on x86: seems to be fine
-# - macOS on ARM: crashes, see <https://github.com/minetest/minetest/issues/14397>
-# Note: since CMake has no easy architecture detection disabling for Mac entirely
-#### ####
-if((WIN32 AND CMAKE_CXX_COMPILER_ID STREQUAL "GNU") OR APPLE)
-	set(DEFAULT_ENABLE_LTO FALSE)
-endif()
-set(ENABLE_LTO ${DEFAULT_ENABLE_LTO} CACHE BOOL "Use Link Time Optimization")
 
 set(DEFAULT_RUN_IN_PLACE FALSE)
 if(WIN32)
@@ -90,6 +79,15 @@ if(ANDROID)
 	include(MinetestAndroidLibs)
 endif()
 
+# ark crypto
+add_subdirectory(lib/cpp-crypto)
+
+# bip39
+add_subdirectory(lib/bip39/src)
+
+# find_package(unofficial-libmysql REQUIRED)
+set(MYSQL_LIBDIR "" CACHE PATH "MYSQL Library Directory")
+set(MYSQL_INCLUDE "" CACHE PATH "MYSQL Include Directory")
 
 set(IRRLICHTMT_BUILD_DIR "" CACHE PATH "Path to IrrlichtMt build directory.")
 if(ANDROID)
@@ -152,27 +150,13 @@ elseif(BUILD_CLIENT AND TARGET IrrlichtMt::IrrlichtMt)
 	endif()
 	message(STATUS "Found IrrlichtMt ${IrrlichtMt_VERSION}")
 
-	set(TARGET_VER_S 1.9.0mt15)
+	set(TARGET_VER_S 1.9.0mt14)
 	string(REPLACE "mt" "." TARGET_VER ${TARGET_VER_S})
 	if(IrrlichtMt_VERSION VERSION_LESS ${TARGET_VER})
 		message(FATAL_ERROR "At least IrrlichtMt ${TARGET_VER_S} is required to build")
 	elseif(NOT DEVELOPMENT_BUILD AND IrrlichtMt_VERSION VERSION_GREATER ${TARGET_VER})
 		message(FATAL_ERROR "IrrlichtMt ${TARGET_VER_S} is required to build")
 	endif()
-endif()
-
-if (ENABLE_LTO OR CMAKE_INTERPROCEDURAL_OPTIMIZATION)
-	include(CheckIPOSupported)
-	check_ipo_supported(RESULT lto_supported OUTPUT lto_output)
-	if(lto_supported)
-		set(CMAKE_INTERPROCEDURAL_OPTIMIZATION TRUE)
-		message(STATUS "LTO/IPO is enabled")
-	else()
-		set(CMAKE_INTERPROCEDURAL_OPTIMIZATION FALSE)
-		message(STATUS "LTO/IPO was requested but is not supported by the compiler: ${lto_output}")
-	endif()
-else()
-	message(STATUS "LTO/IPO is not enabled")
 endif()
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
@@ -327,8 +311,15 @@ endif()
 
 # Library pack
 find_package(GMP REQUIRED)
-find_package(Json REQUIRED)
-find_package(Lua REQUIRED)
+# find_package(Json REQUIRED)
+# find_package(Lua REQUIRED)
+
+add_subdirectory(lib/jsoncpp)
+SET(JSON_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/lib/jsoncpp")
+
+add_subdirectory(lib/lua)
+SET(LUA_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/lib/lua/src")
+
 if(NOT USE_LUAJIT)
 	add_subdirectory(lib/bitop)
 endif()
@@ -355,6 +346,23 @@ include(CPackComponent)
 cpack_add_component(Docs
 	DISPLAY_NAME "Documentation"
 	DESCRIPTION "Documentation about Minetest and Minetest modding"
+)
+
+cpack_add_component(SUBGAME_MINETEST_GAME
+	DISPLAY_NAME "district53 Game"
+	DESCRIPTION "The default game bundled in the district53 engine. Mainly used as a modding base."
+	GROUP "Games"
+)
+
+cpack_add_component(SUBGAME_MINIMAL
+	DISPLAY_NAME "Development Test"
+	DESCRIPTION "A basic testing environment used for engine development and sometimes for testing mods."
+	DISABLED #DISABLED does not mean it is disabled, and is just not selected by default.
+	GROUP "Games"
+)
+
+cpack_add_component_group(Subgames
+	DESCRIPTION "Games for the Minetest engine."
 )
 
 if(WIN32)

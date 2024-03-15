@@ -20,6 +20,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #pragma once
 
 #include "irrlichttypes.h"
+#include "debug.h" // sanity_check
 #include "exceptions.h"
 #include "threading/mutex_auto_lock.h"
 #include "threading/semaphore.h"
@@ -30,7 +31,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include <queue>
 #include <cassert>
 #include <limits>
-#include "debug.h"
 
 /*
 	Queue with unique values with fast checking of value existence

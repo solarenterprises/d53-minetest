@@ -257,7 +257,7 @@ public:
 
 	bool isMeshBufferAnimated(u32 layer, u32 index);
 
-	bool canMeshBufferBeCached(u32 index);
+	bool canMeshBufferBeCached(u32 layer, u32 index);
 
 	// If buffer has animation it will get the animated texture parent and not the texture tile.
 	video::ITexture* getBufferMainTexture(u32 layer, u32 bufferIndex);

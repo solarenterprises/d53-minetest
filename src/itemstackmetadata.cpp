@@ -42,14 +42,14 @@ void ItemStackMetadata::clear()
 	updateWearBarParams();
 }
 
-static void sanitize_string(std::string& str)
+static void sanitize_string(std::string &str)
 {
 	str.erase(std::remove(str.begin(), str.end(), DESERIALIZE_START), str.end());
 	str.erase(std::remove(str.begin(), str.end(), DESERIALIZE_KV_DELIM), str.end());
 	str.erase(std::remove(str.begin(), str.end(), DESERIALIZE_PAIR_DELIM), str.end());
 }
 
-bool ItemStackMetadata::setString(const std::string& name, std::string_view var)
+bool ItemStackMetadata::setString(const std::string &name, std::string_view var)
 {
 	std::string clean_name = name;
 	std::string clean_var(var);
@@ -64,19 +64,19 @@ bool ItemStackMetadata::setString(const std::string& name, std::string_view var)
 	return result;
 }
 
-void ItemStackMetadata::serialize(std::ostream& os) const
+void ItemStackMetadata::serialize(std::ostream &os) const
 {
 	std::ostringstream os2(std::ios_base::binary);
 	os2 << DESERIALIZE_START;
-	for (const auto& stringvar : m_stringvars) {
+	for (const auto &stringvar : m_stringvars) {
 		if (!stringvar.first.empty() || !stringvar.second.empty())
 			os2 << stringvar.first << DESERIALIZE_KV_DELIM
-			<< stringvar.second << DESERIALIZE_PAIR_DELIM;
+				<< stringvar.second << DESERIALIZE_PAIR_DELIM;
 	}
 	os << serializeJsonStringIfNeeded(os2.str());
 }
 
-void ItemStackMetadata::deSerialize(std::istream& is)
+void ItemStackMetadata::deSerialize(std::istream &is)
 {
 	std::string in = deSerializeJsonStringIfNeeded(is);
 
@@ -88,11 +88,10 @@ void ItemStackMetadata::deSerialize(std::istream& is)
 			fnd.to(1);
 			while (!fnd.at_end()) {
 				std::string name = fnd.next(DESERIALIZE_KV_DELIM_STR);
-				std::string var = fnd.next(DESERIALIZE_PAIR_DELIM_STR);
+				std::string var  = fnd.next(DESERIALIZE_PAIR_DELIM_STR);
 				m_stringvars[name] = var;
 			}
-		}
-		else {
+		} else {
 			// BACKWARDS COMPATIBILITY
 			m_stringvars[""] = in;
 		}
@@ -108,13 +107,12 @@ void ItemStackMetadata::updateToolCapabilities()
 		toolcaps_override = ToolCapabilities();
 		std::istringstream is(getString(TOOLCAP_KEY));
 		toolcaps_override.deserializeJson(is);
-	}
-	else {
+	} else {
 		toolcaps_overridden = false;
 	}
 }
 
-void ItemStackMetadata::setToolCapabilities(const ToolCapabilities& caps)
+void ItemStackMetadata::setToolCapabilities(const ToolCapabilities &caps)
 {
 	std::ostringstream os;
 	caps.serializeJson(os);
@@ -131,13 +129,12 @@ void ItemStackMetadata::updateWearBarParams()
 	if (contains(WEAR_BAR_KEY)) {
 		std::istringstream is(getString(WEAR_BAR_KEY));
 		wear_bar_override = WearBarParams::deserializeJson(is);
-	}
-	else {
+	} else {
 		wear_bar_override.reset();
 	}
 }
 
-void ItemStackMetadata::setWearBarParams(const WearBarParams& params)
+void ItemStackMetadata::setWearBarParams(const WearBarParams &params)
 {
 	std::ostringstream os;
 	params.serializeJson(os);

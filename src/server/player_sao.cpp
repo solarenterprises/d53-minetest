@@ -341,12 +341,6 @@ std::string PlayerSAO::generateUpdatePhysicsOverrideCommand() const
 
 void PlayerSAO::setBasePosition(v3f position)
 {
-	// It's not entirely clear which parts of the network protocol still use
-	// v3f1000, but the script API enforces its bound on all float vectors
-	// (maybe it shouldn't?). For that reason we need to make sure the position
-	// isn't ever set to values that fail this restriction.
-	clampToF1000(position);
-
 	if (m_player && position != m_base_position)
 		m_player->setDirty(true);
 
@@ -398,30 +392,6 @@ void PlayerSAO::addPos(const v3f &added_pos)
 	m_move_pool.empty();
 	m_time_from_last_teleport = 0.0;
 	m_env->getGameDef()->SendMovePlayerRel(getPeerID(), added_pos);
-}
-
-void PlayerSAO::addPos(const v3f &added_pos)
-{
-	if (isAttached())
-		return;
-
-	// Backward compatibility for older clients
-	if (m_player->protocol_version < 44) {
-		setPos(getBasePosition() + added_pos);
-		return;
-	}
-
-	// Send mapblock of target location
-	v3f pos = getBasePosition() + added_pos;
-	v3s16 blockpos = v3s16(pos.X / MAP_BLOCKSIZE, pos.Y / MAP_BLOCKSIZE, pos.Z / MAP_BLOCKSIZE);
-	m_env->getGameDef()->SendBlock(m_peer_id, blockpos);
-
-	setBasePosition(pos);
-	// Movement caused by this command is always valid
-	m_last_good_position = getBasePosition();
-	m_move_pool.empty();
-	m_time_from_last_teleport = 0.0;
-	m_env->getGameDef()->SendMovePlayerRel(m_peer_id, added_pos);
 }
 
 void PlayerSAO::moveTo(v3f pos, bool continuous)

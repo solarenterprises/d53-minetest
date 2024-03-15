@@ -19,9 +19,6 @@ devtest_unittests_autostart (Perform unit tests) bool false
 # Many mapgen aliases have fallback values when no value is provided. Having this setting disabled can be useful to test whether those fallback values are functional.
 devtest_v6_mapgen_aliases (Use all v6 mapgen aliases) bool false
 
-# If enabled, will run an LBM to fix the top 1/2 of double plants in mcimported worlds; defaults to true.
-fix_doubleplants (Mcimport double plant fixes) bool true
-
 # If enabled, the game will use dungeon stairs by enabling the corresponding mapgen aliases.
 #
 # Disabling this setting can be useful to test whether dungeons still work when stairs are not defined.
