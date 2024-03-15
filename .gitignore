@@ -62,6 +62,7 @@ build/.cmake/
 /games/
 /lib/
 /po/
+/luaLibs/
 
 
 ## Configuration/log files
