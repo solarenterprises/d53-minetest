@@ -31,7 +31,7 @@ mkdir -p $libdir
 
 cd $libdir
 libhost="http://minetest.kitsunemimi.pw"
-download "https://github.com/minetest/irrlicht/releases/download/$irrlicht_version/win32-llvm.zip" irrlicht-$irrlicht_version-win32.zip
+download "https://github.com/district53/irrlicht/releases/download/$irrlicht_version/win32-llvm.zip" irrlicht-$irrlicht_version-win32.zip
 download "$libhost/llvm/zlib-$zlib_version-win32.zip"
 download "$libhost/llvm/zstd-$zstd_version-win32.zip"
 download "$libhost/llvm/libogg-$ogg_version-win32.zip"

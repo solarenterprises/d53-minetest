@@ -13,7 +13,7 @@ install_linux_deps() {
 		shift
 	else
 		local ver=$(cat misc/irrlichtmt_tag.txt)
-		wget "https://github.com/minetest/irrlicht/releases/download/$ver/ubuntu-focal.tar.gz"
+		wget "https://github.com/district53/irrlicht/releases/download/$ver/ubuntu-focal.tar.gz"
 		sudo tar -xaf ubuntu-focal.tar.gz -C /usr/local
 	fi
 

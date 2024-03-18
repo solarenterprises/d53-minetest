@@ -2,6 +2,18 @@ name: windows
 
 # build on c/cpp changes or workflow changes
 on:
+  workflow_dispatch:
+    paths:
+      - 'lib/**.[ch]'
+      - 'lib/**.cpp'
+      - 'src/**.[ch]'
+      - 'src/**.cpp'
+      - '**/CMakeLists.txt'
+      - 'cmake/Modules/**'
+      - 'util/buildbot/**'
+      - 'misc/irrlichtmt_tag.txt'
+      - 'misc/*.manifest'
+      - '.github/workflows/windows.yml'
   push:
     paths:
       - 'lib/**.[ch]'
@@ -74,7 +86,7 @@ jobs:
     env:
       VCPKG_VERSION: 8eb57355a4ffb410a2e94c07b4dca2dffbee8e50
       # 2023.10.19
-      vcpkg_packages: zlib zstd curl[winssl] openal-soft libvorbis libogg libjpeg-turbo sqlite3 freetype luajit gmp jsoncpp sdl2
+      vcpkg_packages: zlib zstd curl[winssl] openal-soft libvorbis libogg libjpeg-turbo sqlite3 freetype luajit gmp jsoncpp sdl2 libmysql 
     strategy:
       fail-fast: false
       matrix:
@@ -100,7 +112,7 @@ jobs:
       - name: Checkout IrrlichtMt
         run: |
           $ref = @(Get-Content misc\irrlichtmt_tag.txt)
-          git clone https://github.com/minetest/irrlicht lib\irrlichtmt --depth 1 -b $ref[0]
+          git clone https://github.com/district53/irrlicht lib\irrlichtmt --depth 1 -b $ref[0]
 
       - name: Restore from cache and run vcpkg
         uses: lukka/run-vcpkg@v7
