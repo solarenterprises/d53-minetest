@@ -45,6 +45,9 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "lua_api/l_settings.h"
 #include "lua_api/l_http.h"
 #include "lua_api/l_storage.h"
+#include "lua_api/l_sql.h"
+
+#include "filesys.h"
 
 extern "C" {
 #include <lualib.h>
@@ -77,6 +80,22 @@ ServerScripting::ServerScripting(Server* server):
 
 	lua_newtable(L);
 	lua_setfield(L, -2, "luaentities");
+
+	//
+	// Set paths to lua libs (for require)
+	//--------------------------------------------
+	static const std::string lualibs_dir = porting::path_share + DIR_DELIM + "luaLibs/";
+
+	lua_getglobal(L, "package");
+	lua_getfield(L, -1, "path"); // get current package.path
+	std::string currentPath = lua_tostring(L, -1); // convert to std::string
+	currentPath += ";" + lualibs_dir + "?.lua"; // add your module's directory to the path
+	currentPath += ";" + lualibs_dir + "?/?.lua"; // add your module's directory to the path
+	lua_pop(L, 1); // pop the old package.path
+	lua_pushstring(L, currentPath.c_str()); // push the new package.path
+	lua_setfield(L, -2, "path"); // set the package.path to the new value
+	lua_pop(L, 1); // pop the package table
+	//--------------------------------------------
 
 	// Initialize our lua_api modules
 	InitializeModApi(L, top);
@@ -169,6 +188,8 @@ void ServerScripting::InitializeModApi(lua_State *L, int top)
 	ModApiHttp::Initialize(L, top);
 	ModApiStorage::Initialize(L, top);
 	ModApiChannels::Initialize(L, top);
+
+	lua_register(L, "mysql", luaopen_luasql_mysql);
 }
 
 void ServerScripting::InitializeAsync(lua_State *L, int top)
