@@ -43,15 +43,18 @@ jobs:
   mingw32:
     name: "MinGW cross-compiler (32-bit)"
     runs-on: ubuntu-22.04
+    if: false
     steps:
       - uses: actions/checkout@v4
       - name: Install compiler
         run: |
           sudo apt-get update && sudo apt-get install -y gettext
-          sudo ./util/buildbot/download_toolchain.sh /usr
+          chmod +x ./util/buildbot/download_toolchain.sh
+          ./util/buildbot/download_toolchain.sh /usr
 
       - name: Build
         run: |
+           chmod +x ./util/buildbot/buildwin32.sh
            EXISTING_MINETEST_DIR=$PWD ./util/buildbot/buildwin32.sh B
 
       - uses: actions/upload-artifact@v4
@@ -64,14 +67,21 @@ jobs:
     name: "MinGW cross-compiler (64-bit)"
     runs-on: ubuntu-22.04
     steps:
+      - name: CHECK
+        run: |
+            echo "CHECK"
+            ls /usr/include
+            
       - uses: actions/checkout@v4
       - name: Install compiler
         run: |
           sudo apt-get update && sudo apt-get install -y gettext
-          sudo ./util/buildbot/download_toolchain.sh /usr
+          sudo chmod +x ./util/buildbot/download_toolchain.sh
+          ./util/buildbot/download_toolchain.sh /usr
 
       - name: Build
         run: |
+          sudo chmod +x ./util/buildbot/buildwin64.sh
           EXISTING_MINETEST_DIR=$PWD ./util/buildbot/buildwin64.sh B
 
       - uses: actions/upload-artifact@v4
@@ -83,6 +93,7 @@ jobs:
   msvc:
     name: VS 2019 ${{ matrix.config.arch }}-${{ matrix.type }}
     runs-on: windows-2019
+    if: false
     env:
       VCPKG_VERSION: 8eb57355a4ffb410a2e94c07b4dca2dffbee8e50
       # 2023.10.19

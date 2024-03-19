@@ -14,6 +14,15 @@ leveldb_version=1.23
 zlib_version=1.3.1
 zstd_version=1.5.5
 
+if ! command -v cmake &> /dev/null; then
+    sudo apt-get install -y cmake
+fi
+
+if ! dpkg -s libssl-dev >/dev/null 2>&1; then
+    sudo apt-get install -y libssl-dev
+	sudo apt install -y pkg-config
+fi
+
 download () {
 	local url=$1
 	local filename=$2
@@ -81,12 +90,10 @@ add_cmake_libs () {
 		-DIRRLICHT_DLL="$(_dlls $libdir/irrlicht/lib/*)"
 
 		-DZLIB_INCLUDE_DIR=$libdir/zlib/include
-		-DZLIB_LIBRARY=$libdir/zlib/lib/libz.dll.a
-		-DZLIB_DLL=$libdir/zlib/bin/zlib1.dll
+		-DZLIB_LIBRARY=$libdir/zlib/lib/libz.a
 
 		-DZSTD_INCLUDE_DIR=$libdir/zstd/include
-		-DZSTD_LIBRARY=$libdir/zstd/lib/libzstd.dll.a
-		-DZSTD_DLL=$libdir/zstd/bin/libzstd.dll
+		-DZSTD_LIBRARY=$libdir/zstd/lib/libzstd.a
 
 		-DLUA_INCLUDE_DIR=$libdir/luajit/include
 		-DLUA_LIBRARY=$libdir/luajit/libluajit.a
@@ -106,12 +113,12 @@ add_cmake_libs () {
 
 		-DCURL_DLL="$(_dlls $libdir/curl/bin/libcurl*)"
 		-DCURL_INCLUDE_DIR=$libdir/curl/include
-		-DCURL_LIBRARY=$libdir/curl/lib/libcurl.dll.a
+		-DCURL_LIBRARY=$libdir/curl/lib/libcurl.a
 
 		-DGETTEXT_MSGFMT=`command -v msgfmt`
 		-DGETTEXT_DLL="$(_dlls $libdir/gettext/bin/lib{intl,iconv}*)"
 		-DGETTEXT_INCLUDE_DIR=$libdir/gettext/include
-		-DGETTEXT_LIBRARY=$libdir/gettext/lib/libintl.dll.a
+		-DGETTEXT_LIBRARY=$libdir/gettext/lib/libintl.a
 
 		-DFREETYPE_INCLUDE_DIR_freetype2=$libdir/freetype/include/freetype2
 		-DFREETYPE_INCLUDE_DIR_ft2build=$libdir/freetype/include/freetype2
@@ -119,11 +126,15 @@ add_cmake_libs () {
 		-DFREETYPE_DLL="$(_dlls $libdir/freetype/bin/libfreetype*)"
 
 		-DSQLITE3_INCLUDE_DIR=$libdir/sqlite3/include
-		-DSQLITE3_LIBRARY=$libdir/sqlite3/lib/libsqlite3.dll.a
+		-DSQLITE3_LIBRARY=$libdir/sqlite3/lib/libsqlite3.a
 		-DSQLITE3_DLL="$(_dlls $libdir/sqlite3/bin/libsqlite*)"
 
 		-DLEVELDB_INCLUDE_DIR=$libdir/libleveldb/include
 		-DLEVELDB_LIBRARY=$libdir/libleveldb/lib/libleveldb.dll.a
 		-DLEVELDB_DLL=$libdir/libleveldb/bin/libleveldb.dll
+		
+		-DOPENSSL_INCLUDE_DIR=/usr/include/openssl 
+		-DOPENSSL_CRYPTO_LIBRARY=/usr/lib/x86_64-linux-gnu/libcrypto.a 
+		-DOPENSSL_SSL_LIBRARY=/usr/lib/x86_64-linux-gnu/libssl.a
 	)
 }
