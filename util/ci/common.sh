@@ -3,7 +3,7 @@
 # Linux build only
 install_linux_deps() {
 	local pkgs=(
-		cmake gettext postgresql
+		cmake gettext postgresql doxygen 
 		libpng-dev libjpeg-dev libxi-dev libgl1-mesa-dev
 		libsqlite3-dev libhiredis-dev libogg-dev libgmp-dev libvorbis-dev
 		libopenal-dev libpq-dev libleveldb-dev libcurl4-openssl-dev libzstd-dev
