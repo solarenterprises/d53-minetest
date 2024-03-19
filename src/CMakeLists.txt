@@ -333,8 +333,8 @@ check_include_files(endian.h HAVE_ENDIAN_H)
 message(PROJECT_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
 
 configure_file(
-	"${PROJECT_SOURCE_DIR}/cmake_config.h.in"
-	"${PROJECT_BINARY_DIR}/cmake_config.h"
+	"${PROJECT_SOURCE_DIR}/src/cmake_config.h.in"
+	"${PROJECT_BINARY_DIR}/src/cmake_config.h"
 )
 
 
