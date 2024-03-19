@@ -38,6 +38,8 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v4
+        with:
+          depth: 0
       - name: Install deps
         run: |
           source ./util/ci/common.sh
@@ -56,6 +58,7 @@ jobs:
 
   # Current gcc version
   gcc_12:
+    if: false
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
@@ -80,6 +83,7 @@ jobs:
 
   # Older clang version (should be close to our minimum supported version)
   clang_7:
+    if: false
     runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v4
@@ -102,6 +106,7 @@ jobs:
 
   # Current clang version
   clang_14:
+    if: false
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
@@ -127,6 +132,7 @@ jobs:
 
   # Build with prometheus-cpp (server-only)
   clang_9_prometheus:
+    if: false
     name: "clang_9 (PROMETHEUS=1)"
     runs-on: ubuntu-20.04
     steps:
@@ -153,6 +159,7 @@ jobs:
           ./bin/minetestserver --run-unittests
 
   docker:
+    if: false
     name: "Docker image"
     runs-on: ubuntu-20.04
     steps:

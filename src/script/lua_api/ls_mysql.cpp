@@ -18,8 +18,10 @@
 #include "mysql.h"
 #include "errmsg.h"
 
-#include "lua.h"
-#include "lauxlib.h"
+extern "C" {
+#include <lua.h>
+#include <lauxlib.h>
+}
 
 #include "l_sql.h"
 

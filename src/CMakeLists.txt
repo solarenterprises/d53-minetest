@@ -1,3 +1,5 @@
+project(minetest)
+
 set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 
 INCLUDE(CheckTypeSize)
@@ -109,9 +111,10 @@ if(BUILD_CLIENT AND ENABLE_SOUND)
 	endif()
 endif()
 
-option(ENABLE_TOUCH "Enable Touchscreen support" FALSE)
+option(ENABLE_TOUCH "Enable touchscreen by default" FALSE)
 if(ENABLE_TOUCH)
-	add_definitions(-DHAVE_TOUCHSCREENGUI)
+	message(STATUS "Touchscreen support enabled by default.")
+	add_definitions(-DENABLE_TOUCH)
 endif()
 
 if(BUILD_CLIENT)
@@ -330,10 +333,8 @@ check_symbol_exists(strlcpy "string.h" HAVE_STRLCPY)
 
 check_include_files(endian.h HAVE_ENDIAN_H)
 
-message(PROJECT_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
-
 configure_file(
-	"${PROJECT_SOURCE_DIR}/src/cmake_config.h.in"
+	"${PROJECT_SOURCE_DIR}/cmake_config.h.in"
 	"${PROJECT_BINARY_DIR}/cmake_config.h"
 )
 
@@ -575,11 +576,11 @@ if(BUILD_CLIENT)
 			${X11_LIBRARIES}
 			${SOUND_LIBRARIES}
 			${SQLITE3_LIBRARY}
-			# ${LUA_LIBRARY}
+			${LUA_LIBRARY}
 			${GMP_LIBRARY}
-			lua
-			jsoncpp
-			# ${JSON_LIBRARY}
+			# lua
+			# jsoncpp
+			${JSON_LIBRARY}
 			${LUA_BIT_LIBRARY}
 			${FREETYPE_LIBRARY}
 			${PLATFORM_LIBS}
@@ -598,11 +599,11 @@ if(BUILD_CLIENT)
 			${X11_LIBRARIES}
 			${SOUND_LIBRARIES}
 			${SQLITE3_LIBRARY}
-			# ${LUA_LIBRARY}
-			lua
+			${LUA_LIBRARY}
+			# lua
 			${GMP_LIBRARY}
-			jsoncpp
-			# ${JSON_LIBRARY}
+			# jsoncpp
+			${JSON_LIBRARY}
 			${LUA_BIT_LIBRARY}
 			${FREETYPE_LIBRARY}
 			${PLATFORM_LIBS}
@@ -679,9 +680,9 @@ if(BUILD_SERVER)
 		${ZSTD_LIBRARY}
 		${SQLITE3_LIBRARY}
 		jsoncpp
-		lua
+		# lua
 		# ${JSON_LIBRARY}
-		# ${LUA_LIBRARY}
+		${LUA_LIBRARY}
 		${LUA_BIT_LIBRARY}
 		${GMP_LIBRARY}
 		${PLATFORM_LIBS}
@@ -752,39 +753,39 @@ endif()
 
 include(CheckCSourceCompiles)
 
-# set(CMAKE_REQUIRED_INCLUDES ${LUA_INCLUDE_DIR})
-# if(USE_LUAJIT)
-# 	set(CMAKE_REQUIRED_LIBRARIES ${LUA_LIBRARY})
-# 	# LuaJIT provides exactly zero ways to determine how recent it is (the version
-# 	# is unchanged since 2017), however it happens that string buffers were added
-# 	# after the changes which we care about so that works as an indicator.
-# 	# (https://github.com/LuaJIT/LuaJIT/commit/4c6b669 March 2021)
-# 	unset(HAVE_RECENT_LJ CACHE)
-# 	check_symbol_exists(luaopen_string_buffer "lualib.h" HAVE_RECENT_LJ)
-# 	if(NOT HAVE_RECENT_LJ)
-# 		string(CONCAT explanation_msg
-# 			"You are using a relatively old version of LuaJIT. We recommend "
-# 			"running a recent version (from git) as older ones are known not "
-# 			"to build/work correctly in all cases.\n"
-# 			"THIS APPLIES ESPECIALLY ON macOS OR Linux/aarch64!")
-# 		message(WARNING ${explanation_msg})
-# 	endif()
-# elseif(NOT MSVC)
-# 	set(CMAKE_REQUIRED_LIBRARIES "")
-# 	unset(HAVE_ATCCALL CACHE)
-# 	# Note: we need to check the function without having the library
-# 	#       available for linking, so check_symbol_exists won't work.
-# 	# Incidentally this doesn't seem to work on MSVC...
-# 	check_c_source_compiles("#include <lua.h>\nint main(){return sizeof(lua_atccall);}" HAVE_ATCCALL)
-# 	if(NOT HAVE_ATCCALL)
-# 		string(CONCAT explanation_msg
-# 			"It looks like you're trying to build Minetest using a system-wide "
-# 			"Lua installation. This is no longer supported because PUC Lua "
-# 			"cannot interoperate with C++ correctly. Read src/unittest/test_lua.cpp "
-# 			" for technical details.")
-# 		message(FATAL_ERROR ${explanation_msg})
-# 	endif()
-# endif()	
+set(CMAKE_REQUIRED_INCLUDES ${LUA_INCLUDE_DIR})
+if(USE_LUAJIT)
+	set(CMAKE_REQUIRED_LIBRARIES ${LUA_LIBRARY})
+	# LuaJIT provides exactly zero ways to determine how recent it is (the version
+	# is unchanged since 2017), however it happens that string buffers were added
+	# after the changes which we care about so that works as an indicator.
+	# (https://github.com/LuaJIT/LuaJIT/commit/4c6b669 March 2021)
+	# unset(HAVE_RECENT_LJ CACHE)
+	# check_symbol_exists(luaopen_string_buffer "lualib.h" HAVE_RECENT_LJ)
+	if(NOT HAVE_RECENT_LJ)
+		string(CONCAT explanation_msg
+			"You are using a relatively old version of LuaJIT. We recommend "
+			"running a recent version (from git) as older ones are known not "
+			"to build/work correctly in all cases.\n"
+			"THIS APPLIES ESPECIALLY ON macOS OR Linux/aarch64!")
+		message(WARNING ${explanation_msg})
+	endif()
+elseif(NOT MSVC)
+	set(CMAKE_REQUIRED_LIBRARIES "")
+	# unset(HAVE_ATCCALL CACHE)
+	# Note: we need to check the function without having the library
+	      # available for linking, so check_symbol_exists won't work.
+	# Incidentally this doesn't seem to work on MSVC...
+	# check_c_source_compiles("#include <lua.h>\nint main(){return sizeof(lua_atccall);}" HAVE_ATCCALL)
+	if(NOT HAVE_ATCCALL)
+		string(CONCAT explanation_msg
+			"It looks like you're trying to build Minetest using a system-wide "
+			"Lua installation. This is no longer supported because PUC Lua "
+			"cannot interoperate with C++ correctly. Read src/unittest/test_lua.cpp "
+			" for technical details.")
+		message(FATAL_ERROR ${explanation_msg})
+	endif()
+endif()
 
 if(MSVC)
 	# Visual Studio
@@ -932,9 +933,9 @@ if(WIN32)
 		if(LEVELDB_DLL)
 			install(FILES ${LEVELDB_DLL} DESTINATION ${BINDIR})
 		endif()
-		# if(LUA_DLL)
-		# 	install(FILES ${LUA_DLL} DESTINATION ${BINDIR})
-		# endif()
+		if(LUA_DLL)
+			install(FILES ${LUA_DLL} DESTINATION ${BINDIR})
+		endif()
 		if(BUILD_CLIENT AND USE_GETTEXT AND GETTEXT_DLL)
 			install(FILES ${GETTEXT_DLL} DESTINATION ${BINDIR})
 		endif()

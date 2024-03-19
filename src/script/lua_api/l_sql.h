@@ -30,9 +30,9 @@ LUASQL_API int luasql_createmeta (lua_State *L, const char *name, const luaL_Reg
 LUASQL_API void luasql_setmeta (lua_State *L, const char *name);
 LUASQL_API void luasql_set_info (lua_State *L);
 
-#if !defined LUA_VERSION_NUM || LUA_VERSION_NUM==501
-void luaL_setfuncs (lua_State *L, const luaL_Reg *l, int nup);
-#endif
+//#if !defined LUA_VERSION_NUM || LUA_VERSION_NUM==501
+//void luaL_setfuncs (lua_State *L, const luaL_Reg *l, int nup);
+//#endif
 
 
 /* Driver initialization functions prototypes */
