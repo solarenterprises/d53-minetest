@@ -25,7 +25,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "tile.h"
 #include <set>
 #include <map>
-#include <CNullDriver.h>
+#include "CNullDriver.h"
 #include "memoryManager.h"
 
 struct MapDrawControl

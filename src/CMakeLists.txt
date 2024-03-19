@@ -513,23 +513,38 @@ include_directories(SYSTEM
 	${ZLIB_INCLUDE_DIR}
 	${ZSTD_INCLUDE_DIR}
 	${SQLITE3_INCLUDE_DIR}
-	# ${LUA_INCLUDE_DIR}
 	${GMP_INCLUDE_DIR}
 	# ${JSON_INCLUDE_DIR}
+	# ${LUA_INCLUDE_DIR}
 	${LUA_BIT_INCLUDE_DIR}
 )
-include_directories(
-	${JSON_INCLUDE_DIR}
-	${LUA_INCLUDE_DIR}
-	${MYSQL_INCLUDE}
-)
 
-# include_directories(${MYSQL_INCLUDE})
+include_directories(
+		${JSON_INCLUDE_DIR}
+		${LUA_INCLUDE_DIR}
+		${MYSQL_INCLUDE}
+	)
+	
 if (WIN32)
-	SET(MYSQL_LIB ${MYSQL_LIBDIR}/libmysql.lib)
+	find_package(libmysql REQUIRED)
+	
+	include_directories(
+		${LIBMYSQL_INCLUDE_DIR}
+	)
+
 else()
-	SET(MYSQL_LIB ${MYSQL_LIBDIR}/libmysqlclient.a)
+	include(FindPkgConfig)
+	pkg_check_modules(LIBMYSQLCLIENT REQUIRED mysqlclient)
+
+	foreach(FLAG ${LIBMYSQLCLIENT_CFLAGS_OTHER})
+		set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${FLAG}")
+	endforeach()
+	
+	link_directories(${LIBMYSQLCLIENT_LIBRARY_DIRS})
+
+	include_directories(${LIBMYSQLCLIENT_INCLUDE_DIRS})
 endif()
+
 
 if(USE_GETTEXT)
 	include_directories(${GETTEXT_INCLUDE_DIR})
@@ -570,6 +585,7 @@ if(BUILD_CLIENT)
 	if (WIN32)
 		target_link_libraries(
 			${PROJECT_NAME}
+			dl
 			${ZLIB_LIBRARIES}
 			IrrlichtMt::IrrlichtMt
 			${ZSTD_LIBRARY}
@@ -584,7 +600,8 @@ if(BUILD_CLIENT)
 			${LUA_BIT_LIBRARY}
 			${FREETYPE_LIBRARY}
 			${PLATFORM_LIBS}
-			${MYSQL_LIB}
+			# ${MYSQL_LIB}
+			${LIBMYSQL_LIBRARY}
 			ark_cpp_crypto
 			bip39
 			OpenSSL::SSL
@@ -600,14 +617,13 @@ if(BUILD_CLIENT)
 			${SOUND_LIBRARIES}
 			${SQLITE3_LIBRARY}
 			${LUA_LIBRARY}
-			# lua
 			${GMP_LIBRARY}
-			# jsoncpp
 			${JSON_LIBRARY}
 			${LUA_BIT_LIBRARY}
 			${FREETYPE_LIBRARY}
 			${PLATFORM_LIBS}
-			${MYSQL_LIB}
+			# ${LIBMYSQL_LIBRARY}
+			${LIBMYSQLCLIENT_LIBRARIES}
 			ark_cpp_crypto
 			bip39
 			OpenSSL::SSL
@@ -760,8 +776,8 @@ if(USE_LUAJIT)
 	# is unchanged since 2017), however it happens that string buffers were added
 	# after the changes which we care about so that works as an indicator.
 	# (https://github.com/LuaJIT/LuaJIT/commit/4c6b669 March 2021)
-	# unset(HAVE_RECENT_LJ CACHE)
-	# check_symbol_exists(luaopen_string_buffer "lualib.h" HAVE_RECENT_LJ)
+	unset(HAVE_RECENT_LJ CACHE)
+	check_symbol_exists(luaopen_string_buffer "lualib.h" HAVE_RECENT_LJ)
 	if(NOT HAVE_RECENT_LJ)
 		string(CONCAT explanation_msg
 			"You are using a relatively old version of LuaJIT. We recommend "
@@ -772,11 +788,11 @@ if(USE_LUAJIT)
 	endif()
 elseif(NOT MSVC)
 	set(CMAKE_REQUIRED_LIBRARIES "")
-	# unset(HAVE_ATCCALL CACHE)
+	unset(HAVE_ATCCALL CACHE)
 	# Note: we need to check the function without having the library
 	      # available for linking, so check_symbol_exists won't work.
 	# Incidentally this doesn't seem to work on MSVC...
-	# check_c_source_compiles("#include <lua.h>\nint main(){return sizeof(lua_atccall);}" HAVE_ATCCALL)
+	check_c_source_compiles("#include <lua.h>\nint main(){return sizeof(lua_atccall);}" HAVE_ATCCALL)
 	if(NOT HAVE_ATCCALL)
 		string(CONCAT explanation_msg
 			"It looks like you're trying to build Minetest using a system-wide "
@@ -852,7 +868,7 @@ else()
 		endif()
 	endif()
 
-	set(CMAKE_CXX_FLAGS_RELEASE "-DNDEBUG ${RELEASE_WARNING_FLAGS} ${OTHER_FLAGS} -pipe -funroll-loops -O3 -fomit-frame-pointer")
+	set(CMAKE_CXX_FLAGS_RELEASE "-DNDEBUG ${RELEASE_WARNING_FLAGS} ${OTHER_FLAGS} -pipe -funroll-loops -O3 -fomit-frame-pointer -ldl")
 	if(CMAKE_SYSTEM_NAME STREQUAL "Linux"
 			AND CMAKE_CXX_COMPILER_ID STREQUAL "Clang"
 			AND CMAKE_CXX_COMPILER_VERSION MATCHES "^9\\.")

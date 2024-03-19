@@ -2,11 +2,18 @@
 
 # Linux build only
 install_linux_deps() {
+	# local pkgs=(
+		# cmake gettext postgresql doxygen 
+		# libpng-dev libjpeg-dev libxi-dev libgl1-mesa-dev
+		# libsqlite3-dev libhiredis-dev libogg-dev libgmp-dev libvorbis-dev
+		# libopenal-dev libpq-dev libleveldb-dev libcurl4-openssl-dev libzstd-dev
+	# )
+	
 	local pkgs=(
-		cmake gettext postgresql doxygen 
+		cmake gettext pkg-config 
 		libpng-dev libjpeg-dev libxi-dev libgl1-mesa-dev
 		libsqlite3-dev libhiredis-dev libogg-dev libgmp-dev libvorbis-dev
-		libopenal-dev libpq-dev libleveldb-dev libcurl4-openssl-dev libzstd-dev
+		libopenal-dev libleveldb-dev libcurl4-openssl-dev libzstd-dev libluajit-5.1-dev libmysqlclient-dev 
 	)
 
 	if [[ "$1" == "--no-irr" ]]; then
@@ -20,11 +27,11 @@ install_linux_deps() {
 	sudo apt-get update
 	sudo apt-get install -y --no-install-recommends "${pkgs[@]}" "$@"
 
-	sudo systemctl start postgresql.service
-	sudo -u postgres psql <<<"
-		CREATE USER minetest WITH PASSWORD 'minetest';
-		CREATE DATABASE minetest;
-	"
+	# sudo systemctl start postgresql.service
+	# sudo -u postgres psql <<<"
+		# CREATE USER minetest WITH PASSWORD 'minetest';
+		# CREATE DATABASE minetest;
+	# "
 }
 
 # macOS build only

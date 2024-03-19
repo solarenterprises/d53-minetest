@@ -97,8 +97,8 @@ add_subdirectory(lib/cpp-crypto)
 add_subdirectory(lib/bip39/src)
 
 # find_package(unofficial-libmysql REQUIRED)
-set(MYSQL_LIBDIR "" CACHE PATH "MYSQL Library Directory")
-set(MYSQL_INCLUDE "" CACHE PATH "MYSQL Include Directory")
+# set(MYSQL_LIBDIR "" CACHE PATH "MYSQL Library Directory")
+# set(MYSQL_INCLUDE "" CACHE PATH "MYSQL Include Directory")
 
 
 set(IRRLICHTMT_BUILD_DIR "" CACHE PATH "Path to IrrlichtMt build directory.")
