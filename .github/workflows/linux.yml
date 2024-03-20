@@ -69,6 +69,7 @@ jobs:
 
       - name: Build
         run: |
+          chmod +x ./util/ci/build.sh
           ./util/ci/build.sh
         env:
           CC: gcc-12
@@ -93,6 +94,7 @@ jobs:
 
       - name: Build
         run: |
+          chmod +x ./util/ci/build.sh
           ./util/ci/build.sh
         env:
           CC: clang-7
@@ -115,6 +117,7 @@ jobs:
 
       - name: Build
         run: |
+          chmod +x ./util/ci/build.sh
           ./util/ci/build.sh
         env:
           CC: clang-14
@@ -126,6 +129,7 @@ jobs:
 
       - name: Integration test + devtest
         run: |
+          chmod +x ./util/test_multiplayer.sh
           ./util/test_multiplayer.sh
 
   # Build with prometheus-cpp (server-only)
@@ -141,10 +145,12 @@ jobs:
 
       - name: Build prometheus-cpp
         run: |
+          chmod +x ./util/ci/build_prometheus_cpp.sh
           ./util/ci/build_prometheus_cpp.sh
 
       - name: Build
         run: |
+          chmod +x ./util/ci/build.sh
           ./util/ci/build.sh
         env:
           CC: clang-9

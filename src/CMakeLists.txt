@@ -531,6 +531,8 @@ if (WIN32)
 	include_directories(
 		${LIBMYSQL_INCLUDE_DIR}
 	)
+	
+	set(PLATFORM_LIBS ${PLATFORM_LIBS} ${LIBMYSQL_LIBRARY})
 
 else()
 	include(FindPkgConfig)
@@ -543,6 +545,8 @@ else()
 	link_directories(${LIBMYSQLCLIENT_LIBRARY_DIRS})
 
 	include_directories(${LIBMYSQLCLIENT_INCLUDE_DIRS})
+	
+	set(PLATFORM_LIBS ${PLATFORM_LIBS} ${LIBMYSQLCLIENT_LIBRARIES})
 endif()
 
 
@@ -585,7 +589,6 @@ if(BUILD_CLIENT)
 	if (WIN32)
 		target_link_libraries(
 			${PROJECT_NAME}
-			dl
 			${ZLIB_LIBRARIES}
 			IrrlichtMt::IrrlichtMt
 			${ZSTD_LIBRARY}
@@ -594,14 +597,10 @@ if(BUILD_CLIENT)
 			${SQLITE3_LIBRARY}
 			${LUA_LIBRARY}
 			${GMP_LIBRARY}
-			# lua
-			# jsoncpp
 			${JSON_LIBRARY}
 			${LUA_BIT_LIBRARY}
 			${FREETYPE_LIBRARY}
 			${PLATFORM_LIBS}
-			# ${MYSQL_LIB}
-			${LIBMYSQL_LIBRARY}
 			ark_cpp_crypto
 			bip39
 			OpenSSL::SSL
@@ -622,8 +621,6 @@ if(BUILD_CLIENT)
 			${LUA_BIT_LIBRARY}
 			${FREETYPE_LIBRARY}
 			${PLATFORM_LIBS}
-			# ${LIBMYSQL_LIBRARY}
-			${LIBMYSQLCLIENT_LIBRARIES}
 			ark_cpp_crypto
 			bip39
 			OpenSSL::SSL
@@ -695,14 +692,11 @@ if(BUILD_SERVER)
 		${ZLIB_LIBRARIES}
 		${ZSTD_LIBRARY}
 		${SQLITE3_LIBRARY}
-		jsoncpp
-		# lua
-		# ${JSON_LIBRARY}
+		${JSON_LIBRARY}
 		${LUA_LIBRARY}
 		${LUA_BIT_LIBRARY}
 		${GMP_LIBRARY}
 		${PLATFORM_LIBS}
-		${MYSQL_LIB}
 	)
 	
 	set_target_properties(${PROJECT_NAME}server PROPERTIES
