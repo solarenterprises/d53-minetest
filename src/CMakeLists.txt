@@ -562,11 +562,17 @@ if(USE_CURL)
 	include_directories(${CURL_INCLUDE_DIR})
 endif()
 
+if(NOT CMAKE_CL_64)
+    set(BIN_POSTFIX _x86)
+else()
+	set(BIN_POSTFIX _x64)
+endif()
+
 
 # When cross-compiling assume the user doesn't want to run the executable anyway,
 # otherwise place it in <source dir>/bin/ since Minetest can only run from there.
 if(NOT CMAKE_CROSSCOMPILING)
-	set(EXECUTABLE_OUTPUT_PATH "${CMAKE_SOURCE_DIR}/bin")
+	set(EXECUTABLE_OUTPUT_PATH "${CMAKE_SOURCE_DIR}/bin${BIN_POSTFIX}")
 endif()
 
 # if (NOT WIN32)
@@ -1020,3 +1026,5 @@ elseif (USE_GETTEXT)
 endif()
 
 set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+
+set_target_properties(${PROJECT_NAME} PROPERTIES OUTPUT_NAME "District53")

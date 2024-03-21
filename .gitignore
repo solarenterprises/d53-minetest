@@ -132,3 +132,9 @@ client/mod_storage.sqlite
 
 # building for crypto lib
 lib/cpp-crypto/extern/
+
+install32/
+install64/
+build32/
+bin_x86/
+bin_x64/

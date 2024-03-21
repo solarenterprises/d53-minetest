@@ -1,0 +1,1 @@
+cmake --install ./build32 --prefix ./install32
