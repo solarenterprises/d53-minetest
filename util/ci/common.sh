@@ -38,7 +38,7 @@ install_linux_deps() {
 install_macos_deps() {
 	local pkgs=(
 		cmake gettext freetype gmp jpeg-turbo jsoncpp leveldb
-		libogg libpng libvorbis luajit zstd
+		libogg libpng libvorbis luajit zstd pkg-config mysql-client openssl
 	)
 	export HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK=1
 	export HOMEBREW_NO_INSTALL_CLEANUP=1
@@ -47,4 +47,6 @@ install_macos_deps() {
 	brew install --display-times "${pkgs[@]}"
 	brew unlink $(brew ls --formula)
 	brew link "${pkgs[@]}"
+	brew link mysql-client --force
+	brew link openssl --force
 }

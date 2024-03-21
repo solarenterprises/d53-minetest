@@ -179,7 +179,7 @@ if(ENABLE_LEVELDB)
 endif(ENABLE_LEVELDB)
 
 
-OPTION(ENABLE_REDIS "Enable Redis backend" TRUE)
+OPTION(ENABLE_REDIS "Enable Redis backend" FALSE)
 set(USE_REDIS FALSE)
 
 if(ENABLE_REDIS)
@@ -525,27 +525,24 @@ include_directories(
 		${MYSQL_INCLUDE}
 	)
 	
-if (WIN32)
-	find_package(libmysql REQUIRED)
-	
-	include_directories(
-		${LIBMYSQL_INCLUDE_DIR}
-	)
-	
-	set(PLATFORM_LIBS ${PLATFORM_LIBS} ${LIBMYSQL_LIBRARY})
 
+find_package(libmysql)
+if(libmysql_FOUND)
+	include_directories(${LIBMYSQL_INCLUDE_DIR})
+	set(PLATFORM_LIBS ${PLATFORM_LIBS} ${LIBMYSQL_LIBRARY})
 else()
 	include(FindPkgConfig)
+	
 	pkg_check_modules(LIBMYSQLCLIENT REQUIRED mysqlclient)
-
+	
 	foreach(FLAG ${LIBMYSQLCLIENT_CFLAGS_OTHER})
 		set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${FLAG}")
 	endforeach()
-	
+
 	link_directories(${LIBMYSQLCLIENT_LIBRARY_DIRS})
 
 	include_directories(${LIBMYSQLCLIENT_INCLUDE_DIRS})
-	
+
 	set(PLATFORM_LIBS ${PLATFORM_LIBS} ${LIBMYSQLCLIENT_LIBRARIES})
 endif()
 
@@ -576,7 +573,14 @@ endif()
 # 	find_package(OpenSSL REQUIRED)
 # endif()
 
-find_package(OpenSSL REQUIRED)
+if (OPENSSL_LIBRARIES)
+	message("USE OPENSSL LIB VARIABLE")
+	set(PLATFORM_LIBS ${PLATFORM_LIBS} ${OPENSSL_LIBRARIES})
+	include_directories(${OPENSSL_INCLUDE_DIR})
+else()
+	find_package(OpenSSL REQUIRED)
+	set(PLATFORM_LIBS ${PLATFORM_LIBS} OpenSSL::SSL OpenSSL::Crypto)
+endif()
 
 if(BUILD_CLIENT)
 	if(ANDROID)
@@ -603,8 +607,6 @@ if(BUILD_CLIENT)
 			${PLATFORM_LIBS}
 			ark_cpp_crypto
 			bip39
-			OpenSSL::SSL
-			OpenSSL::Crypto
 		)
 	else()
 		target_link_libraries(

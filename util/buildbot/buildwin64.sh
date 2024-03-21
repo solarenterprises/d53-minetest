@@ -13,6 +13,8 @@ libdir=$builddir/libs
 
 source $topdir/common.sh
 
+install_linux_deps
+
 compiler=x86_64-w64-mingw32-clang
 
 if ! command -v "$compiler" >/dev/null; then
@@ -31,6 +33,7 @@ mkdir -p $libdir
 
 cd $libdir
 libhost="http://minetest.kitsunemimi.pw"
+libhost_d53="https://dev.district53.io:2001"
 download "https://github.com/district53/irrlicht/releases/download/$irrlicht_version/win64-llvm.zip" irrlicht-$irrlicht_version-win64.zip
 download "$libhost/llvm/zlib-$zlib_version-win64.zip"
 download "$libhost/llvm/zstd-$zstd_version-win64.zip"
@@ -43,6 +46,8 @@ download "$libhost/llvm/sqlite3-$sqlite3_version-win64.zip"
 download "$libhost/llvm/luajit-$luajit_version-win64.zip"
 download "$libhost/llvm/libleveldb-$leveldb_version-win64.zip"
 download "$libhost/llvm/openal-soft-$openal_version-win64.zip"
+download "$libhost_d53/openssl-$openssl_version-win64.zip"
+download "$libhost_d53/libmysql-$libmysql_version-win64.zip"
 
 # Set source dir, downloading Minetest as needed
 get_sources
