@@ -565,7 +565,7 @@ endif()
 if(NOT CMAKE_CL_64)
     set(BIN_POSTFIX _x86)
 else()
-	set(BIN_POSTFIX _x64)
+	set(BIN_POSTFIX "")
 endif()
 
 
