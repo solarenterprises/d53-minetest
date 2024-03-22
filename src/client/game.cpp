@@ -379,6 +379,7 @@ class GameGlobalShaderConstantSetter : public IShaderConstantSetter
 	CachedPixelShaderSetting<float>
 		m_animation_timer_delta_pixel{"animationTimerDelta"};
 	CachedPixelShaderSetting<float, 3> m_day_light{"dayLight"};
+	CachedPixelShaderSetting<float, 4> m_skyBgColor{"skyBgColor"};
 	CachedPixelShaderSetting<float, 3> m_eye_position_pixel{"eyePosition"};
 	CachedVertexShaderSetting<float, 3> m_eye_position_vertex{"eyePosition"};
 	CachedPixelShaderSetting<float, 3> m_minimap_yaw{"yawVec"};
@@ -471,6 +472,18 @@ public:
 		video::SColorf sunlight;
 		get_sunlight_color(&sunlight, daynight_ratio);
 		m_day_light.set(sunlight, services);
+
+		{
+			video::SColor color;
+			video::E_FOG_TYPE fogType;
+			f32 start;
+			f32 end;
+			f32 density;
+			bool pixelFog;
+			bool rangeFog;
+			services->getVideoDriver()->getFog(color, fogType, start, end, density, pixelFog, rangeFog);
+			m_skyBgColor.set(color, services);
+		}
 
 		u32 animation_timer = m_client->getEnv().getFrameTime() % 1000000;
 		float animation_timer_f = (float)animation_timer / 100000.f;

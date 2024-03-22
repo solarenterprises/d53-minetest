@@ -692,6 +692,9 @@ static bool init_common(const Settings &cmd_args, int argc, char *argv[])
 	if (!read_config_file(cmd_args))
 		return false;
 
+	// Override desynchronize_mapblock_texture_animation, new rendering technique it should always be false.
+	g_settings->setBool("desynchronize_mapblock_texture_animation", false);
+
 	init_log_streams(cmd_args);
 
 	// Initialize random seed

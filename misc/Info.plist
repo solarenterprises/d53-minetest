@@ -5,15 +5,15 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>English</string>
 	<key>CFBundleExecutable</key>
-	<string>minetest</string>
+	<string>District53</string>
 	<key>CFBundleIconFile</key>
 	<string>minetest-icon.icns</string>
 	<key>CFBundleName</key>
-	<string>Minetest</string>
+	<string>District53</string>
 	<key>CFBundleDisplayName</key>
-	<string>Minetest</string>
+	<string>District53</string>
 	<key>CFBundleIdentifier</key>
-	<string>net.minetest.minetest</string>
+	<string>com.district53.district53</string>
 	<key>NSHighResolutionCapable</key>
 	<false/>
 </dict>

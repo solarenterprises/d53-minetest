@@ -316,8 +316,8 @@ local function check_requirements(name, requires)
 	local special = {
 		android = PLATFORM == "Android",
 		desktop = PLATFORM ~= "Android",
-		touchscreen_gui = TOUCHSCREEN_GUI,
-		keyboard_mouse = not TOUCHSCREEN_GUI,
+		touchscreen_gui = core.settings:get_bool("enable_touch"),
+		keyboard_mouse = not core.settings:get_bool("enable_touch"),
 		shaders_support = shaders_support,
 		shaders = core.settings:get_bool("enable_shaders") and shaders_support,
 		opengl = video_driver == "opengl",

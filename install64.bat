@@ -1,1 +1,2 @@
-cmake --install ./minetest-build --prefix ./install64
+cmake --install ./build --prefix ./install64
+pause
