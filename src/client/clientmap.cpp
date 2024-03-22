@@ -1240,60 +1240,59 @@ void ClientMap::updateCacheBuffers(video::IVideoDriver* driver) {
 			sMeshBufferData.vertexMemory = data->vertex_memory.allocate(vertexCount * sizeof(video::S3DVertex));
 			sMeshBufferData.indexMemory = data->index_memory.allocate(indexCount * sizeof(u32));
 
-			if (!sMeshBufferData.vertexMemory.is_valid() || !sMeshBufferData.indexMemory.is_valid()) {
-
+			if (!sMeshBufferData.vertexMemory.is_valid()) {
 				//
-				// Grow memory
+				// Grow Vertex memory
 				//
 
 				core::array<video::S3DVertex> grow_vertices;
-				grow_vertices.set_used(data->vertex_memory.used_mem / sizeof(video::S3DVertex) + 10'000);
-				core::array<u32> grow_indices;
-				grow_indices.set_used(data->index_memory.used_mem / sizeof(u32) + 30'000);
-
-				//
-				// Copy data from GPU
-				glDriver->getVertexHardwareBufferSubData(
-					HWBuffer,
-					data->vertex_memory.used_mem / sizeof(video::S3DVertex),
-					0,
-					(c8*)grow_vertices.pointer());
-
-				glDriver->getIndexHardwareBufferSubData(
-					HWBuffer,
-					data->index_memory.used_mem / sizeof(u32),
-					0,
-					(c8*)grow_indices.pointer());
+				grow_vertices.set_used(data->vertex_memory.used_mem / sizeof(video::S3DVertex) + 50'000);
 
 				//
 				// Resize gpu memory
-				glDriver->updateVertexHardwareBufferDirect(
+				glDriver->resizeVertexHardwareBufferSubData(
 					HWBuffer,
-					(c8*)grow_vertices.pointer(),
 					grow_vertices.size());
 
-				glDriver->updateIndexHardwareBufferDirect(
-					HWBuffer,
-					(c8*)grow_indices.pointer(),
-					grow_indices.size());
-
-
 				buffer->vertexCount = grow_vertices.size();
-				buffer->indexCount = grow_indices.size();
 				data->vertex_memory.setSize(buffer->vertexCount * sizeof(video::S3DVertex));
-				data->index_memory.setSize(buffer->indexCount * sizeof(u32));
 
 				//
 				// Try to get offset again
 				if (!sMeshBufferData.vertexMemory.is_valid())
 					sMeshBufferData.vertexMemory = data->vertex_memory.allocate(vertexCount * sizeof(video::S3DVertex));
+
+				//
+				// Move vertex & index memory to GPU
+				//
+				if (!sMeshBufferData.vertexMemory.is_valid())
+					continue;
+			}
+			if (!sMeshBufferData.indexMemory.is_valid()) {
+				//
+				// Grow Index memory
+				//
+				core::array<u32> grow_indices;
+				grow_indices.set_used(data->index_memory.used_mem / sizeof(u32) + 80'000);
+			
+				//
+				// Resize gpu memory
+				glDriver->resizeIndexHardwareBufferSubData(
+					HWBuffer,
+					grow_indices.size());
+
+				buffer->indexCount = grow_indices.size();
+				data->index_memory.setSize(buffer->indexCount * sizeof(u32));
+
+				//
+				// Try to get offset again
 				if (!sMeshBufferData.indexMemory.is_valid())
 					sMeshBufferData.indexMemory = data->index_memory.allocate(indexCount * sizeof(u32));
 
 				//
 				// Move vertex & index memory to GPU
 				//
-				if (!sMeshBufferData.vertexMemory.is_valid() || !sMeshBufferData.indexMemory.is_valid())
+				if (!sMeshBufferData.indexMemory.is_valid())
 					continue;
 			}
 
