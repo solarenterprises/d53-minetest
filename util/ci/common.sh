@@ -47,5 +47,5 @@ install_macos_deps() {
 	brew update --auto-update
 	brew install --display-times "${pkgs[@]}"
 	brew unlink $(brew ls --formula)
-	brew link "${pkgs[@]}" --force
+	brew link --force --overwrite "${pkgs[@]}" 
 }
