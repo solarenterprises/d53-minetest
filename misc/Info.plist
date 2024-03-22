@@ -13,7 +13,7 @@
 	<key>CFBundleDisplayName</key>
 	<string>District53</string>
 	<key>CFBundleIdentifier</key>
-	<string>com.district53.district53</string>
+	<string>io.district53.district53</string>
 	<key>NSHighResolutionCapable</key>
 	<false/>
 </dict>

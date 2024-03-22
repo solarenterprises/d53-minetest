@@ -38,7 +38,7 @@ install_linux_deps() {
 install_macos_deps() {
 	local pkgs=(
 		cmake gettext freetype gmp jpeg-turbo jsoncpp leveldb
-		libogg libpng libvorbis luajit zstd pkg-config mysql-client openssl
+		libogg libpng libvorbis luajit zstd pkg-config mysql-client
 	)
 	export HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK=1
 	export HOMEBREW_NO_INSTALL_CLEANUP=1
