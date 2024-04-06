@@ -75,5 +75,8 @@ set(client_SRCS
 	${CMAKE_CURRENT_SOURCE_DIR}/shadows/shadowsshadercallbacks.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/shadows/shadowsScreenQuad.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/memoryManager.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/mesh_buffer_handler.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/clientmap_norender.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/player_ai.cpp
 	PARENT_SCOPE
 )

@@ -78,13 +78,41 @@ MapBlock::~MapBlock()
 {
 #ifndef SERVER
 	{
-		delete mesh;
+		//delete mesh;
 		mesh = nullptr;
 	}
 #endif
 
 	delete[] data;
 }
+
+void MapBlock::raiseModified(u32 mod, u32 reason)
+{
+	if (mod > m_modified) {
+		m_modified = mod;
+		m_modified_reason = reason;
+		if (m_modified >= MOD_STATE_WRITE_AT_UNLOAD)
+			m_disk_timestamp = m_timestamp;
+	}
+	else if (mod == m_modified) {
+		m_modified_reason |= reason;
+	}
+	if (mod == MOD_STATE_WRITE_NEEDED)
+		contents.clear();
+
+	static const u32 EDIT_FLAGS =
+		MOD_REASON_REALLOCATE |
+		MOD_REASON_STATIC_DATA_ADDED |
+		MOD_REASON_STATIC_DATA_ADDED |
+		MOD_REASON_STATIC_DATA_REMOVED |
+		MOD_REASON_STATIC_DATA_CHANGED |
+		MOD_REASON_VMANIP |
+		MOD_REASON_SET_NODE;
+
+	if (reason & EDIT_FLAGS)
+		m_modified_version++;
+}
+
 
 bool MapBlock::onObjectsActivation()
 {

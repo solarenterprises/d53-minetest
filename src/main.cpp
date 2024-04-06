@@ -154,7 +154,7 @@ int main(int argc, char *argv[])
 		print_help(allowed_options);
 		return cmd_args_ok ? 0 : 1;
 	}
-	if (cmd_args.getFlag("console"))
+	if (cmd_args.getFlag("console") || cmd_args.getFlag("norender"))
 		porting::attachOrCreateConsole();
 
 	if (cmd_args.getFlag("version")) {
@@ -165,6 +165,11 @@ int main(int argc, char *argv[])
 
 	// Debug handler
 	BEGIN_DEBUG_EXCEPTION_HANDLER
+
+	if (cmd_args.getFlag("norender")) {
+		cmd_args.set("color", "auto");
+		cmd_args.setBool("info", true);
+	}
 
 	if (!setup_log_params(cmd_args))
 		return 1;
@@ -247,10 +252,17 @@ int main(int argc, char *argv[])
 	porting::attachOrCreateConsole();
 	game_params.is_dedicated_server = true;
 #else
+	const bool noRender = cmd_args.getFlag("norender");
+
 	const bool isServer = cmd_args.getFlag("server");
-	if (isServer)
+	if (isServer || noRender)
 		porting::attachOrCreateConsole();
 	game_params.is_dedicated_server = isServer;
+
+	if (cmd_args.exists("playerai"))
+		game_params.playerai = cmd_args.get("playerai");
+	if (noRender && game_params.playerai.empty())
+		game_params.playerai = "playerai";
 #endif
 
 	if (!game_configure(&game_params, cmd_args))
@@ -394,6 +406,10 @@ static void set_allowed_options(OptionList *allowed_options)
 			_("Disable main menu"))));
 	allowed_options->insert(std::make_pair("console", ValueSpec(VALUETYPE_FLAG,
 		_("Starts with the console (Windows only)"))));
+	allowed_options->insert(std::make_pair("norender", ValueSpec(VALUETYPE_FLAG,
+		_("Starts with the console & creates no window for rendering"))));
+	allowed_options->insert(std::make_pair("playerai", ValueSpec(VALUETYPE_FLAG,
+		_("ai will control your character"))));
 #endif
 
 }

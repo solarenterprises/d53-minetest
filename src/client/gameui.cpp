@@ -141,12 +141,16 @@ void GameUI::update(const RunStats &stats, Client *client, MapDrawControl *draw_
 	if (m_flags.show_basic_debug) {
 		v3f player_position = player->getPosition();
 
+		v3s16 block_pos = floatToInt(player_position, BS) / MAP_BLOCKSIZE;
+
 		std::ostringstream os(std::ios_base::binary);
 		os << std::setprecision(1) << std::fixed
 			<< "pos: (" << (player_position.X / BS)
 			<< ", " << (player_position.Y / BS)
 			<< ", " << (player_position.Z / BS)
-			<< ") | yaw: " << (wrapDegrees_0_360(cam.camera_yaw)) << "° "
+			<< ")"
+			<< "| block_pos: (" << block_pos.X << ", " << block_pos.Y << ", " << block_pos.Z-1 << ")"
+			<< "| yaw: " << (wrapDegrees_0_360(cam.camera_yaw)) << "° "
 			<< yawToDirectionString(cam.camera_yaw)
 			<< " | pitch: " << (-wrapDegrees_180(cam.camera_pitch)) << "°"
 			<< " | seed: " << ((u64)client->getMapSeed());

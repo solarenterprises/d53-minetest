@@ -43,10 +43,13 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 	ClientEnvironment
 */
 
-ClientEnvironment::ClientEnvironment(ClientMap *map,
+ClientEnvironment::ClientEnvironment(
+	Map *map,
+	bool p_mapTypeClientMap,
 	ITextureSource *texturesource, Client *client):
 	Environment(client),
 	m_map(map),
+	mapTypeClientMap(p_mapTypeClientMap),
 	m_texturesource(texturesource),
 	m_client(client)
 {
@@ -71,9 +74,13 @@ Map & ClientEnvironment::getMap()
 	return *m_map;
 }
 
+bool ClientEnvironment::isClientMap() {
+	return mapTypeClientMap;
+}
+
 ClientMap & ClientEnvironment::getClientMap()
 {
-	return *m_map;
+	return *(ClientMap*)m_map;
 }
 
 void ClientEnvironment::setLocalPlayer(LocalPlayer *player)
@@ -132,6 +139,9 @@ void ClientEnvironment::step(float dtime)
 	/*
 		Stuff that has a maximum time increment
 	*/
+
+	if (lplayer->getCAO())
+		lplayer->stepAI(dtime);
 
 	u32 steps = std::ceil(dtime / dtime_max_increment);
 	f32 dtime_part = dtime / steps;
@@ -319,10 +329,13 @@ u16 ClientEnvironment::addActiveObject(std::unique_ptr<ClientActiveObject> objec
 	if (!m_ao_manager.registerObject(std::move(object)))
 		return 0;
 
-	obj->addToScene(m_texturesource, m_client->getSceneManager());
+	if (m_client->getSceneManager()) {
+		obj->addToScene(m_texturesource, m_client->getSceneManager());
 
-	// Update lighting immediately
-	obj->updateLight(getDayNightRatio());
+		// Update lighting immediately
+		obj->updateLight(getDayNightRatio());
+	}
+
 	return obj->getId();
 }
 

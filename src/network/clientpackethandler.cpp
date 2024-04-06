@@ -302,8 +302,11 @@ void Client::handleCommand_BlockData(NetworkPacket* pkt)
 
 	v3s16 p;
 	*pkt >> p;
+	u16 modified_version;
+	*pkt >> modified_version;
 
-	std::string datastring(pkt->getString(6), pkt->getSize() - 6);
+	const size_t offset = sizeof(v3s16) + sizeof(u16);
+	std::string datastring(pkt->getString(offset), pkt->getSize() - offset);
 	std::istringstream istr(datastring, std::ios_base::binary);
 
 	MapSector *sector;
@@ -316,6 +319,9 @@ void Client::handleCommand_BlockData(NetworkPacket* pkt)
 
 	block = sector->getBlockNoCreateNoEx(p.Y);
 	if (block) {
+		if (block->getModifiedVersion() >= modified_version)
+			return;
+
 		/*
 			Update an existing block
 		*/
@@ -330,6 +336,8 @@ void Client::handleCommand_BlockData(NetworkPacket* pkt)
 		block->deSerialize(istr, m_server_ser_ver, false);
 		block->deSerializeNetworkSpecific(istr);
 	}
+
+	block->setModifiedVersion(modified_version);
 
 	if (m_localdb) {
 		ServerMap::saveBlock(block, m_localdb);
@@ -685,9 +693,10 @@ void Client::handleCommand_AnnounceMedia(NetworkPacket* pkt)
 		return;
 	}
 
-	// Mesh update thread must be stopped while
-	// updating content definitions
-	sanity_check(!m_mesh_update_manager->isRunning());
+	if (m_mesh_update_manager)
+		// Mesh update thread must be stopped while
+		// updating content definitions
+		sanity_check(!m_mesh_update_manager->isRunning());
 
 	for (u16 i = 0; i < num_files; i++) {
 		std::string name, sha1_base64;
@@ -744,7 +753,7 @@ void Client::handleCommand_Media(NetworkPacket* pkt)
 
 	bool init_phase = m_media_downloader && m_media_downloader->isStarted();
 
-	if (init_phase) {
+	if (init_phase && m_mesh_update_manager) {
 		// Mesh update thread must be stopped while
 		// updating content definitions
 		sanity_check(!m_mesh_update_manager->isRunning());
@@ -782,9 +791,10 @@ void Client::handleCommand_NodeDef(NetworkPacket* pkt)
 	infostream << "Client: Received node definitions: packet size: "
 			<< pkt->getSize() << std::endl;
 
-	// Mesh update thread must be stopped while
-	// updating content definitions
-	sanity_check(!m_mesh_update_manager->isRunning());
+	if (m_mesh_update_manager)
+		// Mesh update thread must be stopped while
+		// updating content definitions
+		sanity_check(!m_mesh_update_manager->isRunning());
 
 	// Decompress node definitions
 	std::istringstream tmp_is(pkt->readLongString(), std::ios::binary);
@@ -801,9 +811,10 @@ void Client::handleCommand_ItemDef(NetworkPacket* pkt)
 	infostream << "Client: Received item definitions: packet size: "
 			<< pkt->getSize() << std::endl;
 
-	// Mesh update thread must be stopped while
-	// updating content definitions
-	sanity_check(!m_mesh_update_manager->isRunning());
+	if (m_mesh_update_manager)
+		// Mesh update thread must be stopped while
+		// updating content definitions
+		sanity_check(!m_mesh_update_manager->isRunning());
 
 	// Decompress item definitions
 	std::istringstream tmp_is(pkt->readLongString(), std::ios::binary);

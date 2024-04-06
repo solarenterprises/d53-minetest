@@ -464,8 +464,11 @@ private:
 			return std::hash<v3s16>()(p.first) ^ p.second;
 		}
 	};
-
-	typedef std::unordered_map<std::pair<v3s16, u16>, std::string, SBCHash> SerializedBlockCache;
+	struct SerializedBlockCacheData {
+		std::string str;
+		u64 last_serialized_version = 0;
+	};
+	typedef std::unordered_map<std::pair<v3s16, u16>, SerializedBlockCacheData, SBCHash> SerializedBlockCache;
 
 	void init();
 
@@ -753,6 +756,9 @@ private:
 	MetricCounterPtr m_packet_recv_counter;
 	MetricCounterPtr m_packet_recv_processed_counter;
 	MetricCounterPtr m_map_edit_event_counter;
+
+	// Cache serialized block data.
+	SerializedBlockCache cache;
 };
 
 /*

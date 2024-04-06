@@ -200,7 +200,6 @@ public:
 	// Returns true if anything has been changed.
 	bool animate(bool faraway, float time, u32 daynight_ratio, u32 bufferIndex);
 	bool animateCracks(int crack);
-	bool animateTransparent(float time);
 
 	scene::IMesh *getMesh()
 	{
@@ -263,7 +262,7 @@ public:
 	video::ITexture* getBufferMainTexture(u32 layer, u32 bufferIndex);
 
 private:
-	scene::IMesh *m_mesh[MAX_TILE_LAYERS];
+	scene::IMesh* m_mesh[MAX_TILE_LAYERS] = { nullptr, nullptr };
 	std::vector<MinimapMapblock*> m_minimap_mapblocks;
 	ITextureSource *m_tsrc;
 	IShaderSource *m_shdrsrc;

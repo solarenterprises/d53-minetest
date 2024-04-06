@@ -631,6 +631,35 @@ void PartialMeshBuffer::afterDraw() const
 	m_vertex_indexes = m_buffer->Indices.steal();
 }
 
+void dumpObj(std::string path, std::string name, irr::video::S3DVertex* vertices, size_t numVertices, u16* indices, size_t numIndices) {
+	std::stringstream ss;
+	ss << "o " << name.c_str() << std::endl;
+
+	for (size_t i = 0; i < numVertices; i++) {
+		auto pos = vertices[i].Pos;
+		ss << "v\t" << std::fixed << std::setprecision(6) << pos.X << "\t"
+			<< std::fixed << std::setprecision(6) << pos.Y << "\t"
+			<< std::fixed << std::setprecision(6) << pos.Z << std::endl;
+
+		auto normal = vertices[i].Normal;
+		ss << "vn\t" << std::fixed << std::setprecision(6) << normal.X << "\t"
+			<< std::fixed << std::setprecision(6) << normal.Y << "\t"
+			<< std::fixed << std::setprecision(6) << normal.Z << std::endl;
+
+		auto uv = vertices[i].TCoords;
+		ss << "vt\t" << std::fixed << std::setprecision(6) << uv.X << "\t"
+			<< std::fixed << std::setprecision(6) << uv.Y << std::endl;
+	}
+	for (size_t i = 0; i < numIndices; i += 3) {
+		ss << "f " << indices[i]+1 << " " << indices[i+1] + 1 << " " << indices[i+2] + 1
+			<< std::endl;
+	}
+
+	std::ofstream o(path);
+	o << ss.rdbuf();
+	o.close();
+}
+
 /*
 	MapBlockMesh
 */
@@ -801,18 +830,17 @@ MapBlockMesh::MapBlockMesh(Client *client, MeshMakeData *data, v3s16 camera_offs
 					t.updateAttributes();
 					m_transparent_triangles.push_back(t);
 				}
-			} else {
-				auto offset = intToFloat(mesh_grid.getMeshPos(data->m_blockpos) * MAP_BLOCKSIZE, BS);
+			}
+			else {
+				auto offset = intToFloat(bp * MAP_BLOCKSIZE, BS);
 				auto size = p.vertices.size();
 				auto translatedVertices = new irr::video::S3DVertex[size];
+				std::memcpy(translatedVertices, p.vertices.data(), size * sizeof(irr::video::S3DVertex));
 				for (size_t i = 0; i < size; i++) {
-					auto vertex = p.vertices[i];
-					vertex.Pos += offset;
-					translatedVertices[i] = vertex;
+					translatedVertices[i].Pos += offset;
 				}
 
-				buf->append(translatedVertices, p.vertices.size(),
-					&p.indices[0], p.indices.size());
+				buf->append(translatedVertices, p.vertices.size(), p.indices.data(), p.indices.size());
 
 				delete[] translatedVertices;
 			}
@@ -861,7 +889,7 @@ bool MapBlockMesh::isMeshBufferAnimated(u32 layer, u32 index) {
 			scene::IMeshBuffer* buf = mesh->getMeshBuffer(i);
 
 			bool is_animated = false;
-			for (auto info : m_animation_info)
+			for (auto& info : m_animation_info)
 				if (info.first.second == i) {
 					//
 					// Has animation
@@ -1017,44 +1045,6 @@ bool MapBlockMesh::animate(bool faraway, float time, u32 daynight_ratio, u32 buf
 	//}
 
 	return false;
-}
-
-bool MapBlockMesh::animateTransparent(float time)
-{
-	if (!m_has_animation) {
-		m_animation_force_timer = 100000;
-		return false;
-	}
-
-	m_animation_force_timer = myrand_range(5, 100);
-
-	// Texture animation
-	for (auto &it : m_animation_info) {
-
-		const TileLayer &tile = it.second.tile;
-		// Figure out current frame
-		int frameno = (int)(time * 1000 / tile.animation_frame_length_ms
-				+ it.second.frame_offset) % tile.animation_frame_count;
-		// If frame doesn't change, skip
-		if (frameno == it.second.frame)
-			break;
-
-		it.second.frame = frameno;
-
-		scene::IMeshBuffer *buf = m_mesh[it.first.first]->getMeshBuffer(it.first.second);
-
-		const FrameSpec &frame = (*tile.frames)[frameno];
-		buf->getMaterial().setTexture(0, frame.texture);
-		if (m_enable_shaders) {
-			if (frame.normal_texture)
-				buf->getMaterial().setTexture(1, frame.normal_texture);
-			buf->getMaterial().setTexture(2, frame.flags_texture);
-		}
-
-		break;
-	}
-
-	return true;
 }
 
 void MapBlockMesh::updateTransparentBuffers(v3f camera_pos, v3s16 block_pos)

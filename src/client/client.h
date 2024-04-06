@@ -38,6 +38,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "clientdynamicinfo.h"
 #include <fstream>
 #include "util/numeric.h"
+#include "mesh_buffer_handler.h"
 
 #define CLIENT_CHAT_MESSAGE_LIMIT_PER_10S 10.0f
 
@@ -68,6 +69,8 @@ class ParticleManager;
 class Camera;
 struct PlayerControl;
 class NetworkPacket;
+struct FpsControl;
+
 namespace con {
 	class Connection;
 }
@@ -123,6 +126,7 @@ public:
 	Client(
 			const char *playername,
 			const std::string &password,
+			const std::string ai_class,
 			MapDrawControl &control,
 			IWritableTextureSource *tsrc,
 			IWritableShaderSource *shsrc,
@@ -376,6 +380,8 @@ public:
 		return getProtoVersion() != 0; // (set in TOCLIENT_HELLO)
 	}
 
+	FpsControl& getFpsControl();
+
 	Minimap* getMinimap() { return m_minimap; }
 	void setCamera(Camera* camera) { m_camera = camera; }
 
@@ -459,9 +465,13 @@ public:
 
 	bool inhibit_inventory_revert = false;
 
-	//
-	// For clientmap updateCache
-	std::vector<MapBlock*> mapBlockMesh_changed;
+	struct SendGotBlocksData {
+		v3s16 pos;
+		u16 modified_version;
+	};
+
+public:
+	std::unique_ptr<MeshBufferHandler> m_mesh_buffer_handler;
 
 private:
 	void loadMods();
@@ -485,7 +495,7 @@ private:
 	void sendInit(const std::string &playerName);
 	void startAuth(AuthMechanism chosen_auth_mechanism);
 	void sendDeletedBlocks(std::vector<v3s16> &blocks);
-	void sendGotBlocks(const std::vector<v3s16> &blocks);
+	void sendGotBlocks(const std::vector<SendGotBlocksData> &blocks);
 	void sendRemovedSounds(const std::vector<s32> &soundList);
 
 	bool canSendChatMessage() const;
@@ -506,6 +516,7 @@ private:
 
 
 	std::unique_ptr<MeshUpdateManager> m_mesh_update_manager;
+	
 	ClientEnvironment m_env;
 	std::unique_ptr<ParticleManager> m_particle_manager;
 	std::unique_ptr<con::Connection> m_con;
@@ -625,4 +636,6 @@ private:
 
 	// The number of blocks the client will combine for mesh generation.
 	MeshGrid m_mesh_grid;
+
+	FpsControl fps_control;
 };

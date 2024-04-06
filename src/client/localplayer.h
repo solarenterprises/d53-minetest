@@ -31,6 +31,7 @@ class GenericCAO;
 class ClientActiveObject;
 class ClientEnvironment;
 class IGameDef;
+class PlayerAI;
 struct collisionMoveResult;
 
 enum class LocalPlayerAnimation
@@ -142,6 +143,16 @@ public:
 	void setPitch(f32 pitch) { m_pitch = pitch; }
 	f32 getPitch() const { return m_pitch; }
 
+	//
+	// Not confirmed that it works
+	v3f getDirection() const {
+		return v3f(
+			std::cos(m_yaw * (180.f / M_PI)),
+			std::sin(m_pitch * (180.f / M_PI)),
+			std::sin(m_yaw * (180.f / M_PI))
+		).normalize();
+	}
+
 	inline void setPosition(const v3f &position)
 	{
 		m_position = position;
@@ -180,6 +191,21 @@ public:
 	inline Lighting& getLighting() { return m_lighting; }
 
 	inline PlayerSettings &getPlayerSettings() { return m_player_settings; }
+
+	template<class T> void setPlayerAI() {
+		static_assert(std::is_base_of<PlayerAI, T>::value, "T must inherit from PlayerAI");
+
+		delete ai;
+		ai = new T(this);
+	}
+
+	void setPlayerAI(std::string className);
+
+	void stepAI(float dtime);
+
+	inline Client* getClient() {
+		return m_client;
+	}
 
 private:
 	void accelerate(const v3f &target_speed, const f32 max_increase_H,
@@ -234,4 +260,6 @@ private:
 
 	PlayerSettings m_player_settings;
 	Lighting m_lighting;
+
+	PlayerAI* ai = nullptr;
 };

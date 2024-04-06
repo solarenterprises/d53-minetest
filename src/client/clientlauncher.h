@@ -35,6 +35,8 @@ public:
 	bool run(GameStartData &start_data, const Settings &cmd_args);
 
 private:
+	bool runNoRender(GameStartData& start_data, const Settings& cmd_args);
+
 	void init_args(GameStartData &start_data, const Settings &cmd_args);
 	bool init_engine();
 	void init_input();

@@ -34,6 +34,8 @@ MemoryManager::MemoryInfo MemoryManager::allocate(u32 chunkSize) {
 	newInfo.chunkEnd = newInfo.chunkStart + chunkSize;
 	memory.insert(it, newInfo);
 
+	assert(newInfo.chunkStart % align_size == 0);
+
 	if (used_mem < newInfo.chunkEnd)
 		used_mem = newInfo.chunkEnd;
 
@@ -49,7 +51,12 @@ void MemoryManager::free(const MemoryManager::MemoryInfo& info) {
 		if (it->id != info.id)
 			continue;
 
+		if (it+1 == memory.end() && memory.size() >= 2) {
+			used_mem = (it-1)->chunkEnd;
+		}
+
 		memory.erase(it);
+
 		return;
 	}
 

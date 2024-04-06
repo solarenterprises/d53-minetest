@@ -53,10 +53,9 @@ void FpsControl::reset()
 
 void FpsControl::limit(IrrlichtDevice *device, f32 *dtime, bool assume_paused)
 {
-	/*const float fps_limit = (device->isWindowFocused() && !assume_paused)
+	const float fps_limit = (!device || device->isWindowFocused() && !assume_paused)
 			? g_settings->getFloat("fps_max")
-			: g_settings->getFloat("fps_max_unfocused");*/
-	const float fps_limit = 1000;
+			: g_settings->getFloat("fps_max_unfocused");
 	const u64 frametime_min = 1000000.0f / std::max(fps_limit, 1.0f);
 
 	u64 time = porting::getTimeUs();

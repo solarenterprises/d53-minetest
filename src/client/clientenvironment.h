@@ -62,10 +62,11 @@ typedef std::unordered_map<u16, ClientActiveObject*> ClientActiveObjectMap;
 class ClientEnvironment : public Environment
 {
 public:
-	ClientEnvironment(ClientMap *map, ITextureSource *texturesource, Client *client);
+	ClientEnvironment(Map *map, bool mapTypeClientMap, ITextureSource *texturesource, Client *client);
 	~ClientEnvironment();
 
 	Map & getMap();
+	bool isClientMap();
 	ClientMap & getClientMap();
 
 	Client *getGameDef() { return m_client; }
@@ -147,7 +148,8 @@ public:
 	u64 getFrameTimeDelta() const { return m_frame_dtime; }
 
 private:
-	ClientMap *m_map;
+	Map *m_map;
+	bool mapTypeClientMap = false;
 	LocalPlayer *m_local_player = nullptr;
 	ITextureSource *m_texturesource;
 	Client *m_client;

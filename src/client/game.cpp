@@ -765,6 +765,7 @@ protected:
 	void checkZoomEnabled();
 
 	void updateCameraDirection(CameraOrientation *cam, float dtime);
+	void updateCameraDirectionNoRender(CameraOrientation *cam, float dtime);
 	void updateCameraOrientation(CameraOrientation *cam, float dtime);
 	void updatePlayerControl(const CameraOrientation &cam);
 	void updatePauseState();
@@ -977,8 +978,7 @@ private:
 };
 
 Game::Game() :
-	m_chat_log_buf(g_logger),
-	m_game_ui(new GameUI())
+	m_chat_log_buf(g_logger)
 {
 	g_settings->registerChangedCallback("doubletap_jump",
 		&settingChangedCallback, this);
@@ -1028,6 +1028,9 @@ Game::Game() :
 
 Game::~Game()
 {
+	if (driver)
+		driver->removeAllHardwareBuffers();
+
 	delete client;
 	delete soundmaker;
 	sound_manager.reset();
@@ -1097,7 +1100,7 @@ bool Game::startup(bool *kill,
 
 	// "cache"
 	m_rendering_engine        = rendering_engine;
-	device                    = m_rendering_engine->get_raw_device();
+	device                    = m_rendering_engine ? m_rendering_engine->get_raw_device() : nullptr;
 	this->kill                = kill;
 	this->error_message       = &error_message;
 	reconnect_requested       = reconnect;
@@ -1107,18 +1110,22 @@ bool Game::startup(bool *kill,
 
 	input->keycache.populate();
 
-	driver = device->getVideoDriver();
-	smgr = m_rendering_engine->get_scene_manager();
+	if (m_rendering_engine) {
+		m_game_ui = std::unique_ptr<GameUI>(new GameUI());
+		m_game_ui->initFlags();
+	}
 
-	driver->setTextureCreationFlag(video::ETCF_CREATE_MIP_MAPS, g_settings->getBool("mip_map"));
+	driver = device ? device->getVideoDriver() : nullptr;
+	smgr = m_rendering_engine ? m_rendering_engine->get_scene_manager() : nullptr;
 
-	smgr->getParameters()->setAttribute(scene::OBJ_LOADER_IGNORE_MATERIAL_FILES, true);
+	if (driver)
+		driver->setTextureCreationFlag(video::ETCF_CREATE_MIP_MAPS, g_settings->getBool("mip_map"));
+	if (smgr)
+		smgr->getParameters()->setAttribute(scene::OBJ_LOADER_IGNORE_MATERIAL_FILES, true);
 
 	// Reinit runData
 	runData = GameRunData();
 	runData.time_from_last_punch = 10.0;
-
-	m_game_ui->initFlags();
 
 	m_first_loop_after_window_activation = true;
 
@@ -1134,7 +1141,8 @@ bool Game::startup(bool *kill,
 	if (!createClient(start_data))
 		return false;
 
-	m_rendering_engine->initialize(client, hud);
+	if (m_rendering_engine)
+		m_rendering_engine->initialize(client, hud);
 
 	return true;
 }
@@ -1146,7 +1154,7 @@ void Game::run()
 	RunStats stats = {};
 	CameraOrientation cam_view_target = {};
 	CameraOrientation cam_view = {};
-	FpsControl draw_times;
+	FpsControl& draw_times = client->getFpsControl();
 	f32 dtime; // in seconds
 
 	/* Clear the profiler */
@@ -1166,7 +1174,7 @@ void Game::run()
 		);
 	const bool initial_window_maximized = g_settings->getBool("window_maximized");
 
-	while (m_rendering_engine->run()
+	while ((!m_rendering_engine || m_rendering_engine->run())
 			&& !(*kill || g_gamecallback->shutdown_requested
 			|| (server && server->isShutdownRequested()))) {
 
@@ -1175,16 +1183,18 @@ void Game::run()
 		//  + Sleep time until the wanted FPS are reached
 		draw_times.limit(device, &dtime, g_menumgr.pausesGame());
 
-		const auto current_dynamic_info = ClientDynamicInfo::getCurrent();
-		if (!current_dynamic_info.equal(client_display_info)) {
-			client_display_info = current_dynamic_info;
-			dynamic_info_send_timer = 0.2f;
-		}
+		if (m_rendering_engine) {
+			const auto current_dynamic_info = ClientDynamicInfo::getCurrent();
+			if (!current_dynamic_info.equal(client_display_info)) {
+				client_display_info = current_dynamic_info;
+				dynamic_info_send_timer = 0.2f;
+			}
 
-		if (dynamic_info_send_timer > 0.0f) {
-			dynamic_info_send_timer -= dtime;
-			if (dynamic_info_send_timer <= 0.0f) {
-				client->sendUpdateClientInfo(current_dynamic_info);
+			if (dynamic_info_send_timer > 0.0f) {
+				dynamic_info_send_timer -= dtime;
+				if (dynamic_info_send_timer <= 0.0f) {
+					client->sendUpdateClientInfo(current_dynamic_info);
+				}
 			}
 		}
 
@@ -1200,12 +1210,17 @@ void Game::run()
 
 		processQueues();
 
-		m_game_ui->clearInfoText();
+		if (m_game_ui)
+			m_game_ui->clearInfoText();
 
 		updateProfilers(stats, draw_times, dtime);
 		processUserInput(dtime);
 		// Update camera before player movement to avoid camera lag of one frame
-		updateCameraDirection(&cam_view_target, dtime);
+		if (m_rendering_engine)
+			updateCameraDirection(&cam_view_target, dtime);
+		else
+			updateCameraDirectionNoRender(&cam_view_target, dtime);
+
 		cam_view.camera_yaw += (cam_view_target.camera_yaw -
 				cam_view.camera_yaw) * m_cache_cam_smoothing;
 		cam_view.camera_pitch += (cam_view_target.camera_pitch -
@@ -1222,27 +1237,32 @@ void Game::run()
 		updateDebugState();
 		updateCamera(dtime);
 		updateSound(dtime);
-		processPlayerInteraction(dtime, m_game_ui->m_flags.show_hud);
+		processPlayerInteraction(dtime, m_game_ui ? m_game_ui->m_flags.show_hud: false);
 		updateFrame(&graph, &stats, dtime, cam_view);
 		updateProfilerGraphs(&graph);
 
-		if (m_does_lost_focus_pause_game && !device->isWindowFocused() && !isMenuActive()) {
-			showPauseMenu();
+		if (m_rendering_engine) {
+			if (m_does_lost_focus_pause_game && !device->isWindowFocused() && !isMenuActive()) {
+				showPauseMenu();
+			}
 		}
 	}
 
-	RenderingEngine::autosaveScreensizeAndCo(initial_screen_size, initial_window_maximized);
+	if (m_rendering_engine)
+		RenderingEngine::autosaveScreensizeAndCo(initial_screen_size, initial_window_maximized);
 }
 
 
 void Game::shutdown()
 {
-	auto formspec = m_game_ui->getFormspecGUI();
-	if (formspec)
-		formspec->quitMenu();
+	if (m_game_ui) {
+		auto formspec = m_game_ui->getFormspecGUI();
+		if (formspec)
+			formspec->quitMenu();
 
-	// Clear text when exiting.
-	m_game_ui->clearText();
+		// Clear text when exiting.
+		m_game_ui->clearText();
+	}
 
 	if (g_touchscreengui)
 		g_touchscreengui->hide();
@@ -1264,7 +1284,8 @@ void Game::shutdown()
 		g_menumgr.deletingMenu(g_menumgr.m_stack.front());
 	}
 
-	m_game_ui->deleteFormspec();
+	if (m_game_ui)
+		m_game_ui->deleteFormspec();
 
 	chat_backend->addMessage(L"", L"# Disconnected.");
 	chat_backend->addMessage(L"", L"");
@@ -1420,6 +1441,11 @@ bool Game::createClient(const GameStartData &start_data)
 	if (!draw_control)
 		return false;
 
+	if (!m_rendering_engine) {
+		draw_control->norender = true;
+		draw_control->wanted_range = 120.f;
+	}
+
 	bool could_connect, connect_aborted;
 	if (!connectToServer(start_data, &could_connect, &connect_aborted))
 		return false;
@@ -1442,7 +1468,12 @@ bool Game::createClient(const GameStartData &start_data)
 		return false;
 	}
 
-	auto *scsf = new GameGlobalShaderConstantSetterFactory(client);
+	if (!m_rendering_engine) {
+		client->afterContentReceived();
+		return true;
+	}
+
+	auto* scsf = new GameGlobalShaderConstantSetterFactory(client);
 	shader_src->addShaderConstantSetterFactory(scsf);
 
 	shader_src->addShaderConstantSetterFactory(
@@ -1484,7 +1515,7 @@ bool Game::createClient(const GameStartData &start_data)
 		crack_animation_length = 5;
 	}
 
-	if (!initGui())
+	if (m_game_ui && !initGui())
 		return false;
 
 	/* Set window caption
@@ -1593,10 +1624,13 @@ bool Game::connectToServer(const GameStartData &start_data,
 			<< "\" isIPv6=" << connect_address.isIPv6() << std::endl;
 	}
 
+	
 
 	try {
-		client = new Client(start_data.name.c_str(),
+		client = new Client(
+				start_data.name.c_str(),
 				start_data.password,
+				start_data.playerai,
 				*draw_control, texture_src, shader_src,
 				itemdef_manager, nodedef_manager, sound_manager.get(), eventmgr,
 				m_rendering_engine, m_game_ui.get(),
@@ -1618,16 +1652,18 @@ bool Game::connectToServer(const GameStartData &start_data,
 		simple_singleplayer_mode || local_server_mode);
 
 	try {
+		FpsControl fps_control;
+
 		input->clear();
 
-		FpsControl fps_control;
 		f32 dtime;
 		f32 wait_time = 0; // in seconds
 		bool did_fallback = false;
 
 		fps_control.reset();
 
-		while (m_rendering_engine->run()) {
+		//while (m_rendering_engine->run()) {
+		while (m_rendering_engine ? m_rendering_engine->run() : !(*kill)) {
 
 			fps_control.limit(device, &dtime);
 
@@ -1692,7 +1728,7 @@ bool Game::getServerContent(bool *aborted)
 
 	fps_control.reset();
 
-	while (m_rendering_engine->run()) {
+	while (m_rendering_engine ? m_rendering_engine->run() : !(*kill)) {
 
 		fps_control.limit(device, &dtime);
 
@@ -1726,12 +1762,19 @@ bool Game::getServerContent(bool *aborted)
 
 		if (!client->itemdefReceived()) {
 			progress = 25;
-			m_rendering_engine->draw_load_screen(wstrgettext("Item definitions..."),
+			if (m_rendering_engine)
+				m_rendering_engine->draw_load_screen(wstrgettext("Item definitions..."),
 					guienv, texture_src, dtime, progress);
+			else
+				infostream << "Item definitions..." << progress << std::endl;
+
 		} else if (!client->nodedefReceived()) {
 			progress = 30;
-			m_rendering_engine->draw_load_screen(wstrgettext("Node definitions..."),
-					guienv, texture_src, dtime, progress);
+			if (m_rendering_engine)
+				m_rendering_engine->draw_load_screen(wstrgettext("Node definitions..."),
+						guienv, texture_src, dtime, progress);
+			else
+				infostream << "Node definitions..." << progress << std::endl;
 		} else {
 			std::ostringstream message;
 			std::fixed(message);
@@ -1756,8 +1799,11 @@ bool Game::getServerContent(bool *aborted)
 			}
 
 			progress = 30 + client->mediaReceiveProgress() * 35 + 0.5;
-			m_rendering_engine->draw_load_screen(utf8_to_wide(message.str()), guienv,
-				texture_src, dtime, progress);
+			if (m_rendering_engine)
+				m_rendering_engine->draw_load_screen(utf8_to_wide(message.str()), guienv,
+					texture_src, dtime, progress);
+			else
+				infostream << message.str() << progress << std::endl;
 		}
 	}
 
@@ -1850,13 +1896,17 @@ void Game::updateDebugState()
 	bool has_debug = client->checkPrivilege("debug");
 	bool has_basic_debug = has_debug || (player->hud_flags & HUD_FLAG_BASIC_DEBUG);
 
-	if (m_game_ui->m_flags.show_basic_debug) {
-		if (!has_basic_debug)
-			m_game_ui->m_flags.show_basic_debug = false;
-	} else if (m_game_ui->m_flags.show_minimal_debug) {
-		if (has_basic_debug)
-			m_game_ui->m_flags.show_basic_debug = true;
+	if (m_game_ui) {
+		if (m_game_ui->m_flags.show_basic_debug) {
+			if (!has_basic_debug)
+				m_game_ui->m_flags.show_basic_debug = false;
+		}
+		else if (m_game_ui->m_flags.show_minimal_debug) {
+			if (has_basic_debug)
+				m_game_ui->m_flags.show_basic_debug = true;
+		}
 	}
+
 	if (!has_basic_debug)
 		hud->disableBlockBounds();
 	if (!has_debug)
@@ -1884,7 +1934,8 @@ void Game::updateProfilers(const RunStats &stats, const FpsControl &draw_times,
 			g_profiler->print(infostream);
 		}
 
-		m_game_ui->updateProfiler();
+		if (m_game_ui)
+			m_game_ui->updateProfiler();
 		g_profiler->clear();
 	}
 
@@ -1953,32 +2004,37 @@ void Game::updateStats(RunStats *stats, const FpsControl &draw_times,
 
 void Game::processUserInput(f32 dtime)
 {
-	// Reset input if window not active or some menu is active
-	if (!device->isWindowActive() || isMenuActive() || guienv->hasFocus(gui_chat_console)) {
-		if (m_game_focused) {
-			m_game_focused = false;
-			infostream << "Game lost focus" << std::endl;
-			input->releaseAllKeys();
-		} else {
-			input->clear();
-		}
-
-		if (g_touchscreengui)
-			g_touchscreengui->hide();
-
-	} else {
-		if (g_touchscreengui) {
-			/* on touchscreengui step may generate own input events which ain't
-			 * what we want in case we just did clear them */
-			g_touchscreengui->show();
-			g_touchscreengui->step(dtime);
-		}
-
+	if (!m_rendering_engine) {
 		m_game_focused = true;
 	}
+	else {
+		// Reset input if window not active or some menu is active
+		if (!device->isWindowActive() || isMenuActive() || guienv->hasFocus(gui_chat_console)) {
+			if (m_game_focused) {
+				m_game_focused = false;
+				infostream << "Game lost focus" << std::endl;
+				input->releaseAllKeys();
+			} else {
+				input->clear();
+			}
 
-	if (!guienv->hasFocus(gui_chat_console) && gui_chat_console->isOpen()) {
-		gui_chat_console->closeConsoleAtOnce();
+			if (g_touchscreengui)
+				g_touchscreengui->hide();
+
+		} else {
+			if (g_touchscreengui) {
+				/* on touchscreengui step may generate own input events which ain't
+				 * what we want in case we just did clear them */
+				g_touchscreengui->show();
+				g_touchscreengui->step(dtime);
+			}
+
+			m_game_focused = true;
+		}
+
+		if (!guienv->hasFocus(gui_chat_console) && gui_chat_console->isOpen()) {
+			gui_chat_console->closeConsoleAtOnce();
+		}
 	}
 
 	// Input handler step() (used by the random input generator)
@@ -2554,6 +2610,18 @@ void Game::checkZoomEnabled()
 		m_game_ui->showTranslatedStatusText("Zoom currently disabled by game or mod");
 }
 
+void Game::updateCameraDirectionNoRender(CameraOrientation* cam, float dtime) {
+	LocalPlayer* player = client->getEnv().getLocalPlayer();
+	v3f speed = player->getSpeed();
+
+	if (speed.getLength() > 0.1) {
+		v3f dir = speed;
+		dir.normalize();
+
+		cam->camera_yaw = std::atan2(dir.Y, dir.X);
+	}
+}
+
 void Game::updateCameraDirection(CameraOrientation *cam, float dtime)
 {
 	auto *cur_control = device->getCursorControl();
@@ -2868,6 +2936,9 @@ void Game::handleClientEvent_ShowLocalFormSpec(ClientEvent *event, CameraOrienta
 void Game::handleClientEvent_HandleParticleEvent(ClientEvent *event,
 		CameraOrientation *cam)
 {
+	if (!client->getParticleManager())
+		return;
+
 	LocalPlayer *player = client->getEnv().getLocalPlayer();
 	client->getParticleManager()->handleParticleEvent(event, client, player);
 }
@@ -3127,15 +3198,23 @@ void Game::updateChat(f32 dtime)
 	auto &buf = chat_backend->getRecentBuffer();
 	if (buf.getLinesModified()) {
 		buf.resetLinesModified();
-		m_game_ui->setChatText(chat_backend->getRecentChat(), buf.getLineCount());
+
+		if (m_game_ui)
+			m_game_ui->setChatText(chat_backend->getRecentChat(), buf.getLineCount());
+		else
+			infostream << chat_backend->getRecentChat().c_str();
 	}
 
 	// Make sure that the size is still correct
-	m_game_ui->updateChatSize();
+	if (m_game_ui)
+		m_game_ui->updateChatSize();
 }
 
 void Game::updateCamera(f32 dtime)
 {
+	if (!camera)
+		return;
+
 	LocalPlayer *player = client->getEnv().getLocalPlayer();
 
 	/*
@@ -3206,16 +3285,20 @@ void Game::updateSound(f32 dtime)
 {
 	// Update sound listener
 	LocalPlayer *player = client->getEnv().getLocalPlayer();
+	v3f position = camera ? camera->getCameraNode()->getPosition() : player->getPosition();
+	v3f direction = camera ? camera->getDirection() : player->getDirection();
+	v3f up = camera ? camera->getCameraNode()->getUpVector() : v3f(0, 1, 0);
+
 	ClientActiveObject *parent = player->getParent();
-	v3s16 camera_offset = camera->getOffset();
+	v3s16 camera_offset = camera ? camera->getOffset() : v3s16();
 	sound_manager->updateListener(
-			(1.0f/BS) * camera->getCameraNode()->getPosition()
+			(1.0f/BS) * position
 					+ intToFloat(camera_offset, 1.0f),
 			(1.0f/BS) * (parent ? parent->getVelocity() : player->getSpeed()),
-			camera->getDirection(),
-			camera->getCameraNode()->getUpVector());
+			direction,
+			up);
 
-	sound_volume_control(sound_manager.get(), device->isWindowActive());
+	sound_volume_control(sound_manager.get(), device ? device->isWindowActive() : true);
 
 	// Tell the sound maker whether to make footstep sounds
 	soundmaker->makes_footstep_sound = player->makes_footstep_sound;
@@ -3224,7 +3307,7 @@ void Game::updateSound(f32 dtime)
 	if (player->makes_footstep_sound)
 		soundmaker->step(dtime);
 
-	ClientMap &map = client->getEnv().getClientMap();
+	Map &map = client->getEnv().getMap();
 	MapNode n = map.getNode(player->getFootstepNodePos());
 	soundmaker->m_player_step_sound = nodedef_manager->get(n).sound_footstep;
 }
@@ -3232,6 +3315,9 @@ void Game::updateSound(f32 dtime)
 
 void Game::processPlayerInteraction(f32 dtime, bool show_hud)
 {
+	if (!camera)
+		return;
+
 	LocalPlayer *player = client->getEnv().getLocalPlayer();
 
 	const v3f camera_direction = camera->getDirection();
@@ -3981,10 +4067,10 @@ void Game::updateFrame(ProfilerGraph *graph, RunStats *stats, f32 dtime,
 		Fog range
 	*/
 
-	if (sky->getFogDistance() >= 0) {
+	if (sky && sky->getFogDistance() >= 0) {
 		draw_control->wanted_range = MYMIN(draw_control->wanted_range, sky->getFogDistance());
 	}
-	if (draw_control->range_all && sky->getFogDistance() < 0) {
+	if (draw_control->range_all && sky && sky->getFogDistance() < 0) {
 		runData.fog_range = FOG_RANGE_ALL;
 	} else {
 		runData.fog_range = draw_control->wanted_range * BS;
@@ -3995,8 +4081,8 @@ void Game::updateFrame(ProfilerGraph *graph, RunStats *stats, f32 dtime,
 	*/
 	u32 daynight_ratio = client->getEnv().getDayNightRatio();
 	float time_brightness = decode_light_f((float)daynight_ratio / 1000.0);
-	float direct_brightness;
-	bool sunlight_seen;
+	float direct_brightness = 1.0;
+	bool sunlight_seen = true;
 
 	// When in noclip mode force same sky brightness as above ground so you
 	// can see properly
@@ -4004,12 +4090,12 @@ void Game::updateFrame(ProfilerGraph *graph, RunStats *stats, f32 dtime,
 		client->checkPrivilege("fly")) {
 		direct_brightness = time_brightness;
 		sunlight_seen = true;
-	} else {
+	} else if (client->getEnv().isClientMap()) {
 		float old_brightness = sky->getBrightness();
 		direct_brightness = client->getEnv().getClientMap()
-				.getBackgroundBrightness(MYMIN(runData.fog_range * 1.2, 60 * BS),
-					daynight_ratio, (int)(old_brightness * 255.5), &sunlight_seen)
-				    / 255.0;
+			.getBackgroundBrightness(MYMIN(runData.fog_range * 1.2, 60 * BS),
+				daynight_ratio, (int)(old_brightness * 255.5), &sunlight_seen)
+			/ 255.0;
 	}
 
 	float time_of_day_smooth = runData.time_of_day_smooth;
@@ -4032,9 +4118,10 @@ void Game::updateFrame(ProfilerGraph *graph, RunStats *stats, f32 dtime,
 
 	runData.time_of_day_smooth = time_of_day_smooth;
 
-	sky->update(time_of_day_smooth, time_brightness, direct_brightness,
-			sunlight_seen, camera->getCameraMode(), player->getYaw(),
-			player->getPitch());
+	if (sky)
+		sky->update(time_of_day_smooth, time_brightness, direct_brightness,
+				sunlight_seen, camera->getCameraMode(), player->getYaw(),
+				player->getPitch());
 
 	/*
 		Update clouds
@@ -4045,7 +4132,8 @@ void Game::updateFrame(ProfilerGraph *graph, RunStats *stats, f32 dtime,
 	/*
 		Update particles
 	*/
-	client->getParticleManager()->step(dtime);
+	if (client->getParticleManager())
+		client->getParticleManager()->step(dtime);
 
 	/*
 		Damage camera tilt
@@ -4082,7 +4170,9 @@ void Game::updateFrame(ProfilerGraph *graph, RunStats *stats, f32 dtime,
 		// Update wielded tool
 		ItemStack selected_item, hand_item;
 		ItemStack &tool_item = player->getWieldedItem(&selected_item, &hand_item);
-		camera->wield(tool_item);
+
+		if (camera)
+			camera->wield(tool_item);
 	}
 
 	/*
@@ -4094,61 +4184,65 @@ void Game::updateFrame(ProfilerGraph *graph, RunStats *stats, f32 dtime,
 
 	float update_draw_list_delta = 0.2f;
 
-	v3f camera_direction = camera->getDirection();
+	if (client->getEnv().isClientMap()) {
+		v3f camera_direction = camera->getDirection();
 
-	// call only one of updateDrawList, touchMapBlocks, or updateShadow per frame
-	// (the else-ifs below are intentional)
-	if (runData.update_draw_list_timer >= update_draw_list_delta
+		// call only one of updateDrawList, touchMapBlocks, or updateShadow per frame
+		// (the else-ifs below are intentional)
+		if (runData.update_draw_list_timer >= update_draw_list_delta
 			|| runData.update_draw_list_last_cam_dir.getDistanceFrom(camera_direction) > 0.2
 			|| m_camera_offset_changed
 			|| client->getEnv().getClientMap().needsUpdateDrawList()) {
-		runData.update_draw_list_timer = 0;
-		client->getEnv().getClientMap().updateDrawList();
-		runData.update_draw_list_last_cam_dir = camera_direction;
-		client->getEnv().getClientMap().updateCacheBuffers(driver);
-	} else if (runData.touch_blocks_timer > update_draw_list_delta) {
-		client->getEnv().getClientMap().touchMapBlocks();
-		runData.touch_blocks_timer = 0;
-		client->getEnv().getClientMap().updateCacheBuffers(driver);
-	} else if (RenderingEngine::get_shadow_renderer()) {
-		updateShadows();
+			runData.update_draw_list_timer = 0;
+			client->getEnv().getClientMap().updateDrawList();
+			runData.update_draw_list_last_cam_dir = camera_direction;
+		}
+		else if (runData.touch_blocks_timer > update_draw_list_delta) {
+			client->getEnv().getClientMap().touchMapBlocks();
+			runData.touch_blocks_timer = 0;
+		}
+		else if (RenderingEngine::get_shadow_renderer()) {
+			updateShadows();
+		}
 	}
 
-	m_game_ui->update(*stats, client, draw_control, cam, runData.pointed_old, gui_chat_console, dtime);
+	if (m_game_ui) {
+		m_game_ui->update(*stats, client, draw_control, cam, runData.pointed_old, gui_chat_console, dtime);
 
-	/*
-	   make sure menu is on top
-	   1. Delete formspec menu reference if menu was removed
-	   2. Else, make sure formspec menu is on top
-	*/
-	auto formspec = m_game_ui->getFormspecGUI();
-	do { // breakable. only runs for one iteration
-		if (!formspec)
-			break;
+		/*
+		   make sure menu is on top
+		   1. Delete formspec menu reference if menu was removed
+		   2. Else, make sure formspec menu is on top
+		*/
+		auto formspec = m_game_ui->getFormspecGUI();
+		do { // breakable. only runs for one iteration
+			if (!formspec)
+				break;
 
-		if (formspec->getReferenceCount() == 1) {
-			// See GUIFormSpecMenu::create what refcnt = 1 means
-			m_game_ui->deleteFormspec();
-			break;
-		}
-
-		auto &loc = formspec->getFormspecLocation();
-		if (loc.type == InventoryLocation::NODEMETA) {
-			NodeMetadata *meta = client->getEnv().getClientMap().getNodeMetadata(loc.p);
-			if (!meta || meta->getString("formspec").empty()) {
-				formspec->quitMenu();
+			if (formspec->getReferenceCount() == 1) {
+				// See GUIFormSpecMenu::create what refcnt = 1 means
+				m_game_ui->deleteFormspec();
 				break;
 			}
-		}
 
-		if (isMenuActive())
-			guiroot->bringToFront(formspec);
-	} while (false);
+			auto& loc = formspec->getFormspecLocation();
+			if (loc.type == InventoryLocation::NODEMETA) {
+				NodeMetadata* meta = client->getEnv().getClientMap().getNodeMetadata(loc.p);
+				if (!meta || meta->getString("formspec").empty()) {
+					formspec->quitMenu();
+					break;
+				}
+			}
+
+			if (isMenuActive())
+				guiroot->bringToFront(formspec);
+		} while (false);
+	}
 
 	/*
 		==================== Drawing begins ====================
 	*/
-	if (device->isWindowVisible())
+	if (device && device->isWindowVisible())
 		drawScene(graph, stats);
 	/*
 		==================== End scene ====================
@@ -4308,6 +4402,9 @@ void Game::drawScene(ProfilerGraph *graph, RunStats *stats)
 
 void Game::showOverlayMessage(const char *msg, float dtime, int percent, bool draw_sky)
 {
+	if (!m_rendering_engine)
+		return;
+
 	m_rendering_engine->draw_load_screen(wstrgettext(msg), guienv, texture_src,
 			dtime, percent, draw_sky);
 }
@@ -4355,12 +4452,15 @@ void Game::readSettings()
 
 void Game::showDeathFormspec()
 {
+	if (!m_game_ui)
+		return;
+
 	static std::string formspec_str =
 		std::string("formspec_version[1]") +
 		SIZE_TAG
 		"bgcolor[#320000b4;true]"
 		"label[4.85,1.35;" + gettext("You died") + "]"
-		"button_exit[4,3;3,0.5;btn_respawn;" + gettext("Respawn") + "]"
+		"button_exit[4,3;3,0.5;§;" + gettext("Respawn") + "]"
 		;
 
 	/* Create menu */

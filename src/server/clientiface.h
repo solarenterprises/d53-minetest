@@ -262,12 +262,13 @@ public:
 	void GetNextBlocks(ServerEnvironment *env, EmergeManager* emerge,
 			float dtime, std::vector<PrioritySortedBlockTransfer> &dest);
 
-	void GotBlock(v3s16 p);
+	void GotBlock(v3s16 p, u16 modified_version);
 
-	void SentBlock(v3s16 p);
+	void SentBlock(v3s16 p, u16 modified_version);
 
+	inline void ResetNothingToSendTimer() { m_nothing_to_send_pause_timer = 0; }
 	void SetBlockNotSent(v3s16 p);
-	void SetBlocksNotSent(const std::vector<v3s16> &blocks);
+	//void SetBlocksNotSent(const std::vector<v3s16> &blocks);
 
 	/**
 	 * tell client about this block being modified right now.
@@ -275,13 +276,16 @@ public:
 	 * while modification is processed by server
 	 * @param p position of modified block
 	 */
-	void ResendBlockIfOnWire(v3s16 p);
+	//void ResendBlockIfOnWire(v3s16 p);
 
-	u32 getSendingCount() const { return m_blocks_sending.size(); }
+	//u32 getSendingCount() const { return m_blocks_sending.size(); }
 
 	bool isBlockSent(v3s16 p) const
 	{
-		return m_blocks_sent.find(p) != m_blocks_sent.end();
+		auto it = m_blocks_sent.find(p);
+		if (it == m_blocks_sent.end())
+			return false;
+		return !it->second.empty();
 	}
 
 	bool markMediaSent(const std::string &name) {
@@ -293,8 +297,8 @@ public:
 	{
 		o<<"RemoteClient "<<peer_id<<": "
 				<<"m_blocks_sent.size()="<<m_blocks_sent.size()
-				<<", m_blocks_sending.size()="<<m_blocks_sending.size()
-				<<", m_nearest_unsent_d="<<m_nearest_unsent_d
+				//<<", m_blocks_sending.size()="<<m_blocks_sending.size()
+				//<<", m_nearest_unsent_d="<<m_nearest_unsent_d
 				<<", m_excess_gotblocks="<<m_excess_gotblocks
 				<<std::endl;
 		m_excess_gotblocks = 0;
@@ -373,7 +377,7 @@ private:
 		List of block positions.
 		No MapBlock* is stored here because the blocks can get deleted.
 	*/
-	std::unordered_set<v3s16> m_blocks_sent;
+	std::unordered_map<v3s16, std::unordered_set<u16>> m_blocks_sent;
 
 	/*
 		Cache of blocks that have been occlusion culled at the current distance.
@@ -382,7 +386,7 @@ private:
 	 */
 	std::unordered_set<v3s16> m_blocks_occ;
 
-	s16 m_nearest_unsent_d = 0;
+	//s16 m_nearest_unsent_d = 0;
 	v3s16 m_last_center;
 	v3f m_last_camera_dir;
 
@@ -408,7 +412,8 @@ private:
 		Block is removed when GOTBLOCKS is received.
 		Value is time from sending. (not used at the moment)
 	*/
-	std::unordered_map<v3s16, float> m_blocks_sending;
+	//std::unordered_map<std::pair<v3s16, u16>, float, hash_pair_v3s16_u16> m_blocks_sending;
+	//std::unordered_map<v3s16, std::unordered_set<u16>> m_blocks_sending;
 
 	/*
 		Blocks that have been modified since blocks were
@@ -418,7 +423,7 @@ private:
 
 		List of block positions.
 	*/
-	std::unordered_set<v3s16> m_blocks_modified;
+	//std::unordered_set<v3s16> m_blocks_modified;
 
 	/*
 		Count of excess GotBlocks().
@@ -474,7 +479,8 @@ public:
 	std::vector<session_t> getClientIDs(ClientState min_state=CS_Active);
 
 	/* mark blocks as not sent on all active clients */
-	void markBlocksNotSent(const std::vector<v3s16> &positions);
+	//void markBlocksNotSent(const std::vector<v3s16> &positions);
+	void ResetNothingToSendTimer();
 
 	/* verify is server user limit was reached */
 	bool isUserLimitReached();

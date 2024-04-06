@@ -103,19 +103,7 @@ public:
 	////
 	//// Modification tracking methods
 	////
-	void raiseModified(u32 mod, u32 reason=MOD_REASON_UNKNOWN)
-	{
-		if (mod > m_modified) {
-			m_modified = mod;
-			m_modified_reason = reason;
-			if (m_modified >= MOD_STATE_WRITE_AT_UNLOAD)
-				m_disk_timestamp = m_timestamp;
-		} else if (mod == m_modified) {
-			m_modified_reason |= reason;
-		}
-		if (mod == MOD_STATE_WRITE_NEEDED)
-			contents.clear();
-	}
+	void raiseModified(u32 mod, u32 reason = MOD_REASON_UNKNOWN);
 
 	inline u32 getModified()
 	{
@@ -125,6 +113,16 @@ public:
 	inline u32 getModifiedReason()
 	{
 		return m_modified_reason;
+	}
+
+	inline u16 getModifiedVersion()
+	{
+		return m_modified_version;
+	}
+
+	inline void setModifiedVersion(u16 ver)
+	{
+		m_modified_version = ver;
 	}
 
 	std::string getModifiedReasonString();
@@ -461,7 +459,7 @@ private:
 
 public:
 #ifndef SERVER // Only on client
-	MapBlockMesh *mesh = nullptr;
+	std::shared_ptr<MapBlockMesh> mesh;
 
 	// marks the sides which are opaque: 00+Z-Z+Y-Y+X-X
 	u8 solid_sides = 0;
@@ -526,6 +524,7 @@ private:
 	*/
 	u16 m_modified = MOD_STATE_CLEAN;
 	u32 m_modified_reason = 0;
+	u16 m_modified_version = 0;
 
 	/*
 		When block is removed from active blocks, this is set to gametime.

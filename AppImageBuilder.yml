@@ -7,8 +7,8 @@ AppDir:
     id: district53
     name: District53
     icon: minetest
-    version: 3.0.2
-    exec: usr/local/bin/district53
+    version: 5.9.0.001
+    exec: usr/bin/District53
     exec_args: $@
   runtime:
     env:
@@ -17,20 +17,24 @@ AppDir:
   apt:
     arch: amd64
     sources:
-      - sourceline: deb http://archive.ubuntu.com/ubuntu/ bionic main universe
+      - sourceline: deb http://archive.ubuntu.com/ubuntu/ focal main universe
         key_url: 'http://keyserver.ubuntu.com/pks/lookup?op=get&search=0x3b4fe6acc0b21f32'
-      - sourceline: deb http://archive.ubuntu.com/ubuntu/ bionic-updates main universe
-      - sourceline: deb http://archive.ubuntu.com/ubuntu/ bionic-backports main universe
-      - sourceline: deb http://archive.ubuntu.com/ubuntu/ bionic-security main universe
+      - sourceline: deb http://archive.ubuntu.com/ubuntu/ focal-updates main universe
+      - sourceline: deb http://archive.ubuntu.com/ubuntu/ focal-backports main universe
+      - sourceline: deb http://archive.ubuntu.com/ubuntu/ focal-security main universe
+      - sourceline: deb http://archive.ubuntu.com/ubuntu/ jammy main universe
+        key_url: 'http://keyserver.ubuntu.com/pks/lookup?op=get&search=0x871920D1991BC93C'
+      
 
     include:
       - libc6
       - libcurl3-gnutls
+      - libcurl4
       - libfreetype6
       - libgl1
       - libjpeg-turbo8
       - libjsoncpp1
-      - libleveldb1v5
+      - libleveldb1d
       - libopenal1
       - libpng16-16
       - libsqlite3-0
@@ -41,6 +45,9 @@ AppDir:
       - zlib1g
       - libluajit-5.1-dev
       - libssl-dev
+      - libmysqlclient-dev
+      - libfuse2
+      - libjsoncpp25
 
   files:
     exclude:
@@ -52,6 +59,9 @@ AppDir:
 
 AppImage:
   update-information: None
-  #sign-key: None
-  sign-key: 0236A9D6C1366CDA
+  sign-key: D85EFD1CF2B8800C88B6A2DEEA8DF9DC979031BE
   arch: x86_64
+  
+script: |
+    cmake --install .
+    cp ../irrlicht./lib/Linux/libIrrlichtMt.so.1.9.0.15 AppDir/usr/lib/x86_64-linux-gnu/

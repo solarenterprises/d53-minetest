@@ -47,6 +47,16 @@ struct EnumString es_TileAnimationType[] =
 	{0, nullptr},
 };
 
+void luaL_checktype_withname(lua_State* L, int narg, int tag, char* name) {
+	//luaL_checktype(L, narg, tag);
+	if (lua_type(L, narg) != tag) {
+		const char* tname = lua_typename(L, tag);
+		const char* msg = lua_pushfstring(L, "%s expected, got %s, in %s",
+			tname, luaL_typename(L, narg), name);
+		luaL_argerror(L, narg, msg);
+	}
+}
+
 /******************************************************************************/
 void read_item_definition(lua_State* L, int index,
 		const ItemDefinition &default_def, ItemDefinition &def)
@@ -102,7 +112,7 @@ void read_item_definition(lua_State* L, int index,
 	} else if (lua_isstring(L, -1)) {
 		video::SColor color;
 		read_color(L, -1, &color);
-		def.wear_bar_params = WearBarParams({{0.0, color}},
+		def.wear_bar_params = WearBarParams({{0.0f, color}},
 				WearBarParams::BLEND_MODE_CONSTANT);
 	}
 
@@ -119,7 +129,8 @@ void read_item_definition(lua_State* L, int index,
 
 	lua_getfield(L, index, "sounds");
 	if (!lua_isnil(L, -1)) {
-		luaL_checktype(L, -1, LUA_TTABLE);
+		luaL_checktype_withname(L, -1, LUA_TTABLE, "sounds");
+		//luaL_checktype(L, -1, LUA_TTABLE);
 		lua_getfield(L, -1, "place");
 		read_simplesoundspec(L, -1, def.sound_place);
 		lua_pop(L, 1);
@@ -132,7 +143,8 @@ void read_item_definition(lua_State* L, int index,
 	// No, this is not a mistake. Item sounds are in "sound", node sounds in "sounds".
 	lua_getfield(L, index, "sound");
 	if (!lua_isnil(L, -1)) {
-		luaL_checktype(L, -1, LUA_TTABLE);
+		luaL_checktype_withname(L, -1, LUA_TTABLE, "sound");
+		//luaL_checktype(L, -1, LUA_TTABLE);
 		lua_getfield(L, -1, "punch_use");
 		read_simplesoundspec(L, -1, def.sound_use);
 		lua_pop(L, 1);
@@ -158,7 +170,8 @@ void read_item_definition(lua_State* L, int index,
 
 	lua_getfield(L, index, "touch_interaction");
 	if (!lua_isnil(L, -1)) {
-		luaL_checktype(L, -1, LUA_TTABLE);
+		luaL_checktype_withname(L, -1, LUA_TTABLE, "touch_interaction");
+		//luaL_checktype(L, -1, LUA_TTABLE);
 
 		TouchInteraction &inter = def.touch_interaction;
 		inter.pointed_nothing = (TouchInteractionMode)getenumfield(L, -1, "pointed_nothing",
@@ -296,7 +309,8 @@ void read_object_properties(lua_State *L, int index,
 	if (lua_isnil(L, index))
 		return;
 
-	luaL_checktype(L, -1, LUA_TTABLE);
+	luaL_checktype_withname(L, -1, LUA_TTABLE, "object_properties");
+	//luaL_checktype(L, -1, LUA_TTABLE);
 
 	int hp_max = 0;
 	if (getintfield(L, -1, "hp_max", hp_max)) {
@@ -1239,7 +1253,8 @@ NodeBox read_nodebox(lua_State *L, int index)
 	if (lua_isnil(L, -1))
 		return nodebox;
 
-	luaL_checktype(L, -1, LUA_TTABLE);
+	luaL_checktype_withname(L, -1, LUA_TTABLE, "read_nodebox");
+	//luaL_checktype(L, -1, LUA_TTABLE);
 
 	nodebox.type = (NodeBoxType)getenumfield(L, index, "type",
 			ScriptApiNode::es_NodeBoxType, NODEBOX_REGULAR);
@@ -1885,7 +1900,8 @@ void read_groups(lua_State *L, int index, ItemGroupList &result)
 	if (lua_isnil(L, index))
 		return;
 
-	luaL_checktype(L, index, LUA_TTABLE);
+	luaL_checktype_withname(L, index, LUA_TTABLE, "groups");
+	//luaL_checktype(L, index, LUA_TTABLE);
 
 	result.clear();
 	lua_pushnil(L);
@@ -1930,7 +1946,8 @@ std::vector<ItemStack> read_items(lua_State *L, int index, IGameDef *gdef)
 		index = lua_gettop(L) + 1 + index;
 
 	std::vector<ItemStack> items;
-	luaL_checktype(L, index, LUA_TTABLE);
+	luaL_checktype_withname(L, index, LUA_TTABLE, "items");
+	//luaL_checktype(L, index, LUA_TTABLE);
 	lua_pushnil(L);
 	while (lua_next(L, index)) {
 		s32 key = luaL_checkinteger(L, -2);
@@ -1952,7 +1969,8 @@ void luaentity_get(lua_State *L, u16 id)
 	// Get luaentities[i]
 	lua_getglobal(L, "core");
 	lua_getfield(L, -1, "luaentities");
-	luaL_checktype(L, -1, LUA_TTABLE);
+	luaL_checktype_withname(L, -1, LUA_TTABLE, "luaentities");
+	//luaL_checktype(L, -1, LUA_TTABLE);
 	lua_pushinteger(L, id);
 	lua_gettable(L, -2);
 	lua_remove(L, -2); // Remove luaentities
@@ -2229,7 +2247,8 @@ void push_objectRef(lua_State *L, const u16 id)
 	// Get core.object_refs[i]
 	lua_getglobal(L, "core");
 	lua_getfield(L, -1, "object_refs");
-	luaL_checktype(L, -1, LUA_TTABLE);
+	luaL_checktype_withname(L, -1, LUA_TTABLE, "object_refs");
+	//luaL_checktype(L, -1, LUA_TTABLE);
 	lua_pushinteger(L, id);
 	lua_gettable(L, -2);
 	lua_remove(L, -2); // object_refs

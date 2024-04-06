@@ -1,4 +1,4 @@
-/*
+ /*
 Minetest
 Copyright (C) 2010-2013 celeron55, Perttu Ahola <celeron55@gmail.com>
 
@@ -31,6 +31,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "camera.h"               // CameraModes
 #include "util/basic_macros.h"
 #include "client/renderingengine.h"
+#include "COpenGLDriver.h"
 
 #include <queue>
 
@@ -285,27 +286,11 @@ void ClientMap::updateDrawList()
 	}
 	m_keeplist.clear();
 
-	cache_keep_blocks.clear();
-
 	const v3s16 cam_pos_nodes = floatToInt(m_camera_position, BS);
 
 	v3s16 p_blocks_min;
 	v3s16 p_blocks_max;
 	getBlocksInViewRange(cam_pos_nodes, &p_blocks_min, &p_blocks_max);
-
-	for (auto& sector_it : m_sectors) {
-		const MapSector* sector = sector_it.second;
-		v2s16 sp = sector->getPos();
-
-		if (sp.X < p_blocks_min.X || sp.X > p_blocks_max.X ||
-			sp.Y < p_blocks_min.Z || sp.Y > p_blocks_max.Z)
-			continue;
-
-		for (const auto& entry : sector->getBlocks()) {
-			MapBlock* block = entry.second.get();
-			cache_keep_blocks[block->getPos()] = block;
-		}
-	}
 
 	// Number of blocks occlusion culled
 	u32 blocks_occlusion_culled = 0;
@@ -363,7 +348,7 @@ void ClientMap::updateDrawList()
 			// Loop through blocks in sector
 			for (const auto& entry : sector->getBlocks()) {
 				MapBlock* block = entry.second.get();
-				MapBlockMesh* mesh = block->mesh;
+				MapBlockMesh* mesh = block->mesh.get();
 
 				// Calculate the coordinates for range and frustum culling
 				v3f mesh_sphere_center;
@@ -475,7 +460,7 @@ void ClientMap::updateDrawList()
 			if (!block)
 				continue;
 
-			MapBlockMesh* mesh = block ? block->mesh : nullptr;
+			MapBlockMesh* mesh = block ? block->mesh.get() : nullptr;
 
 			// Calculate the coordinates for range and frustum culling
 			v3f mesh_sphere_center;
@@ -696,7 +681,7 @@ void ClientMap::touchMapBlocks()
 
 		for (const auto& entry : sector->getBlocks()) {
 			MapBlock* block = entry.second.get();
-			MapBlockMesh* mesh = block->mesh;
+			MapBlockMesh* mesh = block->mesh.get();
 
 			// Calculate the coordinates for range and frustum culling
 			v3f mesh_sphere_center;
@@ -747,8 +732,7 @@ void ClientMap::renderMap(video::IVideoDriver* driver, s32 pass)
 	if (pass == scene::ESNRP_SOLID) {
 		m_last_drawn_sectors.clear();
 
-		if (doesNeedToUpdateCache())
-			updateCacheBuffers(driver);
+		updateCacheBuffers(driver);
 	}
 
 	/*
@@ -782,11 +766,12 @@ void ClientMap::renderMap(video::IVideoDriver* driver, s32 pass)
 		for (auto& i : m_drawlist) {
 			v3s16 block_pos = i.first;
 			MapBlock* block = i.second;
-			MapBlockMesh* block_mesh = block->mesh;
+			MapBlockMesh* block_mesh = block->mesh.get();
 
 			// If the mesh of the block happened to get deleted, ignore it
 			if (!block_mesh)
 				continue;
+
 
 			auto& transparent_buffers = block_mesh->getTransparentBuffers();
 			if (transparent_buffers.empty())
@@ -967,119 +952,189 @@ void ClientMap::renderMap(video::IVideoDriver* driver, s32 pass)
 	g_profiler->avg(prefix + "material swaps [#]", material_swaps);
 }
 
-bool ClientMap::doesNeedToUpdateCache() {
-	return !m_client->mapBlockMesh_changed.empty();
-}
-
 void ClientMap::updateCacheBuffers(video::IVideoDriver* driver) {
+	TextureBufListMaps buffers;
+	if (!m_client->m_mesh_buffer_handler->getCacheBuffers(buffers))
+		return;
+
+	const v3s16 cam_pos_nodes = floatToInt(m_camera_position, BS);
+	v3s16 p_blocks_min;
+	v3s16 p_blocks_max;
+	getBlocksInViewRange(cam_pos_nodes, &p_blocks_min, &p_blocks_max);
+	m_client->m_mesh_buffer_handler->setView(p_blocks_min, p_blocks_max);
+
 	auto glDriver = (video::CNullDriver*)driver;
+	bool canDropTextures = true;
 
-	//
-	// Unload buffers
-	//
-	std::vector<MapBlock*> unload_mapblocks = m_client->mapBlockMesh_changed;
-	auto cache_keep_blocks_end = cache_keep_blocks.end();
-	for (auto it : buffer_data) {
-		if (cache_keep_blocks.find(it.first->getPos()) != cache_keep_blocks_end)
-			continue;
+	auto& fps_control = m_client->getFpsControl();
+	auto sleep_time_sec = ((double)fps_control.sleep_time) * 1e-6;
 
-		unload_mapblocks.push_back(it.first);
-	}
+	auto now = std::chrono::steady_clock::now();
+	auto time_since_last_time = std::chrono::duration<double>(now - last_time_build_buffers).count() - sleep_time_sec;
+	last_time_build_buffers = now;
 
-	for (auto mapBlockMesh : unload_mapblocks) {
-		if (buffer_data.find(mapBlockMesh) == buffer_data.end())
-			continue;
+	const u64 max_gl_ops = std::max(
+		(u64)1,
+		u64((1.0 - std::clamp(
+			time_since_last_time,
+			0.0,
+			1.0
+		)) * 5000));
 
-		auto& bufferList = buffer_data[mapBlockMesh];
-		for (auto& meshBufferData : bufferList) {
-			//std::cout << "Unload:" << meshBufferData.texture->getName().getPath().c_str() << std::endl;
+	const u64 gl_ops_points_div = 100;
 
-			auto cache = cache_buffers.getNoCreate(meshBufferData.texture, meshBufferData.layer);
-			if (!cache) {
+	u64 gl_ops_processed = 0;
+	u64 num_load_data_processed = 0;
+	for (auto it : buffers.loadData) {
+		if (gl_ops_processed >= max_gl_ops) {
+			canDropTextures = false;
+			break;
+		}
+
+		auto loadBlockData = it.block_data;
+		auto& loadDataVec = loadBlockData.data;
+
+		for (auto loadData : loadDataVec) {
+			auto texture = loadData.texture;
+			auto data = buffers.getNoCreate(texture, loadData.layer);
+			assert(data);
+
+			auto cache = cache_buffers.get(texture, loadData.layer);
+
+			auto buffer = cache->buffer;
+			if (!buffer->getHWBuffer()) {
+				buffer->vertexCount = data->vertexCount;
+				buffer->indexCount = data->indexCount;
+				buffer->drawPrimitiveCount = 0;
+				buffer->Material = data->material;
+				glDriver->getBufferLink(buffer);
+			}
+
+			auto HWBuffer = glDriver->getBufferLink(buffer);
+			if (!HWBuffer)
 				continue;
+
+			//
+			// Grow memory
+			//
+			size_t setVertexCount = data->vertexCount;
+			if (buffer->vertexCount != setVertexCount) {
+				//
+				// Resize gpu memory
+				glDriver->resizeVertexHardwareBufferSubData(
+					HWBuffer,
+					setVertexCount,
+					buffer->vertexCount);
+
+				buffer->vertexCount = setVertexCount;
+
+				gl_ops_processed += (setVertexCount / gl_ops_points_div) * 2;
 			}
 
-			auto HWBuffer = glDriver->getBufferLink(cache->buffer);
-			if (HWBuffer) {
-				if (meshBufferData.indexMemory.is_valid()) {
-					auto indexCount = meshBufferData.indexMemory.size() / sizeof(u32);
-					assert(empty_data.size() >= indexCount);
+			size_t setIndexCount = data->indexCount;
+			if (buffer->indexCount != setIndexCount) {
+				//
+				// Resize gpu memory
+				glDriver->resizeIndexHardwareBufferSubData(
+					HWBuffer,
+					setIndexCount,
+					buffer->indexCount);
 
-					glDriver->subUpdateIndexHardwareBuffer(
-						HWBuffer,
-						(c8*)empty_data.pointer(),
-						indexCount,
-						meshBufferData.indexMemory.chunkStart / sizeof(u32));
+				buffer->indexCount = setIndexCount;
+
+				gl_ops_processed += (setIndexCount / gl_ops_points_div) * 2;
+			}
+
+			//
+			// Vertices
+			//
+			OpenGLSubData* vertexSubData = loadData.glVertexSubData;
+			OpenGLSubData* indexSubData = loadData.glIndexSubData;
+
+			if (vertexSubData) {
+				auto subData = vertexSubData;
+
+				//
+				// Move vertex & index memory to GPU
+				//
+				video::S3DVertex* vertices;
+				if (subData->isEmpty()) {
+					vertices = (video::S3DVertex*)empty_data.pointer();
+					assert(subData->size <= empty_data.size());
 				}
+				else
+					vertices = (video::S3DVertex*)subData->data.pointer();
 
-				/*if (meshBufferData.vertexMemory.is_valid()) {
-					auto vertexCount = meshBufferData.vertexMemory.size() / sizeof(video::S3DVertex);
-					assert(empty_data.size() >= vertexCount);
+				glDriver->subUpdateVertexHardwareBuffer(
+					HWBuffer,
+					(c8*)vertices,
+					subData->size / sizeof(video::S3DVertex),
+					subData->offset / sizeof(video::S3DVertex));
 
-					glDriver->subUpdateVertexHardwareBuffer(
-						HWBuffer,
-						(c8*)empty_data.pointer(),
-						vertexCount,
-						meshBufferData.vertexMemory.chunkStart / sizeof(video::S3DVertex));
-				}*/
+				gl_ops_processed += subData->size / gl_ops_points_div;
+
+				delete subData;
 			}
 
-			if (meshBufferData.vertexMemory.is_valid())
-				cache->vertex_memory.free(meshBufferData.vertexMemory);
-			if (meshBufferData.indexMemory.is_valid())
-				cache->index_memory.free(meshBufferData.indexMemory);
+			if (indexSubData) {
+				auto subData = indexSubData;
+
+				//
+				// Move vertex & index memory to GPU
+				//
+				u32* indices;
+				if (subData->isEmpty()) {
+					indices = empty_data.pointer();
+					assert(subData->size <= empty_data.size());
+				}
+				else
+					indices = (u32*)subData->data.pointer();
+
+				glDriver->subUpdateIndexHardwareBuffer(
+					HWBuffer,
+					(c8*)indices,
+					subData->size / sizeof(u32),
+					subData->offset / sizeof(u32));
+
+				gl_ops_processed += subData->size / gl_ops_points_div;
+
+				buffer->drawPrimitiveCount = loadData.drawPrimitiveCount;
+
+				delete subData;
+			}
 		}
 
-		buffer_data.erase(mapBlockMesh);
+		num_load_data_processed++;
 	}
 
-	//
-	// Block meshes has not been built yet.
-	//
-	std::unordered_map<MapBlock*, std::vector<SMeshBufferData>> build_blocks;
-	std::set<video::ITexture*> keepTextures;
+	m_client->m_mesh_buffer_handler->eraseLoadOrder(num_load_data_processed);
+	
+	if (canDropTextures) {
+		//
+		// Drop textures
+		struct Drop {
+			u8 layer;
+			video::ITexture* texture;
+		};
+		std::vector<Drop> drop_textures;
+		for (u8 layer = 0; layer < MAX_TILE_LAYERS; layer++) {
+			auto& cache_maps = cache_buffers.maps[layer];
+			auto& maps = buffers.maps[layer];
+			auto maps_end = maps.end();
 
-	for (auto block : m_client->mapBlockMesh_changed) {
-		cache_keep_blocks[block->getPos()] = block;
-
-		auto block_mesh = block->mesh;
-		if (!block_mesh)
-			continue;
-
-		//auto& transparentBuffers = block_mesh->getMapTransparentBuffers();
-
-		for (int layer = 0; layer < MAX_TILE_LAYERS; layer++) {
-			scene::IMesh* mesh = block_mesh->getMesh(layer);
-			assert(mesh);
-
-			u32 c = mesh->getMeshBufferCount();
-			for (u32 i = 0; i < c; i++) {
-				if (!block_mesh->canMeshBufferBeCached(layer, i)) {
+			for (auto& it : cache_maps) {
+				auto texture = it.first;
+				if (maps.find(texture) != maps_end)
 					continue;
-				}
-
-				scene::IMeshBuffer* buf = mesh->getMeshBuffer(i);
-
-				/*if (transparentBuffers.find(buf) != transparentBuffers.end())
-					continue;*/
-
-				video::IMaterialRenderer* rnd =
-					driver->getMaterialRenderer(buf->getMaterial().MaterialType);
-				bool transparent = (rnd && rnd->isTransparent());
-				if (transparent)
-					continue;
-
-				auto sMeshBufferData = SMeshBufferData();
-				sMeshBufferData.meshBuffer = buf;
-				sMeshBufferData.texture = block_mesh->getBufferMainTexture(layer, i);
-				sMeshBufferData.layer = layer;
-				build_blocks[block].push_back(sMeshBufferData);
-
-				keepTextures.insert(sMeshBufferData.texture);
+				drop_textures.push_back({ layer, texture });
 			}
 		}
+
+		for (auto d : drop_textures)
+			cache_buffers.drop(d.texture, d.layer);
 	}
-	m_client->mapBlockMesh_changed.clear();
+
+	buffers.clear();
 
 	//
 	// Go through render list and group same materials together
@@ -1109,10 +1164,10 @@ void ClientMap::updateCacheBuffers(video::IVideoDriver* driver) {
 	render_uncached[0].clear();
 	render_uncached[1].clear();
 
-	for (auto& it : cache_keep_blocks) {
+	for (auto& it : m_drawlist) {
 		v3s16 block_pos = it.first;
 		MapBlock* block = it.second;
-		MapBlockMesh* block_mesh = block->mesh;
+		MapBlockMesh* block_mesh = block->mesh.get();
 
 		// If the mesh of the block happened to get deleted, ignore it
 		if (!block_mesh)
@@ -1140,9 +1195,6 @@ void ClientMap::updateCacheBuffers(video::IVideoDriver* driver) {
 
 				scene::IMeshBuffer* buf = mesh->getMeshBuffer(i);
 
-				video::ITexture* texture = block_mesh->getBufferMainTexture(layer, i);
-				keepTextures.insert(texture);
-
 				/*if (!skip_animate)
 					continue;*/
 
@@ -1156,6 +1208,7 @@ void ClientMap::updateCacheBuffers(video::IVideoDriver* driver) {
 				}
 
 				if (block_mesh->isMeshBufferAnimated(layer, i)) {
+					video::ITexture* texture = block_mesh->getBufferMainTexture(layer, i);
 					if (animate_blocks.find(texture) == animate_blocks.end()) {
 						animate_blocks[texture] = { block_mesh, buf, i };
 					}
@@ -1189,166 +1242,6 @@ void ClientMap::updateCacheBuffers(video::IVideoDriver* driver) {
 				data->buffer->Material = material;
 			}
 		}
-	}
-
-	//
-	// Start building dynamic meshes
-	//
-
-	for (auto& it : build_blocks) {
-		auto& sMeshBuffers = buffer_data[it.first];
-		if (!sMeshBuffers.empty())
-			continue;
-
-		auto& loadBuffers = it.second;
-
-		for (auto& sMeshBufferData : loadBuffers) {
-			//
-			// Allocate memory spots for buffers
-			//
-
-			auto meshBuffer = sMeshBufferData.meshBuffer;
-			auto vertexCount = meshBuffer->getVertexCount();
-			auto indexCount = meshBuffer->getIndexCount();
-
-			if (indexCount == 0 || vertexCount == 0) {
-				errorstream << "Block [" << analyze_block(it.first)
-					<< "] contains an empty meshbuf" << std::endl;
-				continue;
-			}
-
-			video::ITexture* texture = sMeshBufferData.texture;
-			auto data = cache_buffers.get(texture, sMeshBufferData.layer);
-			auto buffer = data->buffer;
-			if (!buffer->getHWBuffer()) {
-				buffer->vertexCount = 100'000;
-				buffer->indexCount = 20'000;
-
-				data->vertex_memory.setSize(buffer->vertexCount * sizeof(video::S3DVertex));
-				data->index_memory.setSize(buffer->indexCount * sizeof(u32));
-
-				buffer->drawPrimitiveCount = 0;
-				buffer->Material = meshBuffer->getMaterial();
-				glDriver->getBufferLink(buffer);
-			}
-
-			auto HWBuffer = glDriver->getBufferLink(buffer);
-			if (!HWBuffer) {
-				continue;
-			}
-
-			sMeshBufferData.vertexMemory = data->vertex_memory.allocate(vertexCount * sizeof(video::S3DVertex));
-			sMeshBufferData.indexMemory = data->index_memory.allocate(indexCount * sizeof(u32));
-
-			if (!sMeshBufferData.vertexMemory.is_valid()) {
-				//
-				// Grow Vertex memory
-				//
-
-				core::array<video::S3DVertex> grow_vertices;
-				grow_vertices.set_used(data->vertex_memory.used_mem / sizeof(video::S3DVertex) + 50'000);
-
-				//
-				// Resize gpu memory
-				glDriver->resizeVertexHardwareBufferSubData(
-					HWBuffer,
-					grow_vertices.size());
-
-				buffer->vertexCount = grow_vertices.size();
-				data->vertex_memory.setSize(buffer->vertexCount * sizeof(video::S3DVertex));
-
-				//
-				// Try to get offset again
-				if (!sMeshBufferData.vertexMemory.is_valid())
-					sMeshBufferData.vertexMemory = data->vertex_memory.allocate(vertexCount * sizeof(video::S3DVertex));
-
-				//
-				// Move vertex & index memory to GPU
-				//
-				if (!sMeshBufferData.vertexMemory.is_valid())
-					continue;
-			}
-			if (!sMeshBufferData.indexMemory.is_valid()) {
-				//
-				// Grow Index memory
-				//
-				core::array<u32> grow_indices;
-				grow_indices.set_used(data->index_memory.used_mem / sizeof(u32) + 80'000);
-			
-				//
-				// Resize gpu memory
-				glDriver->resizeIndexHardwareBufferSubData(
-					HWBuffer,
-					grow_indices.size());
-
-				buffer->indexCount = grow_indices.size();
-				data->index_memory.setSize(buffer->indexCount * sizeof(u32));
-
-				//
-				// Try to get offset again
-				if (!sMeshBufferData.indexMemory.is_valid())
-					sMeshBufferData.indexMemory = data->index_memory.allocate(indexCount * sizeof(u32));
-
-				//
-				// Move vertex & index memory to GPU
-				//
-				if (!sMeshBufferData.indexMemory.is_valid())
-					continue;
-			}
-
-			//
-			// Move vertex & index memory to GPU
-			//
-			auto vertices = (video::S3DVertex*)meshBuffer->getVertices();
-			auto indices = meshBuffer->getIndices();
-
-			core::array<u32> indicesWithOffset;
-			indicesWithOffset.set_used(indexCount);
-			u32 indexValueOffset = sMeshBufferData.vertexMemory.chunkStart / sizeof(video::S3DVertex);
-			u32* indices_ptr = indicesWithOffset.pointer();
-			for (u32 i = 0; i < indexCount; ++i) {
-				*indices_ptr = indices[i] + indexValueOffset;
-				indices_ptr++;
-			}
-
-			glDriver->subUpdateVertexHardwareBuffer(
-				HWBuffer,
-				(c8*)vertices,
-				vertexCount,
-				sMeshBufferData.vertexMemory.chunkStart / sizeof(video::S3DVertex));
-			glDriver->subUpdateIndexHardwareBuffer(
-				HWBuffer,
-				(c8*)indicesWithOffset.pointer(),
-				indexCount,
-				sMeshBufferData.indexMemory.chunkStart / sizeof(u32));
-
-			buffer->drawPrimitiveCount = (data->index_memory.used_mem / sizeof(u32)) / 3;
-
-			sMeshBuffers.push_back(sMeshBufferData);
-		}
-	}
-
-	//
-	// Check if should drop a texture
-	struct Drop {
-		u8 layer;
-		video::ITexture* texture;
-	};
-	std::vector<Drop> dropTextures;
-	for (u8 layer = 0; layer < MAX_TILE_LAYERS; layer++) {
-		auto& map = cache_buffers.maps[layer];
-		for (auto& list : map) {
-			auto cache = list.second;
-			auto texture = list.first;
-			if (cache && keepTextures.find(texture) != keepTextures.end())
-				continue;
-
-			dropTextures.push_back({ layer, texture });
-		}
-	}
-
-	for (auto& it : dropTextures) {
-		cache_buffers.drop(it.texture, it.layer);
 	}
 
 	g_profiler->avg("updateCacheBuffers(): animated meshes [#]", mesh_animate_count);
@@ -1746,7 +1639,7 @@ void ClientMap::updateDrawListShadow(v3f shadow_light_pos, v3f shadow_light_dir,
 		*/
 		for (const auto& entry : sector->getBlocks()) {
 			MapBlock* block = entry.second.get();
-			MapBlockMesh* mesh = block->mesh;
+			MapBlockMesh* mesh = block->mesh.get();
 			if (!mesh) {
 				// Ignore if mesh doesn't exist
 				continue;

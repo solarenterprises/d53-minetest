@@ -38,6 +38,8 @@ struct MapDrawControl
 	bool allow_noclip = false;
 	// show a wire frame for debugging
 	bool show_wireframe = false;
+
+	bool norender = false;
 };
 
 namespace irr
@@ -97,21 +99,7 @@ namespace irr
 }
 
 namespace {
-	struct SMeshBufferData {
-		MemoryManager::MemoryInfo vertexMemory;
-		MemoryManager::MemoryInfo indexMemory;
-
-		scene::IMeshBuffer* meshBuffer;
-		video::ITexture* texture = nullptr;
-		u8 layer = 0;
-	};
-
-	struct MeshBlockBuffer {
-		MapBlockMesh* mapBlockMesh = nullptr;
-		scene::IMeshBuffer* meshBuffer = nullptr;
-	};
-
-	struct TextureBufListMaps
+	struct TextureBufferMaps
 	{
 		struct TextureHash
 		{
@@ -125,15 +113,9 @@ namespace {
 
 		struct Data
 		{
-			scene::SMeshBuffer32* buffer;
+			scene::SMeshBuffer32* buffer = nullptr;
 
-			MemoryManager vertex_memory;
-			MemoryManager index_memory;
-
-			Data() :
-				buffer(nullptr),
-				vertex_memory(sizeof(video::S3DVertex)),
-				index_memory(sizeof(u32)*3) {
+			Data() : buffer(nullptr) {
 
 			}
 		};
@@ -145,7 +127,7 @@ namespace {
 
 		std::array<MaterialBufListMap, MAX_TILE_LAYERS> maps;
 
-		~TextureBufListMaps() {
+		~TextureBufferMaps() {
 			clear();
 		}
 
@@ -306,7 +288,6 @@ public:
 
 	void onSettingChanged(const std::string &name);
 
-	bool doesNeedToUpdateCache();
 	void updateCacheBuffers(video::IVideoDriver* driver);
 
 protected:
@@ -388,11 +369,9 @@ private:
 	bool m_loops_occlusion_culler;
 	bool m_enable_raytraced_culling;
 
-	TextureBufListMaps cache_buffers;
+	TextureBufferMaps cache_buffers;
 	core::array<u32> empty_data;
-
-	std::unordered_map<v3s16, MapBlock*> cache_keep_blocks;
-	std::unordered_map<MapBlock*, std::vector<SMeshBufferData>> buffer_data;
 	std::unordered_set<MapBlock*> render_uncached[2];
 	int last_frameno = -1;
+	std::chrono::steady_clock::time_point last_time_build_buffers = std::chrono::steady_clock::now();
 };

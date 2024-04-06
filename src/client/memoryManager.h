@@ -1,3 +1,5 @@
+#pragma once
+
 #include <irrTypes.h>
 #include <vector>
 
@@ -10,6 +12,7 @@ public:
 		u32 chunkStart = 0;
 		u32 chunkEnd = 0;
 
+		// In bytes
 		inline u32 size() {
 			return chunkEnd - chunkStart;
 		}

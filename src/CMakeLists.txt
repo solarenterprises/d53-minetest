@@ -1,7 +1,5 @@
 project(minetest)
 
-set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
-
 INCLUDE(CheckTypeSize)
 INCLUDE(CheckIncludeFiles)
 INCLUDE(CheckLibraryExists)
@@ -811,22 +809,22 @@ if(MSVC)
 	# Visual Studio
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /D _WIN32_WINNT=0x0601 /D WIN32_LEAN_AND_MEAN")
 	# EHa enables SEH exceptions (used for catching segfaults)
-	set(CMAKE_CXX_FLAGS_RELEASE "/EHa /Ox /MT /GS- /Zi /fp:fast /D NDEBUG /D _HAS_ITERATOR_DEBUGGING=0")
+	set(CMAKE_CXX_FLAGS_RELEASE "/EHa /Ox /MD /GS- /Zi /fp:fast /D NDEBUG /D _HAS_ITERATOR_DEBUGGING=0")
 	if(CMAKE_SIZEOF_VOID_P EQUAL 4)
 		set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /arch:SSE")
 	endif()
 
 	set(CMAKE_EXE_LINKER_FLAGS_RELEASE "/INCREMENTAL:NO /DEBUG /OPT:REF /OPT:ICF /SUBSYSTEM:WINDOWS /ENTRY:mainCRTStartup")
 
-	set(CMAKE_CXX_FLAGS_SEMIDEBUG "/MTd /Zi /Ob0 /O1 /RTC1")
+	set(CMAKE_CXX_FLAGS_SEMIDEBUG "/MDd /Zi /Ob0 /O1 /RTC1")
 
 	# Debug build doesn't catch exceptions by itself
 	# Add some optimizations because otherwise it's VERY slow
-	set(CMAKE_CXX_FLAGS_DEBUG "/MTd /Zi /Ob0 /Od /RTC1")
+	set(CMAKE_CXX_FLAGS_DEBUG "/MDd /Zi /Ob0 /Od /RTC1")
 
 	# Flags for C files (sqlite)
 	# /MD = dynamically link to MSVCRxxx.dll
-	set(CMAKE_C_FLAGS_RELEASE "/O2 /Ob2 /MT")
+	set(CMAKE_C_FLAGS_RELEASE "/O2 /Ob2 /MD")
 
 	# Flags that cannot be shared between cl and clang-cl
 	# https://clang.llvm.org/docs/UsersManual.html#clang-cl
@@ -1027,6 +1025,23 @@ elseif (USE_GETTEXT)
 	add_custom_target(translations ALL COMMENT "mo update" DEPENDS ${MO_FILES})
 endif()
 
-set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
-
 set_target_properties(${PROJECT_NAME} PROPERTIES OUTPUT_NAME "District53")
+
+if(ANDROID)
+	set(sysname Android)
+elseif(APPLE)
+	set(sysname OSX)
+elseif(MSVC)
+	set(sysname Win32-VisualStudio)
+elseif(WIN32)
+	set(sysname Win32-gcc)
+else()
+	set(sysname Linux)
+endif()
+		
+if (WIN32)
+	add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+		COMMAND ${CMAKE_COMMAND} -E copy_directory
+			"${IRRLICHTMT_BUILD_DIR}/bin/${sysname}/$<CONFIGURATION>"
+			"$<TARGET_FILE_DIR:minetest>/")
+endif()

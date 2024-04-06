@@ -74,6 +74,9 @@ public:
 ClientSimpleObject* createSmokePuff(scene::ISceneManager *smgr,
 		ClientEnvironment *env, v3f pos, v2f size)
 {
+	if (!smgr)
+		return nullptr;
+
 	return new SmokePuffCSO(smgr, env, pos, size);
 }
 

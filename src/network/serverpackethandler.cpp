@@ -430,37 +430,40 @@ void Server::handleCommand_ClientReady(NetworkPacket* pkt)
 
 void Server::handleCommand_GotBlocks(NetworkPacket* pkt)
 {
-	if (pkt->getSize() < 1)
-		return;
+	//if (pkt->getSize() < 1)
+	//	return;
 
-	/*
-		[0] u16 command
-		[2] u8 count
-		[3] v3s16 pos_0
-		[3+6] v3s16 pos_1
-		...
-	*/
+	///*
+	//	[0] u16 command
+	//	[2] u8 count
+	//	[3] v3s16 pos_0
+	//	[3+6] v3s16 pos_1
+	//	...
+	//*/
 
-	u8 count;
-	*pkt >> count;
+	//u8 count;
+	//*pkt >> count;
 
-	if ((s16)pkt->getSize() < 1 + (int)count * 6) {
-		throw con::InvalidIncomingDataException
-				("GOTBLOCKS length is too short");
-	}
+	//if ((s16)pkt->getSize() < 1 + (int)count * (6 + sizeof(u16))) {
+	//	throw con::InvalidIncomingDataException
+	//			("GOTBLOCKS length is too short");
+	//}
 
-	ClientInterface::AutoLock lock(m_clients);
-	RemoteClient *client = m_clients.lockedGetClientNoEx(pkt->getPeerId());
+	//ClientInterface::AutoLock lock(m_clients);
+	//RemoteClient *client = m_clients.lockedGetClientNoEx(pkt->getPeerId());
 
-	for (u16 i = 0; i < count; i++) {
-		v3s16 p;
-		*pkt >> p;
-		client->GotBlock(p);
-	}
+	//Map& map = m_env->getMap();
+
+	//for (u16 i = 0; i < count; i++) {
+	//	v3s16 p;
+	//	u16 modified_version;
+	//	*pkt >> p;
+	//	*pkt >> modified_version;
+	//	client->GotBlock(p, modified_version);
+	//}
 }
 
-void Server::process_PlayerPos(RemotePlayer *player, PlayerSAO *playersao,
-	NetworkPacket *pkt)
+void Server::process_PlayerPos(RemotePlayer *player, PlayerSAO *playersao, NetworkPacket *pkt)
 {
 	if (pkt->getRemainingBytes() < 12 + 12 + 4 + 4 + 4 + 1 + 1)
 		return;
@@ -1060,7 +1063,8 @@ void Server::handleCommand_Interact(NetworkPacket *pkt)
 				// Re-send block to revert change on client-side
 				RemoteClient *client = getClient(peer_id);
 				v3s16 blockpos = getNodeBlockPos(pointed.node_undersurface);
-				client->SetBlockNotSent(blockpos);
+				client->ResetNothingToSendTimer();
+				//client->SetBlockNotSent(blockpos);
 			}
 			return;
 		}
@@ -1217,11 +1221,14 @@ void Server::handleCommand_Interact(NetworkPacket *pkt)
 		v3s16 blockpos = getNodeBlockPos(p_under);
 		RemoteClient *client = getClient(peer_id);
 		// Send unusual result (that is, node not being removed)
-		if (m_env->getMap().getNode(p_under).getContent() != CONTENT_AIR)
-			// Re-send block to revert change on client-side
-			client->SetBlockNotSent(blockpos);
-		else
-			client->ResendBlockIfOnWire(blockpos);
+		//if (m_env->getMap().getNode(p_under).getContent() != CONTENT_AIR)
+		//	// Re-send block to revert change on client-side
+		//	client->ResetNothingToSendTimer();
+		//	//client->SetBlockNotSent(blockpos);
+		//else
+		//	client->ResendBlockIfOnWire(blockpos);
+
+		client->SetBlockNotSent(blockpos);
 
 		return;
 	} // action == INTERACT_DIGGING_COMPLETED
@@ -1273,7 +1280,12 @@ void Server::handleCommand_Interact(NetworkPacket *pkt)
 		RemoteClient *client = getClient(peer_id);
 		v3s16 blockpos = getNodeBlockPos(pointed.node_abovesurface);
 		v3s16 blockpos2 = getNodeBlockPos(pointed.node_undersurface);
-		if (had_prediction) {
+		client->SetBlockNotSent(blockpos);
+		if (blockpos2 != blockpos)
+			client->SetBlockNotSent(blockpos2);
+
+		/*if (had_prediction) {
+			client->ResetNothingToSendTimer();
 			client->SetBlockNotSent(blockpos);
 			if (blockpos2 != blockpos)
 				client->SetBlockNotSent(blockpos2);
@@ -1282,6 +1294,8 @@ void Server::handleCommand_Interact(NetworkPacket *pkt)
 			if (blockpos2 != blockpos)
 				client->ResendBlockIfOnWire(blockpos2);
 		}
+
+		client->ResetNothingToSendTimer();*/
 
 		return;
 	} // action == INTERACT_PLACE

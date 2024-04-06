@@ -59,7 +59,8 @@ void set_default_settings()
 	settings->setDefault("screenshot_format", "png");
 	settings->setDefault("screenshot_quality", "0");
 	settings->setDefault("client_unload_unused_data_timeout", "600");
-	settings->setDefault("client_mapblock_limit", "7500");
+	//settings->setDefault("client_mapblock_limit", "7500");
+	settings->setDefault("client_mapblock_limit", "4500");
 	settings->setDefault("enable_build_where_you_stand", "false");
 	settings->setDefault("curl_timeout", "20000");
 	settings->setDefault("curl_parallel_limit", "8");
@@ -421,7 +422,7 @@ void set_default_settings()
 	settings->setDefault("chat_message_limit_trigger_kick", "50");
 	settings->setDefault("sqlite_synchronous", "2");
 	settings->setDefault("map_compression_level_disk", "-1");
-	settings->setDefault("map_compression_level_net", "-1");
+	settings->setDefault("map_compression_level_net", "3");
 	settings->setDefault("full_block_send_enable_min_time_from_building", "2.0");
 	settings->setDefault("dedicated_server_step", "0.09");
 	settings->setDefault("active_block_mgmt_interval", "2.0");

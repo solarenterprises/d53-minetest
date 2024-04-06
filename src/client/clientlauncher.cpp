@@ -97,6 +97,10 @@ bool ClientLauncher::run(GameStartData &start_data, const Settings &cmd_args)
 
 	init_args(start_data, cmd_args);
 
+	bool norender = cmd_args.exists("norender");
+	if (norender)
+		return runNoRender(start_data, cmd_args);
+
 #if USE_SOUND
 	if (g_settings->getBool("enable_sound"))
 		g_sound_manager_singleton = createSoundManagerSingleton();
@@ -277,9 +281,107 @@ bool ClientLauncher::run(GameStartData &start_data, const Settings &cmd_args)
 	return retval;
 }
 
+bool ClientLauncher::runNoRender(GameStartData& start_data, const Settings& cmd_args) {
+
+	// Create game callback for menus
+	g_gamecallback = new MainGameCallback();
+
+	input = new RandomInputHandler();
+
+	ChatBackend chat_backend;
+
+	// If an error occurs, this is set to something by menu().
+	// It is then displayed before the menu shows on the next call to menu()
+	std::string error_message;
+	bool reconnect_requested = false;
+
+	bool first_loop = true;
+
+	/*
+		Menu-game loop
+	*/
+	bool retval = true;
+	bool* kill = porting::signal_handler_killstatus();
+
+	while (!*kill &&
+		!g_gamecallback->shutdown_requested) {
+
+		try {	// This is used for catching disconnects
+
+			bool should_run_game = launch_game(error_message, reconnect_requested,
+				start_data, cmd_args);
+
+			// Reset the reconnect_requested flag
+			reconnect_requested = false;
+
+			// If skip_main_menu, we only want to startup once
+			if (skip_main_menu && !first_loop)
+				break;
+			first_loop = false;
+
+			if (!should_run_game) {
+				if (skip_main_menu)
+					break;
+				continue;
+			}
+
+			// Break out of menu-game loop to shut down cleanly
+			if (*kill)
+				break;
+
+			the_game(
+				kill,
+				input,
+				nullptr,
+				start_data,
+				error_message,
+				chat_backend,
+				&reconnect_requested
+			);
+		} //try
+		catch (con::PeerNotFoundException& e) {
+			error_message = gettext("Connection error (timed out?)");
+			errorstream << error_message << std::endl;
+		}
+		catch (ShaderException& e) {
+			error_message = e.what();
+			errorstream << error_message << std::endl;
+		}
+
+#ifdef NDEBUG
+		catch (std::exception& e) {
+			error_message = "Some exception: ";
+			error_message.append(debug_describe_exc(e));
+			errorstream << error_message << std::endl;
+		}
+#endif
+
+		/* Save the settings when leaving the game.
+		 * This makes sure that setting changes made in-game are persisted even
+		 * in case of a later unclean exit from the mainmenu.
+		 * This is especially useful on Android because closing the app from the
+		 * "Recents screen" results in an unclean exit.
+		 * Caveat: This means that the settings are saved twice when exiting Minetest.
+		 */
+		if (!g_settings_path.empty())
+			g_settings->updateConfigFile(g_settings_path.c_str());
+
+		// If no main menu, show error and exit
+		if (skip_main_menu) {
+			if (!error_message.empty())
+				retval = false;
+			break;
+		}
+	} // Menu-game loop
+
+	return retval;
+}
+
 void ClientLauncher::init_args(GameStartData &start_data, const Settings &cmd_args)
 {
 	skip_main_menu = cmd_args.getFlag("go");
+	if (cmd_args.exists("norender"))
+		skip_main_menu = true;
 
 	start_data.address = g_settings->get("address");
 	if (cmd_args.exists("address")) {
@@ -461,7 +563,7 @@ bool ClientLauncher::launch_game(std::string &error_message,
 			start_data.address.empty() && !start_data.name.empty();
 	}
 
-	if (!m_rendering_engine->run())
+	if (m_rendering_engine && !m_rendering_engine->run())
 		return false;
 
 	if (!start_data.isSinglePlayer() && start_data.name.empty()) {

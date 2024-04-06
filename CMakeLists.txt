@@ -102,6 +102,7 @@ add_subdirectory(lib/bip39/src)
 
 
 set(IRRLICHTMT_BUILD_DIR "" CACHE PATH "Path to IrrlichtMt build directory.")
+		
 if(ANDROID)
 	# currently manually provided
 elseif(NOT "${IRRLICHTMT_BUILD_DIR}" STREQUAL "")
@@ -432,3 +433,5 @@ if(BUILD_DOCUMENTATION)
 		)
 	endif()
 endif()
+
+

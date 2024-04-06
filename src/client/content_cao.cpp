@@ -1339,6 +1339,9 @@ void GenericCAO::updateTexturePos()
 // Do not pass by reference, see header.
 void GenericCAO::updateTextures(std::string mod)
 {
+	if (!m_env->isClientMap())
+		return;
+
 	ITextureSource *tsrc = m_client->tsrc();
 
 	bool use_trilinear_filter = g_settings->getBool("trilinear_filter");
@@ -1946,7 +1949,8 @@ void GenericCAO::processMessage(const std::string &data)
 				ClientSimpleObject *simple = createSmokePuff(
 						m_smgr, m_env, m_position,
 						v2f(m_prop.visual_size.X, m_prop.visual_size.Y) * BS);
-				m_env->addSimpleObject(simple);
+				if (simple)
+					m_env->addSimpleObject(simple);
 			} else if (m_reset_textures_timer < 0 && !m_prop.damage_texture_modifier.empty()) {
 				m_reset_textures_timer = 0.05;
 				if(damage >= 2)

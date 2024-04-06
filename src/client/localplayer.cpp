@@ -27,6 +27,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "map.h"
 #include "client.h"
 #include "content_cao.h"
+#include "player_ai.h"
 
 /*
 	PlayerSettings
@@ -86,6 +87,18 @@ LocalPlayer::LocalPlayer(Client *client, const char *name):
 LocalPlayer::~LocalPlayer()
 {
 	m_player_settings.deregisterSettingsCallback();
+}
+
+void LocalPlayer::setPlayerAI(std::string className) {
+	if (className.empty())
+		return;
+
+	if (className == "playerai") {
+		setPlayerAI<PlayerAI>();
+		return;
+	}
+
+	errorstream << "PlayerAI class name \"" << className.c_str() << "\" not found" << std::endl;
 }
 
 static aabb3f getNodeBoundingBox(const std::vector<aabb3f> &nodeboxes)
@@ -549,6 +562,12 @@ void LocalPlayer::move(f32 dtime, Environment *env, f32 pos_max_d,
 void LocalPlayer::move(f32 dtime, Environment *env, f32 pos_max_d)
 {
 	move(dtime, env, pos_max_d, NULL);
+}
+
+void LocalPlayer::stepAI(float dtime) {
+	if (!ai)
+		return;
+	ai->step(dtime);
 }
 
 void LocalPlayer::applyControl(float dtime, Environment *env)

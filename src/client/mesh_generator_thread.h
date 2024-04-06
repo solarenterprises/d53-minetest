@@ -95,7 +95,7 @@ private:
 struct MeshUpdateResult
 {
 	v3s16 p = v3s16(-1338, -1338, -1338);
-	MapBlockMesh *mesh = nullptr;
+	std::shared_ptr<MapBlockMesh> mesh;
 	u8 solid_sides;
 	std::vector<v3s16> ack_list;
 	bool urgent = false;
@@ -134,6 +134,8 @@ public:
 	void updateBlock(Map *map, v3s16 p, bool ack_block_to_server, bool urgent,
 			bool update_neighbors = false);
 	void putResult(const MeshUpdateResult &r);
+	void delayResult(const MeshUpdateResult &r);
+	void undelayAll();
 	bool getNextResult(MeshUpdateResult &r);
 
 
@@ -152,6 +154,8 @@ private:
 	MeshUpdateQueue m_queue_in;
 	MutexedQueue<MeshUpdateResult> m_queue_out;
 	MutexedQueue<MeshUpdateResult> m_queue_out_urgent;
+
+	std::vector<MeshUpdateResult> delay_results;
 
 	std::vector<std::unique_ptr<MeshUpdateWorkerThread>> m_workers;
 };

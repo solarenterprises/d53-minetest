@@ -152,10 +152,15 @@ std::map<std::string, std::string> parse_connection_string(const std::string& co
 
 void Database_MySQL::connectToDatabase()
 {
+	if (initialized())
+		return;
+
 	m_conn = mysql_init(NULL);
+
 	if (!m_conn) {
 		throw std::runtime_error("Failed to initialize MySQL connection");
 	}
+
 
 	auto params = parse_connection_string(m_connect_string);
 	auto database = params["database_prefix"] + m_type;

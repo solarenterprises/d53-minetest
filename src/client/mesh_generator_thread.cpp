@@ -229,11 +229,9 @@ void MeshUpdateWorkerThread::doUpdate()
 
 		MapBlockMesh *mesh_new = new MapBlockMesh(m_client, q->data, *m_camera_offset);
 
-
-
 		MeshUpdateResult r;
 		r.p = q->p;
-		r.mesh = mesh_new;
+		r.mesh = std::shared_ptr<MapBlockMesh>(mesh_new);
 		r.solid_sides = get_solid_sides(q->data);
 		r.ack_list = std::move(q->ack_list);
 		r.urgent = q->urgent;
@@ -295,6 +293,16 @@ void MeshUpdateManager::putResult(const MeshUpdateResult &result)
 		m_queue_out_urgent.push_back(result);
 	else
 		m_queue_out.push_back(result);
+}
+
+void MeshUpdateManager::delayResult(const MeshUpdateResult& r)
+{
+	delay_results.push_back(r);
+}
+
+void MeshUpdateManager::undelayAll() {
+	for (auto& result : delay_results)
+		putResult(result);
 }
 
 bool MeshUpdateManager::getNextResult(MeshUpdateResult &r)
