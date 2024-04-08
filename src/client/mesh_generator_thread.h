@@ -102,6 +102,34 @@ struct MeshUpdateResult
 	std::vector<MapBlock *> map_blocks;
 
 	MeshUpdateResult() = default;
+
+	void grabTextures() {
+		auto m = mesh->getMesh();
+		auto c = m->getMeshBufferCount();
+		for (u8 i = 0; i < c; i++) {
+			auto& material = m->getMeshBuffer(i)->getMaterial();
+
+			for (u8 layer = 0; layer < 4; layer++)
+				material.TextureLayers[layer].Texture->grab();
+
+			for (u8 layer = 0; layer < MAX_TILE_LAYERS; layer++)
+				mesh->getBufferMainTexture(layer, i)->grab();
+		}
+	}
+
+	void dropTextures() {
+		auto m = mesh->getMesh();
+		auto c = m->getMeshBufferCount();
+		for (u8 i = 0; i < c; i++) {
+			auto& material = m->getMeshBuffer(i)->getMaterial();
+
+			for (u8 layer = 0; layer < 4; layer++)
+				material.TextureLayers[layer].Texture->drop();
+
+			for (u8 layer = 0; layer < MAX_TILE_LAYERS; layer++)
+				mesh->getBufferMainTexture(layer, i)->drop();
+		}
+	}
 };
 
 class MeshUpdateManager;

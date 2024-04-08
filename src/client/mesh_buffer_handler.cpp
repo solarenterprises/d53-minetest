@@ -232,7 +232,6 @@ void MeshBufferWorkerThread::doUpdate() {
 	//
 	// Gather results
 	//
-	std::vector<MeshUpdateResult> results;
 	std::unordered_set<v3s16> unload_mapblocks;
 	std::unordered_set<v3s16> mapblocks_needs_to_reload;
 	MeshUpdateResult r;
@@ -240,13 +239,7 @@ void MeshBufferWorkerThread::doUpdate() {
 	while (meshUpdateManager->getNextResult(r)) {
 		auto& p = r.p;
 
-		results.push_back(r);
 		mesh_update_result_queue.push_back(r);
-	}
-
-	{
-		MutexAutoLock lock(m_mutex_mesh_update_results);
-		mesh_update_results.insert(mesh_update_results.end(), results.begin(), results.end());
 	}
 
 	//
@@ -262,12 +255,6 @@ void MeshBufferWorkerThread::doUpdate() {
 			mesh_update_result_queue.erase(mesh_update_result_queue.begin() + j);
 			i--;
 		}
-	}
-
-	std::unordered_set<v3s16> test;
-	for (auto it : mesh_update_result_queue) {
-		assert(test.find(it.p) == test.end());
-		test.insert(it.p);
 	}
 
 	//
@@ -332,8 +319,11 @@ void MeshBufferWorkerThread::doUpdate() {
 			i = 0;
 	}
 
+	std::vector<MeshUpdateResult> results;
+
 	while(!mesh_update_result_queue.empty()) {
 		auto r = mesh_update_result_queue.front();
+		results.push_back(r);
 		mesh_update_result_queue.erase(mesh_update_result_queue.begin());
 
 		if (r.mesh.get()) {
@@ -356,6 +346,11 @@ void MeshBufferWorkerThread::doUpdate() {
 
 		if (num_load_data_queue >= max_load_data_queue)
 			break;
+	}
+
+	{
+		MutexAutoLock lock(m_mutex_mesh_update_results);
+		mesh_update_results.insert(mesh_update_results.end(), results.begin(), results.end());
 	}
 
 	//

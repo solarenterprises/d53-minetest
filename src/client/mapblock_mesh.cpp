@@ -914,6 +914,8 @@ bool MapBlockMesh::canMeshBufferBeCached(u32 layer, u32 index) {
 }
 
 video::ITexture* MapBlockMesh::getBufferMainTexture(u32 layer, u32 bufferIndex) {
+	MutexAutoLock lock(m_mutext_main_textures);
+
 	if (!cache_buffer_main_texture[layer].empty())
 		return cache_buffer_main_texture[layer][bufferIndex];
 

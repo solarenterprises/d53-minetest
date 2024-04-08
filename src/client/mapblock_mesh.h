@@ -267,6 +267,8 @@ private:
 	ITextureSource *m_tsrc;
 	IShaderSource *m_shdrsrc;
 
+	std::mutex m_mutext_main_textures;
+
 	f32 m_bounding_radius;
 	v3f m_bounding_sphere_center;
 
