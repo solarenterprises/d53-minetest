@@ -199,7 +199,7 @@ public:
 	//   crack: -1 .. CRACK_ANIMATION_LENGTH-1 (-1 for off)
 	// Returns true if anything has been changed.
 	bool animate(bool faraway, float time, u32 daynight_ratio, u32 bufferIndex);
-	bool animateCracks(int crack);
+	bool animateCracks(int crack, u32 bufferIndex);
 
 	scene::IMesh *getMesh()
 	{
@@ -254,7 +254,7 @@ public:
 		return m_animation_info;
 	}
 
-	bool isMeshBufferAnimated(u32 layer, u32 index);
+	int isMeshBufferAnimated(u32 layer, u32 index);
 
 	bool canMeshBufferBeCached(u32 layer, u32 index);
 
@@ -280,7 +280,7 @@ private:
 
 	// Animation info: cracks
 	// Last crack value passed to animate()
-	int m_last_crack;
+	std::unordered_map<u32, int> m_last_crack;
 	// Maps mesh and mesh buffer (i.e. material) indices to base texture names
 	std::map<std::pair<u8, u32>, std::string> m_crack_materials;
 
@@ -306,7 +306,7 @@ private:
 	std::unordered_set<scene::IMeshBuffer*> m_map_transparent_buffers;
 
 	std::vector<video::ITexture*> cache_buffer_main_texture[MAX_TILE_LAYERS];
-	std::vector<bool> cache_is_buffer_animated[MAX_TILE_LAYERS];
+	std::vector<int> cache_is_buffer_animated[MAX_TILE_LAYERS];
 };
 
 /*!

@@ -669,7 +669,7 @@ MapBlockMesh::MapBlockMesh(Client *client, MeshMakeData *data, v3s16 camera_offs
 	m_shdrsrc(client->getShaderSource()),
 	m_bounding_sphere_center((data->side_length * 0.5f - 0.5f) * BS),
 	m_animation_force_timer(0), // force initial animation
-	m_last_crack(-1),
+	//m_last_crack(-1),
 	m_last_daynight_ratio((u32) -1)
 {
 	for (auto &m : m_mesh)
@@ -873,7 +873,7 @@ MapBlockMesh::~MapBlockMesh()
 		delete block;
 }
 
-bool MapBlockMesh::isMeshBufferAnimated(u32 layer, u32 index) {
+int MapBlockMesh::isMeshBufferAnimated(u32 layer, u32 index) {
 	if (!cache_is_buffer_animated[layer].empty())
 		return cache_is_buffer_animated[layer][index];
 
@@ -888,16 +888,26 @@ bool MapBlockMesh::isMeshBufferAnimated(u32 layer, u32 index) {
 		for (u32 i = 0; i < c; i++) {
 			scene::IMeshBuffer* buf = mesh->getMeshBuffer(i);
 
-			bool is_animated = false;
+			int animation_flag = 0;
 			for (auto& info : m_animation_info)
 				if (info.first.second == i) {
 					//
 					// Has animation
-					is_animated = true;
+					animation_flag = MATERIAL_FLAG_ANIMATION;
 					break;
 				}
 
-			cache_is_buffer_animated[layer].push_back(is_animated);
+			if (!animation_flag)
+				for (auto& crack : m_crack_materials) {
+					if (crack.first.second == i) {
+						//
+						// Has animation
+						animation_flag = MATERIAL_FLAG_CRACK;
+						break;
+					}
+				}
+
+			cache_is_buffer_animated[layer].push_back(animation_flag);
 		}
 	}
 
@@ -905,10 +915,10 @@ bool MapBlockMesh::isMeshBufferAnimated(u32 layer, u32 index) {
 }
 
 bool MapBlockMesh::canMeshBufferBeCached(u32 layer, u32 index) {
-	for (auto& crack_material : m_crack_materials) {
+	/*for (auto& crack_material : m_crack_materials) {
 		if (layer == crack_material.first.first && index == crack_material.first.second)
 			return false;
-	}
+	}*/
 
 	return true;
 }
@@ -949,7 +959,7 @@ video::ITexture* MapBlockMesh::getBufferMainTexture(u32 layer, u32 bufferIndex) 
 	return cache_buffer_main_texture[layer][bufferIndex];
 }
 
-bool MapBlockMesh::animateCracks(int crack)
+bool MapBlockMesh::animateCracks(int crack, u32 bufferIndex)
 {
 	if (!m_has_animation) {
 		m_animation_force_timer = 100000;
@@ -959,8 +969,11 @@ bool MapBlockMesh::animateCracks(int crack)
 	m_animation_force_timer = myrand_range(5, 100);
 
 	// Cracks
-	if (crack != m_last_crack) {
+	if (m_last_crack.find(bufferIndex) == m_last_crack.end() || crack != m_last_crack[bufferIndex]) {
 		for (auto &crack_material : m_crack_materials) {
+			if (crack_material.first.second != bufferIndex)
+				continue;
+
 			scene::IMeshBuffer *buf = m_mesh[crack_material.first.first]->
 				getMeshBuffer(crack_material.first.second);
 
@@ -982,7 +995,7 @@ bool MapBlockMesh::animateCracks(int crack)
 			}
 		}
 
-		m_last_crack = crack;
+		m_last_crack[bufferIndex] = crack;
 	}
 
 

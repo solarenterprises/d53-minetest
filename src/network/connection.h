@@ -733,6 +733,7 @@ public:
 	bool Connected();
 	void Disconnect();
 	bool ReceiveTimeoutMs(NetworkPacket *pkt, u32 timeout_ms);
+	bool ReceivePackets(std::deque<NetworkPacket*>& pkts);
 	void Receive(NetworkPacket *pkt);
 	bool TryReceive(NetworkPacket *pkt);
 	void Send(session_t peer_id, u8 channelnum, NetworkPacket *pkt, bool reliable);
@@ -778,6 +779,7 @@ protected:
 	{
 		return getPeerNoEx(PEER_ID_SERVER) != nullptr;
 	}
+
 private:
 	// Event queue: ReceiveThread -> user
 	MutexedQueue<ConnectionEventPtr> m_event_queue;

@@ -1150,6 +1150,7 @@ void ClientMap::updateCacheBuffers(video::IVideoDriver* driver) {
 		MapBlockMesh* mapBlockMesh;
 		scene::IMeshBuffer* buffer;
 		u32 bufferIndex;
+		int animation_flag;
 	};
 
 	std::unordered_map<video::ITexture*, MapBlockMeshAndBuffer> animate_blocks;
@@ -1179,19 +1180,16 @@ void ClientMap::updateCacheBuffers(video::IVideoDriver* driver) {
 		if (is_frustum_culled(mesh_sphere_center, mesh_sphere_radius))
 			continue;*/
 
-		if (block_mesh->animateCracks(crack))
-			mesh_animate_count++;
-
 		for (int layer = 0; layer < MAX_TILE_LAYERS; layer++) {
 			scene::IMesh* mesh = block_mesh->getMesh(layer);
 			assert(mesh);
 
 			u32 c = mesh->getMeshBufferCount();
 			for (u32 i = 0; i < c; i++) {
-				if (!block_mesh->canMeshBufferBeCached(layer, i)) {
+				/*if (!block_mesh->canMeshBufferBeCached(layer, i)) {
 					render_uncached[layer].insert(block);
 					continue;
-				}
+				}*/
 
 				scene::IMeshBuffer* buf = mesh->getMeshBuffer(i);
 
@@ -1202,15 +1200,17 @@ void ClientMap::updateCacheBuffers(video::IVideoDriver* driver) {
 					driver->getMaterialRenderer(buf->getMaterial().MaterialType);
 				bool transparent = (rnd && rnd->isTransparent());
 				if (transparent) {
-					if (block_mesh->isMeshBufferAnimated(layer, i))
-						animated_blocks_transparent.push_back({ block_mesh, buf, i });
+					int flag = block_mesh->isMeshBufferAnimated(layer, i);
+					if (flag)
+						animated_blocks_transparent.push_back({ block_mesh, buf, i, flag });
 					continue;
 				}
 
-				if (block_mesh->isMeshBufferAnimated(layer, i)) {
+				int animation_flag = block_mesh->isMeshBufferAnimated(layer, i);
+				if (animation_flag) {
 					video::ITexture* texture = block_mesh->getBufferMainTexture(layer, i);
 					if (animate_blocks.find(texture) == animate_blocks.end()) {
-						animate_blocks[texture] = { block_mesh, buf, i };
+						animate_blocks[texture] = { block_mesh, buf, i, animation_flag };
 					}
 				}
 			}
@@ -1229,17 +1229,33 @@ void ClientMap::updateCacheBuffers(video::IVideoDriver* driver) {
 	for (auto it : animate_blocks) {
 		auto& data = it.second;
 
+		if (data.animation_flag == MATERIAL_FLAG_CRACK) {
+			if (!data.mapBlockMesh->animateCracks(crack, data.bufferIndex))
+				continue;
+
+			auto cache_data = cache_buffers.getNoCreate(it.first, 0);
+			if (!cache_data)
+				continue;
+
+			// Incase the texture has been changed (happens for animated blocks)
+			cache_data->buffer->Material = data.buffer->getMaterial();
+
+			mesh_animate_count++;
+
+			continue;
+		}
+
 		bool animated = data.mapBlockMesh->animate(false, animation_time, daynight_ratio, data.bufferIndex);
 		if (animated) {
 			mesh_animate_count++;
 
 			auto material = data.buffer->getMaterial();
 			for (int layer = 0; layer < MAX_TILE_LAYERS; layer++) {
-				auto data = cache_buffers.getNoCreate(it.first, layer);
-				if (!data)
+				auto cache_data = cache_buffers.getNoCreate(it.first, layer);
+				if (!cache_data)
 					continue;
 				// Incase the texture has been changed (happens for animated blocks)
-				data->buffer->Material = material;
+				cache_data->buffer->Material = material;
 			}
 		}
 	}

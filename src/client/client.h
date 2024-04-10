@@ -299,6 +299,7 @@ public:
 	int getCrackLevel();
 	v3s16 getCrackPos();
 	void setCrack(int level, v3s16 pos);
+	std::unordered_map<v3s16, int>& getCracks() { return cracks; }
 
 	u16 getHP();
 
@@ -543,6 +544,7 @@ private:
 	float m_animation_time = 0.0f;
 	int m_crack_level = -1;
 	v3s16 m_crack_pos;
+	std::unordered_map<v3s16, int> cracks;
 	// 0 <= m_daynight_i < DAYNIGHT_CACHE_COUNT
 	//s32 m_daynight_i;
 	//u32 m_daynight_ratio;

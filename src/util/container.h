@@ -185,6 +185,34 @@ public:
 		throw ItemNotFoundException("MutexedQueue: queue is empty");
 	}
 
+	bool pop_front_nowait(T &t)
+	{
+		std::unique_lock<std::mutex> lock(m_mutex, std::try_to_lock);
+		if (!lock.owns_lock())
+			return false;
+
+		if (m_queue.empty())
+			throw ItemNotFoundException("MutexedQueue: queue is empty");
+
+		t = std::move(m_queue.front());
+		m_queue.pop_front();
+		return true;
+	}
+
+	bool nowait_pop_num(std::deque<T> &t, u32 max_packets)
+	{
+		std::unique_lock<std::mutex> lock(m_mutex, std::try_to_lock);
+		if (!lock.owns_lock())
+			return false;
+
+		for (u32 i = 0; i < max_packets && !m_queue.empty(); i++) {
+			t.push_back(std::move(m_queue.front()));
+			m_queue.pop_front();
+		}
+
+		return true;
+	}
+
 	T pop_frontNoEx()
 	{
 		m_signal.wait();

@@ -1178,6 +1178,8 @@ void Game::run()
 			&& !(*kill || g_gamecallback->shutdown_requested
 			|| (server && server->isShutdownRequested()))) {
 
+		g_logger.flushLogToOutputs();
+
 		// Calculate dtime =
 		//    m_rendering_engine->run() from this iteration
 		//  + Sleep time until the wanted FPS are reached
@@ -1710,6 +1712,8 @@ bool Game::connectToServer(const GameStartData &start_data,
 
 			// Update status
 			showOverlayMessage(N_("Connecting to server..."), dtime, 20);
+
+			g_logger.flushLogToOutputs();
 		}
 	} catch (con::PeerNotFoundException &e) {
 		warningstream << "This should not happen. Please report a bug." << std::endl;
@@ -3589,6 +3593,10 @@ void Game::handlePointingAtNode(const PointedThing &pointed,
 	*/
 
 	ClientMap &map = client->getEnv().getClientMap();
+
+	if (isKeyDown(KeyType::DIG)) {
+		bool test = true;
+	}
 
 	if (runData.nodig_delay_timer <= 0.0 && isKeyDown(KeyType::DIG)
 			&& !runData.digging_blocked

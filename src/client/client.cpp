@@ -1701,6 +1701,11 @@ void Client::setCrack(int level, v3s16 pos)
 	m_crack_level = level;
 	m_crack_pos = pos;
 
+	if (level < 0)
+		cracks.erase(pos);
+	else
+		cracks[pos] = level;
+
 	if (old_crack_level >= 0 && (level < 0 || pos != old_crack_pos))
 	{
 		// remove old crack

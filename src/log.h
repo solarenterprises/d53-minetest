@@ -81,6 +81,8 @@ public:
 
 	static LogColor color_mode;
 
+	void flushLogToOutputs();
+
 private:
 	void logToOutputsRaw(LogLevel, const std::string &line);
 	void logToOutputs(LogLevel, const std::string &combined,
@@ -91,6 +93,15 @@ private:
 
 	std::vector<ILogOutput *> m_outputs[LL_MAX];
 	std::atomic<bool> m_has_outputs[LL_MAX];
+
+	struct LogOutputData {
+		LogLevel lev;
+		const std::string combined;
+		const std::string time;
+		const std::string thread_name;
+		const std::string payload_text;
+	};
+	std::vector<LogOutputData> logOutputData;
 
 	// Should implement atomic loads and stores (even though it's only
 	// written to when one thread has access currently).

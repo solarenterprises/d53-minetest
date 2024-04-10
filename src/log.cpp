@@ -280,9 +280,25 @@ void Logger::logToOutputs(LogLevel lev, const std::string &combined,
 	const std::string &time, const std::string &thread_name,
 	const std::string &payload_text)
 {
-	MutexAutoLock lock(m_mutex);
-	for (size_t i = 0; i != m_outputs[lev].size(); i++)
-		m_outputs[lev][i]->log(lev, combined, time, thread_name, payload_text);
+	logOutputData.push_back({ lev, combined, time, thread_name, payload_text });
+	flushLogToOutputs();
+}
+
+void Logger::flushLogToOutputs() {
+	std::vector<LogOutputData> flushedLogOutputData;
+	{
+		std::unique_lock<std::mutex> lock(m_mutex, std::try_to_lock);
+		if (!lock.owns_lock())
+			return;
+		flushedLogOutputData = std::move(logOutputData);
+		logOutputData = std::vector<LogOutputData>();
+	}
+
+	for (auto& d : flushedLogOutputData) {
+		LogLevel lev = d.lev;
+		for (size_t i = 0; i != m_outputs[lev].size(); i++)
+			m_outputs[lev][i]->log(lev, d.combined, d.time, d.thread_name, d.payload_text);
+	}
 }
 
 ////

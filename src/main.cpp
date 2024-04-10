@@ -287,6 +287,7 @@ int main(int argc, char *argv[])
 
 	END_DEBUG_EXCEPTION_HANDLER
 
+	g_logger.flushLogToOutputs();
 	return retval;
 }
 

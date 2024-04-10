@@ -204,7 +204,7 @@ public:
 	void handleCommand_HaveMedia(NetworkPacket *pkt);
 	void handleCommand_UpdateClientInfo(NetworkPacket *pkt);
 
-	void ProcessData(NetworkPacket *pkt);
+	void ProcessData(NetworkPacket* pkt);
 
 	void Send(NetworkPacket *pkt);
 	void Send(session_t peer_id, NetworkPacket *pkt);
@@ -672,6 +672,7 @@ private:
 	 	Client interface
 	*/
 	ClientInterface m_clients;
+	u32 current_sent_blocks_to_client_index = 0;
 
 	/*
 		Peer change queue.

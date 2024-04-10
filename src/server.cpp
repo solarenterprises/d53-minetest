@@ -1061,24 +1061,20 @@ void Server::Receive(float timeout)
 		return std::max(0.0f, timeout_us - (porting::getTimeUs() - t0));
 	};
 
-	NetworkPacket pkt;
+	std::deque<NetworkPacket*> pkts;
+	if (!m_con->ReceivePackets(pkts))
+		return;
+
+	// Environment is locked first.
+	MutexAutoLock envlock(m_env_mutex);
+
 	session_t peer_id;
-	for (;;) {
-		pkt.clear();
+	for (auto pkt : pkts) {
 		peer_id = 0;
 		try {
-			if (!m_con->ReceiveTimeoutMs(&pkt,
-					(u32)remaining_time_us() / 1000)) {
-				// No incoming data.
-				// Already break if there's 1ms left, as ReceiveTimeoutMs is too coarse
-				// and a faster server-step is better than busy waiting.
-				if (remaining_time_us() < 1000.0f)
-					break;
-			}
-
-			peer_id = pkt.getPeerId();
+			peer_id = pkt->getPeerId();
 			m_packet_recv_counter->increment();
-			ProcessData(&pkt);
+			ProcessData(pkt);
 			m_packet_recv_processed_counter->increment();
 		} catch (const con::InvalidIncomingDataException &e) {
 			infostream << "Server::Receive(): InvalidIncomingDataException: what()="
@@ -1095,6 +1091,8 @@ void Server::Receive(float timeout)
 		} catch (ClientNotFoundException &e) {
 			infostream << "Server: ClientNotFoundException" << std::endl;
 		}
+
+		delete pkt;
 	}
 }
 
@@ -1179,9 +1177,6 @@ inline void Server::handleCommand(NetworkPacket *pkt)
 
 void Server::ProcessData(NetworkPacket *pkt)
 {
-	// Environment is locked first.
-	MutexAutoLock envlock(m_env_mutex);
-
 	ScopeProfiler sp(g_profiler, "Server: Process network packet (sum)");
 	u32 peer_id = pkt->getPeerId();
 
@@ -2480,16 +2475,30 @@ void Server::SendBlocks(float dtime)
 		std::vector<session_t> clients = m_clients.getClientIDs();
 
 		ClientInterface::AutoLock clientlock(m_clients);
-		for (const session_t client_id : clients) {
-			RemoteClient *client = m_clients.lockedGetClientNoEx(client_id, CS_Active);
 
-			if (!client)
-				continue;
+		if (!clients.empty()) {
+			int last_sent_blocks_to_client_index = -1;
 
-			//total_sending += client->getSendingCount();
-			const auto old_count = queue.size();
-			client->GetNextBlocks(m_env,m_emerge, dtime, queue);
-			unique_clients += queue.size() > old_count ? 1 : 0;
+			for (int send_to_num_clients = 0; send_to_num_clients < 10; send_to_num_clients++) {
+				current_sent_blocks_to_client_index++;
+				current_sent_blocks_to_client_index %= clients.size();
+				if (current_sent_blocks_to_client_index == last_sent_blocks_to_client_index)
+					break;
+
+				if (last_sent_blocks_to_client_index == -1)
+					last_sent_blocks_to_client_index = current_sent_blocks_to_client_index;
+
+				const session_t client_id = clients[current_sent_blocks_to_client_index];
+
+				RemoteClient* client = m_clients.lockedGetClientNoEx(client_id, CS_Active);
+
+				if (!client)
+					continue;
+
+				const auto old_count = queue.size();
+				client->GetNextBlocks(m_env, m_emerge, dtime, queue);
+				unique_clients += queue.size() > old_count ? 1 : 0;
+			}
 		}
 	}
 
@@ -4142,6 +4151,8 @@ void dedicated_server_loop(Server &server, bool &kill)
 				g_profiler->clear();
 			}
 		}
+
+		g_logger.flushLogToOutputs();
 	}
 
 	infostream << "Dedicated server quitting" << std::endl;

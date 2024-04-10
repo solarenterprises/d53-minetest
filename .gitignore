@@ -138,3 +138,4 @@ install64/
 build32/
 bin_x86/
 bin_x64/
+stress-test-config.txt
