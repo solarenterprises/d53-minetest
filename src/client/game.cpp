@@ -3054,6 +3054,9 @@ void Game::handleClientEvent_HudChange(ClientEvent *event, CameraOrientation *ca
 
 void Game::handleClientEvent_SetSky(ClientEvent *event, CameraOrientation *cam)
 {
+	if (!sky)
+		return;
+
 	sky->setVisible(false);
 	// Whether clouds are visible in front of a custom skybox.
 	sky->setCloudsEnabled(event->set_sky->clouds);
@@ -3124,6 +3127,9 @@ void Game::handleClientEvent_SetSky(ClientEvent *event, CameraOrientation *cam)
 
 void Game::handleClientEvent_SetSun(ClientEvent *event, CameraOrientation *cam)
 {
+	if (!sky)
+		return;
+
 	sky->setSunVisible(event->sun_params->visible);
 	sky->setSunTexture(event->sun_params->texture,
 		event->sun_params->tonemap, texture_src);
@@ -3135,6 +3141,9 @@ void Game::handleClientEvent_SetSun(ClientEvent *event, CameraOrientation *cam)
 
 void Game::handleClientEvent_SetMoon(ClientEvent *event, CameraOrientation *cam)
 {
+	if (!sky)
+		return;
+
 	sky->setMoonVisible(event->moon_params->visible);
 	sky->setMoonTexture(event->moon_params->texture,
 		event->moon_params->tonemap, texture_src);
@@ -3144,6 +3153,9 @@ void Game::handleClientEvent_SetMoon(ClientEvent *event, CameraOrientation *cam)
 
 void Game::handleClientEvent_SetStars(ClientEvent *event, CameraOrientation *cam)
 {
+	if (!sky)
+		return;
+
 	sky->setStarsVisible(event->star_params->visible);
 	sky->setStarCount(event->star_params->count);
 	sky->setStarColor(event->star_params->starcolor);

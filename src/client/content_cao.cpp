@@ -500,7 +500,7 @@ void GenericCAO::setAttachment(int parent_id, const std::string &bone,
 	} else if (!m_is_local_player) {
 		// Objects attached to the local player should be hidden in first person
 		m_is_visible = !m_attached_to_local ||
-			m_client->getCamera()->getCameraMode() != CAMERA_MODE_FIRST;
+			(m_client->getCamera() && m_client->getCamera()->getCameraMode() != CAMERA_MODE_FIRST);
 		m_force_visible = false;
 	} else {
 		// Local players need to have this set,

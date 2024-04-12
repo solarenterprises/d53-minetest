@@ -199,11 +199,13 @@ public:
 		return true;
 	}
 
-	bool nowait_pop_num(std::deque<T> &t, u32 max_packets)
+	bool nowait_pop_num(std::vector<T> &t, u32 max_packets)
 	{
 		std::unique_lock<std::mutex> lock(m_mutex, std::try_to_lock);
 		if (!lock.owns_lock())
 			return false;
+
+		t.reserve(std::min(max_packets, (u32)m_queue.size()));
 
 		for (u32 i = 0; i < max_packets && !m_queue.empty(); i++) {
 			t.push_back(std::move(m_queue.front()));

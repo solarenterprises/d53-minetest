@@ -1055,13 +1055,15 @@ void Server::AsyncRunStep(float dtime, bool initial_step)
 
 void Server::Receive(float timeout)
 {
-	const u64 t0 = porting::getTimeUs();
+	using namespace con;
+
+	/*const u64 t0 = porting::getTimeUs();
 	const float timeout_us = timeout * 1e6f;
 	auto remaining_time_us = [&]() -> float {
 		return std::max(0.0f, timeout_us - (porting::getTimeUs() - t0));
-	};
+	};*/
 
-	std::deque<NetworkPacket*> pkts;
+	std::vector<ConnectionEventPtr> pkts;
 	if (!m_con->ReceivePackets(pkts))
 		return;
 
@@ -1069,13 +1071,57 @@ void Server::Receive(float timeout)
 	MutexAutoLock envlock(m_env_mutex);
 
 	session_t peer_id;
-	for (auto pkt : pkts) {
+	NetworkPacket pkt;
+	for (auto& e_ptr : pkts) {
+		pkt.clear();
 		peer_id = 0;
+
 		try {
-			peer_id = pkt->getPeerId();
-			m_packet_recv_counter->increment();
-			ProcessData(pkt);
-			m_packet_recv_processed_counter->increment();
+			if (!e_ptr)
+				continue;
+
+			const ConnectionEvent& e = *e_ptr;
+
+			if (e.type != CONNEVENT_NONE) {
+				dout_con << m_con->getDesc() << ": Receive: got event: "
+					<< e.describe() << std::endl;
+			}
+
+			switch (e.type) {
+			case CONNEVENT_NONE:
+				continue;
+			case CONNEVENT_DATA_RECEIVED:
+				// Data size is lesser than command size, ignoring packet
+				if (e.data.getSize() < 2) {
+					continue;
+				}
+
+				pkt.putRawPacket(*e.data, e.data.getSize(), e.peer_id);
+				peer_id = pkt.getPeerId();
+				m_packet_recv_counter->increment();
+				ProcessData(&pkt);
+				m_packet_recv_processed_counter->increment();
+				continue;
+			case CONNEVENT_PEER_ADDED: {
+				auto m_bc_peerhandler = m_con->getPeerHandler();
+
+				UDPPeer tmp(e.peer_id, e.address, m_con.get());
+				if (m_bc_peerhandler)
+					m_bc_peerhandler->peerAdded(&tmp);
+				continue;
+			}
+			case CONNEVENT_PEER_REMOVED: {
+				auto m_bc_peerhandler = m_con->getPeerHandler();
+
+				UDPPeer tmp(e.peer_id, e.address, m_con.get());
+				if (m_bc_peerhandler)
+					m_bc_peerhandler->deletingPeer(&tmp, e.timeout);
+				continue;
+			}
+			case CONNEVENT_BIND_FAILED:
+				throw ConnectionBindFailed("Failed to bind socket "
+					"(port already in use?)");
+			}
 		} catch (const con::InvalidIncomingDataException &e) {
 			infostream << "Server::Receive(): InvalidIncomingDataException: what()="
 					<< e.what() << std::endl;
@@ -1091,8 +1137,6 @@ void Server::Receive(float timeout)
 		} catch (ClientNotFoundException &e) {
 			infostream << "Server: ClientNotFoundException" << std::endl;
 		}
-
-		delete pkt;
 	}
 }
 

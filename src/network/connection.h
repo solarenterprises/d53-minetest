@@ -733,7 +733,7 @@ public:
 	bool Connected();
 	void Disconnect();
 	bool ReceiveTimeoutMs(NetworkPacket *pkt, u32 timeout_ms);
-	bool ReceivePackets(std::deque<NetworkPacket*>& pkts);
+	bool ReceivePackets(std::vector<ConnectionEventPtr>& pkts);
 	void Receive(NetworkPacket *pkt);
 	bool TryReceive(NetworkPacket *pkt);
 	void Send(session_t peer_id, u8 channelnum, NetworkPacket *pkt, bool reliable);
@@ -744,6 +744,10 @@ public:
 	u32 GetProtocolID() const { return m_protocol_id; };
 	const std::string getDesc();
 	void DisconnectPeer(session_t peer_id);
+
+	inline PeerHandler* getPeerHandler() {
+		return m_bc_peerhandler;
+	}
 
 protected:
 	PeerHelper getPeerNoEx(session_t peer_id);

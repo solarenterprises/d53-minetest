@@ -1449,60 +1449,15 @@ ConnectionEventPtr Connection::waitEvent(u32 timeout_ms)
 	}
 }
 
-bool Connection::ReceivePackets(std::deque<NetworkPacket*>& pkts)
+bool Connection::ReceivePackets(std::vector<ConnectionEventPtr>& pkts)
 {
 	/*
 		Note that this function can potentially wait infinitely if non-data
 		events keep happening before the timeout expires.
 		This is not considered to be a problem (is it?)
 	*/
-	std::deque<ConnectionEventPtr> ptrs;
-	if (!m_event_queue.nowait_pop_num(ptrs, 10'000))
+	if (!m_event_queue.nowait_pop_num(pkts, 10'000))
 		return false;
-
-	for (auto& e_ptr : ptrs) {
-		if (!e_ptr)
-			continue;
-
-		const ConnectionEvent& e = *e_ptr;
-
-		if (e.type != CONNEVENT_NONE) {
-			LOG(dout_con << getDesc() << ": Receive: got event: "
-				<< e.describe() << std::endl);
-		}
-
-		NetworkPacket* pkt = new NetworkPacket();
-		pkts.push_back(pkt);
-
-		switch (e.type) {
-		case CONNEVENT_NONE:
-			continue;
-		case CONNEVENT_DATA_RECEIVED:
-			// Data size is lesser than command size, ignoring packet
-			if (e.data.getSize() < 2) {
-				continue;
-			}
-
-			pkt->putRawPacket(*e.data, e.data.getSize(), e.peer_id);
-			continue;
-		case CONNEVENT_PEER_ADDED: {
-			UDPPeer tmp(e.peer_id, e.address, this);
-			if (m_bc_peerhandler)
-				m_bc_peerhandler->peerAdded(&tmp);
-			continue;
-		}
-		case CONNEVENT_PEER_REMOVED: {
-			UDPPeer tmp(e.peer_id, e.address, this);
-			if (m_bc_peerhandler)
-				m_bc_peerhandler->deletingPeer(&tmp, e.timeout);
-			continue;
-		}
-		case CONNEVENT_BIND_FAILED:
-			throw ConnectionBindFailed("Failed to bind socket "
-				"(port already in use?)");
-		}
-	}
-
 	return !pkts.empty();
 }
 
