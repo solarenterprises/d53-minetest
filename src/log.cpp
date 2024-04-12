@@ -280,7 +280,10 @@ void Logger::logToOutputs(LogLevel lev, const std::string &combined,
 	const std::string &time, const std::string &thread_name,
 	const std::string &payload_text)
 {
-	logOutputData.push_back({ lev, combined, time, thread_name, payload_text });
+	{
+		MutexAutoLock lock(m_mutex);
+		logOutputData.push_back({ lev, combined, time, thread_name, payload_text });
+	}
 	flushLogToOutputs();
 }
 
