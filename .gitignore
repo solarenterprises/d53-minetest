@@ -66,9 +66,6 @@ AppDir
 /client/mod_storage/
 /minetest-build
 /.plastic/
-/lib/
-/po/
-/luaLibs/
 
 
 ## Configuration/log files
