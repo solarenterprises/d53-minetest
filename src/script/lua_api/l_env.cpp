@@ -709,9 +709,25 @@ int ModApiEnv::l_get_player_by_name(lua_State *L)
 {
 	GET_ENV_PTR;
 
-	// Do it
 	const char *name = luaL_checkstring(L, 1);
 	RemotePlayer *player = env->getPlayer(name);
+	if (!player)
+		return 0;
+	PlayerSAO *sao = player->getPlayerSAO();
+	if (!sao || sao->isGone())
+		return 0;
+	// Put player on stack
+	getScriptApiBase(L)->objectrefGetOrCreate(L, sao);
+	return 1;
+}
+
+// get_player_by_peer_id(peer_id)
+int ModApiEnv::l_get_player_by_peer_id(lua_State *L)
+{
+	GET_ENV_PTR;
+
+	const int peer_id = luaL_checkinteger(L, 1);
+	RemotePlayer *player = env->getPlayer(peer_id);
 	if (!player)
 		return 0;
 	PlayerSAO *sao = player->getPlayerSAO();
@@ -1446,6 +1462,7 @@ void ModApiEnv::Initialize(lua_State *L, int top)
 	API_FCT(get_node_timer);
 	API_FCT(get_connected_players);
 	API_FCT(get_player_by_name);
+	API_FCT(get_player_by_peer_id);
 	API_FCT(get_objects_in_area);
 	API_FCT(get_objects_inside_radius);
 	API_FCT(set_timeofday);

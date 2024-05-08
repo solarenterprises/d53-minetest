@@ -33,6 +33,8 @@ class ClientEnvironment;
 struct ItemStack;
 class Inventory;
 struct ItemDefinition;
+class InputHandler;
+class NetworkPacket;
 
 class ScriptApiClient : virtual public ScriptApiBase
 {
@@ -59,6 +61,10 @@ public:
 	bool on_item_use(const ItemStack &item, const PointedThing &pointed);
 
 	bool on_inventory_open(Inventory *inventory);
+
+	void on_input(InputHandler* input);
+	void on_lua_packet(int mod_name_hash, NetworkPacket* pkt);
+	void on_lua_packet_stream(int mod_name_hash, u32 id, u16 chunk_id, NetworkPacket* pkt);
 
 	void setEnv(ClientEnvironment *env);
 };

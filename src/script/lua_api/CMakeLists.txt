@@ -25,6 +25,9 @@ set(common_SCRIPT_LUA_API_SRCS
 	${CMAKE_CURRENT_SOURCE_DIR}/l_vmanip.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/ls_mysql.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/l_sql.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/l_network_packet.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/l_ogg.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/l_buffer.cpp
 	PARENT_SCOPE)
 
 set(client_SCRIPT_LUA_API_SRCS
@@ -37,4 +40,5 @@ set(client_SCRIPT_LUA_API_SRCS
 	${CMAKE_CURRENT_SOURCE_DIR}/l_minimap.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/l_particles_local.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/l_storage.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/l_voice.cpp
 	PARENT_SCOPE)

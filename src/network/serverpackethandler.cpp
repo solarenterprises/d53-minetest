@@ -42,6 +42,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "util/serialize.h"
 #include "util/srp.h"
 #include "clientdynamicinfo.h"
+#include "network/stream_packet.h"
 
 void Server::handleCommand_Deprecated(NetworkPacket* pkt)
 {
@@ -1901,3 +1902,39 @@ void Server::handleCommand_UpdateClientInfo(NetworkPacket *pkt)
 	RemoteClient *client = getClient(peer_id, CS_Invalid);
 	client->setDynamicInfo(info);
 }
+
+void Server::handleCommand_Lua_Packet(NetworkPacket* pkt) {
+	NetworkPacket* clone = new NetworkPacket(*pkt);
+
+	int mod_hash_name;
+	(*clone) >> mod_hash_name;
+
+	((ScriptApiServer*)m_script)->on_lua_packet(mod_hash_name, clone);
+}
+
+void Server::handleCommand_Lua_Packet_Stream(NetworkPacket* _pkt) {
+	StreamPacketHandler::HandleCallback func = [&](session_t peer_id, u32 id, u16 chunk_id, NetworkPacket* pkt, void* user_data) {
+		if (!pkt) {
+			((ScriptApiServer*)m_script)->on_lua_packet_stream(*(int*)user_data, peer_id, id, chunk_id, nullptr);
+
+			// EOF
+			delete user_data;
+			return;
+		}
+
+		if (chunk_id == 0) {
+			//
+			// Init
+			int* mod_hash_name = (int*)pkt->getRemainingString();
+
+			m_streamPacketHandler->set_user_data(peer_id, id, new int(*mod_hash_name));
+
+			return;
+		}
+
+		NetworkPacket* clone = new NetworkPacket(*pkt);
+		((ScriptApiServer*)m_script)->on_lua_packet_stream(*(int*)user_data, peer_id, id, chunk_id, clone);
+	};
+	m_streamPacketHandler->handle(_pkt, func);
+}
+

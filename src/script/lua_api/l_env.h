@@ -146,6 +146,9 @@ private:
 	// get_player_by_name(name)
 	static int l_get_player_by_name(lua_State *L);
 
+	// get_player_by_peer_id(peer_id)
+	static int l_get_player_by_peer_id(lua_State *L);
+
 	// get_objects_inside_radius(pos, radius)
 	static int l_get_objects_inside_radius(lua_State *L);
 

@@ -78,5 +78,6 @@ set(client_SRCS
 	${CMAKE_CURRENT_SOURCE_DIR}/mesh_buffer_handler.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/clientmap_norender.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/player_ai.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/voice.cpp
 	PARENT_SCOPE
 )

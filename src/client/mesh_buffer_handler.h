@@ -18,16 +18,6 @@ struct OpenGLSubData {
 	}
 };
 
-//struct OpenGLSubDataArray {
-//	std::vector<OpenGLSubData*> data;
-//
-//	inline void push_back(OpenGLSubData* d) {
-//		data.push_back(d);
-//	}
-//
-//	void optimize(v3s16 view_center);
-//};
-
 struct TextureBufListMaps
 {
 	struct TextureHash
@@ -144,7 +134,7 @@ struct TextureBufListMaps
 			return;
 
 		for (auto& loadOrder : loadData) {
-			for (int i = 0; i < loadOrder.block_data.data.size(); i++) {
+			for (int i = 0; i < (int)loadOrder.block_data.data.size(); i++) {
 				auto& data = loadOrder.block_data.data[i];
 				if (data.texture != texture)
 					continue;
@@ -207,7 +197,7 @@ public:
 
 		END_DEBUG_EXCEPTION_HANDLER
 
-			return NULL;
+		return NULL;
 	}
 
 private:

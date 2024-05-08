@@ -86,6 +86,14 @@ void KeyCache::populate()
 	}
 
 	if (handler) {
+		for (size_t i = 0; i < handler->custom_keys.size(); i++) {
+			if (KeyType::CUSTOM_1 + i > KeyType::CUSTOM_10)
+				throw "Too many custom keys";
+
+			std::string key_id = "keymap_" + handler->custom_keys[i].id;
+			key[KeyType::CUSTOM_1 + i] = getKeySetting(key_id.c_str());
+		}
+
 		// First clear all keys, then re-add the ones we listen for
 		handler->dontListenForKeys();
 		for (const KeyPress &k : key) {

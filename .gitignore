@@ -140,3 +140,6 @@ bin_x86/
 bin_x64/
 stress-test-config.txt
 minetest.dmp
+
+/games/*
+!/games/devtest*

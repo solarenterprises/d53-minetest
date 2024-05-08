@@ -1633,6 +1633,7 @@ bool Game::connectToServer(const GameStartData &start_data,
 				start_data.name.c_str(),
 				start_data.password,
 				start_data.playerai,
+				input,
 				*draw_control, texture_src, shader_src,
 				itemdef_manager, nodedef_manager, sound_manager.get(), eventmgr,
 				m_rendering_engine, m_game_ui.get(),
@@ -1643,6 +1644,7 @@ bool Game::connectToServer(const GameStartData &start_data,
 		return false;
 	}
 
+	client->cleanupServerMods();
 	client->migrateModStorage();
 	client->m_simple_singleplayer_mode = simple_singleplayer_mode;
 
@@ -1873,7 +1875,7 @@ inline bool Game::handleCallbacks()
 
 	if (g_gamecallback->keyconfig_requested) {
 		(new GUIKeyChangeMenu(guienv, guiroot, -1,
-				      &g_menumgr, texture_src))->drop();
+				      &g_menumgr, texture_src, input))->drop();
 		g_gamecallback->keyconfig_requested = false;
 	}
 
@@ -2065,6 +2067,9 @@ void Game::processUserInput(f32 dtime)
 
 void Game::processKeyInput()
 {
+	if(client->modsLoaded())
+		client->getScript()->on_input(input);
+
 	if (wasKeyDown(KeyType::DROP)) {
 		dropSelectedItem(isKeyDown(KeyType::SNEAK));
 	} else if (wasKeyDown(KeyType::AUTOFORWARD)) {
@@ -3605,10 +3610,6 @@ void Game::handlePointingAtNode(const PointedThing &pointed,
 	*/
 
 	ClientMap &map = client->getEnv().getClientMap();
-
-	if (isKeyDown(KeyType::DIG)) {
-		bool test = true;
-	}
 
 	if (runData.nodig_delay_timer <= 0.0 && isKeyDown(KeyType::DIG)
 			&& !runData.digging_blocked

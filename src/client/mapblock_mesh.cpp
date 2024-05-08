@@ -886,8 +886,6 @@ int MapBlockMesh::isMeshBufferAnimated(u32 layer, u32 index) {
 		cache_is_buffer_animated[layer].reserve(c);
 
 		for (u32 i = 0; i < c; i++) {
-			scene::IMeshBuffer* buf = mesh->getMeshBuffer(i);
-
 			int animation_flag = 0;
 			for (auto& info : m_animation_info)
 				if (info.first.second == i) {

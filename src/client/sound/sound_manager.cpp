@@ -189,6 +189,141 @@ std::shared_ptr<PlayingSound> OpenALSoundManager::createPlayingSound(
 	return sound;
 }
 
+std::shared_ptr<PlayingSound> OpenALSoundManager::createPlayingSound(
+		std::shared_ptr<ISoundDataOpen> lsnd, bool loop, f32 volume, f32 pitch,
+		f32 start_time, const std::optional<std::pair<v3f, v3f>> &pos_vel_opt)
+{
+	if (!lsnd) {
+		// does not happen because of the call to getLoadedSoundNameFromGroup
+		errorstream << "OpenALSoundManager::createPlayingSound: Sound \""
+			<< "stream " << "\" disappeared." << std::endl;
+		return nullptr;
+	}
+
+	/*if (lsnd->m_decode_info.is_stereo && pos_vel_opt.has_value()
+			&& m_warned_positional_stereo_sounds.find(sound_name)
+					== m_warned_positional_stereo_sounds.end()) {
+		warningstream << "OpenALSoundManager::createPlayingSound: "
+				<< "Creating positional stereo sound \"" << sound_name << "\"."
+				<< std::endl;
+		m_warned_positional_stereo_sounds.insert(sound_name);
+	}*/
+
+	ALuint source_id;
+	alGenSources(1, &source_id);
+	if (warn_if_al_error("createPlayingSound (alGenSources)") != AL_NO_ERROR) {
+		// happens ie. if there are too many sources (out of memory)
+		return nullptr;
+	}
+
+	auto sound = std::make_shared<PlayingSound>(source_id, std::move(lsnd), loop,
+			volume, pitch, start_time, pos_vel_opt, m_exts);
+
+	sound->play();
+
+	warn_if_al_error("createPlayingSound");
+	return sound;
+}
+
+int ogg_next_id = 0;
+void OpenALSoundManager::playSoundGenericOGG(sound_handle_t id, std::string ogg_buffer, bool loop,
+	f32 volume, f32 fade, f32 pitch, bool use_local_fallback, f32 start_time,
+	const std::optional<std::pair<v3f, v3f>>& pos_vel_opt)
+{
+	assert(id != 0);
+
+	auto unopn_snd = std::make_unique<SoundDataUnopenBuffer>(std::move(ogg_buffer));
+	std::string name = "ogg_stream_" + std::to_string(ogg_next_id++);
+	std::shared_ptr<ISoundDataOpen> opn_snd = std::move(*unopn_snd).open(name);
+
+	volume = std::max(0.0f, volume);
+	f32 target_fade_volume = volume;
+	if (fade > 0.0f)
+		volume = 0.0f;
+
+	if (!(pitch > 0.0f)) {
+		warningstream << "OpenALSoundManager::playSoundGeneric: Illegal pitch value: "
+			<< start_time << std::endl;
+		pitch = 1.0f;
+	}
+
+	if (!std::isfinite(start_time)) {
+		warningstream << "OpenALSoundManager::playSoundGeneric: Illegal start_time value: "
+			<< start_time << std::endl;
+		start_time = 0.0f;
+	}
+
+	// play it
+	std::shared_ptr<PlayingSound> sound = createPlayingSound(opn_snd, loop,
+		volume, pitch, start_time, pos_vel_opt);
+	if (!sound) {
+		reportRemovedSound(id);
+		return;
+	}
+
+	// add to streaming sounds if streaming
+	if (sound->isStreaming())
+		m_sounds_streaming_next_bigstep.push_back(sound);
+
+	m_sounds_playing.emplace(id, std::move(sound));
+
+	if (fade > 0.0f)
+		fadeSound(id, fade, target_fade_volume);
+}
+
+void OpenALSoundManager::playSoundGenericRAW(sound_handle_t id, const std::string& raw_buffer, int sample_rate, bool loop,
+	f32 volume, f32 fade, f32 pitch, bool use_local_fallback, f32 start_time,
+	const std::optional<std::pair<v3f, v3f>>& pos_vel_opt)
+{
+	assert(id != 0);
+	assert(sample_rate > 0);
+
+	OggFileDecodeInfo decoded_info;
+	decoded_info.bytes_per_sample = sizeof(short);
+	decoded_info.format = AL_FORMAT_MONO16;
+	decoded_info.freq = sample_rate;
+	decoded_info.is_stereo = false;
+	decoded_info.length_samples = raw_buffer.length() / sizeof(short);
+	decoded_info.length_seconds = (float)decoded_info.length_samples / decoded_info.freq;
+	decoded_info.name_for_logging = "raw";
+	
+	std::shared_ptr<ISoundDataOpen> opn_snd = std::shared_ptr<ISoundDataOpen>(new SoundDataOpenBufferRAW(decoded_info, (short*)raw_buffer.c_str()));
+
+	volume = std::max(0.0f, volume);
+	f32 target_fade_volume = volume;
+	if (fade > 0.0f)
+		volume = 0.0f;
+
+	if (!(pitch > 0.0f)) {
+		warningstream << "OpenALSoundManager::playSoundGeneric: Illegal pitch value: "
+			<< start_time << std::endl;
+		pitch = 1.0f;
+	}
+
+	if (!std::isfinite(start_time)) {
+		warningstream << "OpenALSoundManager::playSoundGeneric: Illegal start_time value: "
+			<< start_time << std::endl;
+		start_time = 0.0f;
+	}
+
+	// play it
+	std::shared_ptr<PlayingSound> sound = createPlayingSound(opn_snd, loop,
+		volume, pitch, start_time, pos_vel_opt);
+	if (!sound) {
+		reportRemovedSound(id);
+		return;
+	}
+
+	// add to streaming sounds if streaming
+	if (sound->isStreaming())
+		m_sounds_streaming_next_bigstep.push_back(sound);
+
+	m_sounds_playing.emplace(id, std::move(sound));
+
+	if (fade > 0.0f)
+		fadeSound(id, fade, target_fade_volume);
+}
+
 void OpenALSoundManager::playSoundGeneric(sound_handle_t id, const std::string &group_name,
 		bool loop, f32 volume, f32 fade, f32 pitch, bool use_local_fallback,
 		f32 start_time, const std::optional<std::pair<v3f, v3f>> &pos_vel_opt)
@@ -397,6 +532,14 @@ void OpenALSoundManager::addSoundToGroup(const std::string &sound_name, const st
 
 void OpenALSoundManager::playSound(sound_handle_t id, const SoundSpec &spec)
 {
+	if (!spec.raw.empty())
+		return playSoundGenericRAW(id, spec.raw, spec.raw_sample_rate, spec.loop, spec.gain, spec.fade, spec.pitch,
+				spec.use_local_fallback, spec.start_time, std::nullopt);
+
+	if (!spec.ogg.empty())
+		return playSoundGenericOGG(id, spec.ogg, spec.loop, spec.gain, spec.fade, spec.pitch,
+				spec.use_local_fallback, spec.start_time, std::nullopt);
+
 	return playSoundGeneric(id, spec.name, spec.loop, spec.gain, spec.fade, spec.pitch,
 			spec.use_local_fallback, spec.start_time, std::nullopt);
 }
@@ -408,6 +551,14 @@ void OpenALSoundManager::playSoundAt(sound_handle_t id, const SoundSpec &spec,
 			swap_handedness(pos_),
 			swap_handedness(vel_)
 		});
+
+	if (!spec.raw.empty())
+		return playSoundGenericRAW(id, spec.raw, spec.raw_sample_rate, spec.loop, spec.gain, spec.fade, spec.pitch,
+			spec.use_local_fallback, spec.start_time, pos_vel_opt);
+
+	if (!spec.ogg.empty())
+		return playSoundGenericOGG(id, spec.ogg, spec.loop, spec.gain, spec.fade, spec.pitch,
+			spec.use_local_fallback, spec.start_time, pos_vel_opt);
 
 	return playSoundGeneric(id, spec.name, spec.loop, spec.gain, spec.fade, spec.pitch,
 			spec.use_local_fallback, spec.start_time, pos_vel_opt);

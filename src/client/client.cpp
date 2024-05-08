@@ -66,6 +66,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "translation.h"
 #include "content/mod_configuration.h"
 #include "mapnode.h"
+#include "inputhandler.h"
+#include "../network/stream_packet.h"
 
 extern gui::IGUIEnvironment* guienv;
 
@@ -101,6 +103,7 @@ Client::Client(
 		const char *playername,
 		const std::string &password,
 		const std::string ai_class,
+		InputHandler* input,
 		MapDrawControl &control,
 		IWritableTextureSource *tsrc,
 		IWritableShaderSource *shsrc,
@@ -112,6 +115,7 @@ Client::Client(
 		GameUI *game_ui,
 		ELoginRegister allow_login_or_register
 ):
+	m_input(input),
 	m_tsrc(tsrc),
 	m_shsrc(shsrc),
 	m_itemdef(itemdef),
@@ -133,8 +137,12 @@ Client::Client(
 	m_media_downloader(new ClientMediaDownloader()),
 	m_state(LC_Created),
 	m_game_ui(game_ui),
-	m_modchannel_mgr(new ModChannelMgr())
+	m_modchannel_mgr(new ModChannelMgr()),
+	m_streamPacketHandler(new StreamPacketHandler())
 {
+	m_input->custom_keys.clear();
+	m_input->keycache.populate();
+
 	if (rendering_engine) {
 		m_mesh_update_manager = std::make_unique<MeshUpdateManager>(this);
 		m_particle_manager = std::make_unique<ParticleManager>(&m_env);
@@ -161,6 +169,14 @@ Client::Client(
 
 FpsControl& Client::getFpsControl() {
 	return fps_control;
+}
+
+void Client::cleanupServerMods() {
+	std::string path = porting::path_cache + DIR_DELIM + "mods";
+	if (!fs::PathExists(path))
+		return;
+
+	fs::RecursiveDelete(path);
 }
 
 void Client::migrateModStorage()
@@ -255,6 +271,24 @@ void Client::loadMods()
 	// Run them
 	for (const ModSpec& mod : m_mods)
 		m_script->loadModFromMemory(mod.name);
+
+	//
+	// Load mods downloaded from server
+	//
+	infostream << "Server mods:";
+	std::string client_mods_path = porting::path_cache + DIR_DELIM + "mods" + DIR_DELIM;
+	auto dl = fs::GetDirListing(client_mods_path);
+	for (auto d : dl) {
+		if (!d.dir)
+			continue;
+
+		 infostream << d.name << " ";
+
+		scanModIntoMemory(d.name, client_mods_path + d.name + DIR_DELIM + "client" + DIR_DELIM);
+		m_script->loadModFromMemory(d.name);
+	}
+	infostream << std::endl;
+
 
 	// Mods are done loading. Unlock callbacks
 	m_mods_loaded = true;
@@ -798,10 +832,36 @@ void Client::step(float dtime)
 bool Client::loadMedia(const std::string& data, const std::string& filename,
 	bool from_media_push)
 {
+	std::string name;
+	const char* script_ext[] = {
+		".lua",
+		NULL
+	};
+
+	name = removeStringEnd(filename, script_ext);
+	if (!name.empty()) {
+		TRACESTREAM(<< "Client: save script file \"" << filename << "\"" << std::endl);
+
+		io::IFileSystem* irrfs = m_rendering_engine->get_filesystem();
+
+		std::string filepath = porting::path_cache + DIR_DELIM + filename;
+		std::string filedir = filepath.substr(0, filepath.find_last_of(DIR_DELIM));
+		fs::CreateAllDirs(filedir);
+
+		std::ofstream ofs(filepath, std::ios::out | std::ios::binary);
+		if (!ofs.good()) {
+			errorstream << "Client: Cannot create lua from data of "
+				<< "file \"" << filename << "\"" << std::endl;
+			return false;
+		}
+
+		ofs.write(data.c_str(), data.size());
+
+		return true;
+	}
+
 	if (!m_rendering_engine)
 		return true;
-
-	std::string name;
 
 	const char* image_ext[] = {
 		".png", ".jpg", ".bmp", ".tga",
@@ -2192,4 +2252,44 @@ ModChannel* Client::getModChannel(const std::string& channel)
 const std::string &Client::getFormspecPrepend() const
 {
 	return m_env.getLocalPlayer()->formspec_prepend;
+}
+
+std::string Client::input_key_to_id_string(int index) {
+	if (index >= KeyType::INTERNAL_ENUM_COUNT)
+		return "";
+
+	if (index >= KeyType::CUSTOM_1 && index <= KeyType::CUSTOM_10) {
+		int base_index = index - KeyType::CUSTOM_1;
+
+		std::vector<InputHandler::CustomKey>& custom_keys = m_input->custom_keys;
+		if (base_index >= custom_keys.size())
+			return "";
+
+		return custom_keys[base_index].id;
+	}
+
+	return KeyType::to_string[index];
+}
+
+void Client::register_input_key(std::string id, std::string display_name, std::string defaultKey) {
+	std::vector<InputHandler::CustomKey>& custom_keys = m_input->custom_keys;
+	if (std::find_if(custom_keys.begin(), custom_keys.end(), [&id](InputHandler::CustomKey& f) { return f.id == id; }) != custom_keys.end())
+		return;
+
+	//
+	// Validate key code
+	KeyPress k(defaultKey.c_str());
+	if (strcmp(k.sym(), "") == 0)
+		throw (std::string("invalid key code ") + defaultKey).c_str();
+
+	std::string settings_id = "keymap_" + id;
+	if (!g_settings->exists(settings_id)) {
+		g_settings->setDefault(settings_id, defaultKey);
+	}
+
+	custom_keys.push_back({
+		id,
+		display_name,
+	});
+	m_input->keycache.populate();
 }

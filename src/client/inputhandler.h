@@ -273,6 +273,12 @@ public:
 
 	JoystickController joystick;
 	KeyCache keycache;
+
+	struct CustomKey {
+		std::string id;
+		std::string display_name;
+	};
+	std::vector<CustomKey> custom_keys;
 };
 /*
 	Separated input handler

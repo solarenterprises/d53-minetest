@@ -60,6 +60,15 @@ void NetworkPacket::clear()
 	m_peer_id = 0;
 }
 
+std::string NetworkPacket::substring(int length) {
+	checkReadOffset(0, length);
+	std::string str(getString(0), length);
+	m_data.erase(m_data.begin(), m_data.begin() + length);
+	m_read_offset -= length;
+	m_datasize = m_data.size();
+	return std::move(str);
+}
+
 const char* NetworkPacket::getString(u32 from_offset) const
 {
 	checkReadOffset(from_offset, 0);

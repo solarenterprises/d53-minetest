@@ -126,6 +126,13 @@ const ToClientCommandHandler toClientCommandTable[TOCLIENT_NUM_MSG_TYPES] =
 	{ "TOCLIENT_FORMSPEC_PREPEND",         TOCLIENT_STATE_CONNECTED, &Client::handleCommand_FormspecPrepend }, // 0x61,
 	{ "TOCLIENT_MINIMAP_MODES",            TOCLIENT_STATE_CONNECTED, &Client::handleCommand_MinimapModes }, // 0x62,
 	{ "TOCLIENT_SET_LIGHTING",             TOCLIENT_STATE_CONNECTED, &Client::handleCommand_SetLighting }, // 0x63,
+
+	null_command_handler, // 0x64
+	null_command_handler, // 0x65
+	null_command_handler, // 0x66
+	null_command_handler, // 0x67
+	{ "TOCLIENT_LUA_PACKET",			   TOCLIENT_STATE_CONNECTED, &Client::handleCommand_Lua_Packet }, // 0x68,
+	{ "TOCLIENT_LUA_PACKET_STREAM",        TOCLIENT_STATE_CONNECTED, &Client::handleCommand_Lua_Packet_Stream }, // 0x69,
 };
 
 const static ServerCommandFactory null_command_factory = { nullptr, 0, false };
@@ -226,4 +233,11 @@ const ServerCommandFactory serverCommandFactoryTable[TOSERVER_NUM_MSG_TYPES] =
 	{ "TOSERVER_SRP_BYTES_A",        1, true }, // 0x51
 	{ "TOSERVER_SRP_BYTES_M",        1, true }, // 0x52
 	{ "TOSERVER_UPDATE_CLIENT_INFO", 2, true }, // 0x53
+
+	null_command_factory, // 0x54
+	null_command_factory, // 0x55
+	null_command_factory, // 0x56
+	null_command_factory, // 0x57
+	{ "TOSERVER_LUA_PACKET",		0, true }, // 0x58,
+	{ "TOSERVER_LUA_PACKET_STREAM", 0, true }, // 0x59,
 };

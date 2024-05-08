@@ -34,6 +34,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "map.h"
 #include "util/string.h"
 #include "nodedef.h"
+#include "lua_api/l_network_packet.h"
+#include "../client/localplayer.h"
 
 #define checkCSMRestrictionFlag(flag) \
 	( getClient(L)->checkCSMRestrictionFlag(CSMRestrictionFlags::flag) )
@@ -154,6 +156,67 @@ int ModApiClient::l_show_formspec(lua_State *L)
 	event->show_formspec.formspec = new std::string(luaL_checkstring(L, 2));
 	getClient(L)->pushToEventQueue(event);
 	lua_pushboolean(L, true);
+	return 1;
+}
+
+// hud_add(hud)
+int ModApiClient::l_hud_add(lua_State* L)
+{
+	NO_MAP_LOCK_REQUIRED;
+
+	//
+	// Move first argument to second argument so read_hud_element can look for table in second argument.
+	lua_pushvalue(L, 1);
+	lua_insert(L, 2);
+
+	HudElement* elem = new HudElement;
+	read_hud_element(L, elem);
+
+	auto player = getClient(L)->getEnv().getLocalPlayer();
+	auto id = player->addHud(elem);
+
+	lua_pushnumber(L, id);
+	return 1;
+}
+
+// hud_remove(id)
+int ModApiClient::l_hud_remove(lua_State* L)
+{
+	NO_MAP_LOCK_REQUIRED;
+
+	u32 id = luaL_checkint(L, 1);
+
+	auto player = getClient(L)->getEnv().getLocalPlayer();
+	auto elem = player->removeHud(id);
+
+	lua_pushboolean(L, elem != nullptr);
+
+	delete elem;
+	return 1;
+}
+
+// hud_change(id, stat, data)
+int ModApiClient::l_hud_change(lua_State* L)
+{
+	NO_MAP_LOCK_REQUIRED;
+
+	u32 id = luaL_checkint(L, 1);
+
+	auto player = getClient(L)->getEnv().getLocalPlayer();
+	HudElement* e = player->getHud(id);
+	if (e == nullptr)
+		return 0;
+
+	lua_pushvalue(L, 3);
+	lua_insert(L, 4);
+
+	lua_pushvalue(L, 2);
+	lua_insert(L, 3);
+
+	HudElementStat stat;
+	void* value = nullptr;
+	bool ok = read_hud_change(L, stat, e, &value);
+	lua_pushboolean(L, ok);
 	return 1;
 }
 
@@ -338,6 +401,88 @@ int ModApiClient::l_get_csm_restrictions(lua_State *L)
 	return 1;
 }
 
+int ModApiClient::l_register_input_key(lua_State* L)
+{
+	luaL_checktype(L, 1, LUA_TTABLE);
+
+	std::string id;
+	getstringfield(L, 1, "id", id);
+
+	std::string display_name;
+	getstringfield(L, 1, "display_name", display_name);
+
+	std::string default_key;
+	getstringfield(L, 1, "default_key", default_key);
+
+	getClient(L)->register_input_key(id, display_name, default_key);
+
+	return 0;
+}
+
+int ModApiClient::l_send(lua_State* L)
+{
+	if (!lua_isuserdata(L, 1)) {
+		lua_pushboolean(L, false);
+		return 1;
+	}
+	LuaNetworkPacket* lua_packet = checkObject<LuaNetworkPacket>(L, 1);
+
+	getClient(L)->Send(lua_packet->packet.get());
+	lua_pushboolean(L, true);
+	return 0;
+}
+
+
+int ModApiClient::l_register_on_lua_packet(lua_State* L)
+{
+	NO_MAP_LOCK_REQUIRED;
+
+	if (!lua_isfunction(L, 1))
+		throw LuaError("callback is missing");
+
+	std::string current_mod_name = ScriptApiBase::getCurrentModNameInsecure(L);
+	if (current_mod_name.empty())
+		throw LuaError("register_on_lua_packet needs to be called on init time");
+
+	lua_getglobal(L, "core");
+	lua_getfield(L, -1, "registered_on_lua_packet");
+	luaL_checktype(L, -1, LUA_TTABLE);
+
+	int mod_hash = std::hash<std::string>{}(current_mod_name);
+	lua_pushinteger(L, mod_hash);
+	lua_pushvalue(L, 1); // Push the function onto the stack
+	lua_settable(L, -3);
+
+	lua_pop(L, 2);
+
+	return 0;
+}
+
+int ModApiClient::l_register_on_lua_packet_stream(lua_State* L)
+{
+	NO_MAP_LOCK_REQUIRED;
+
+	if (!lua_isfunction(L, 1))
+		throw LuaError("callback is missing");
+
+	std::string current_mod_name = ScriptApiBase::getCurrentModNameInsecure(L);
+	if (current_mod_name.empty())
+		throw LuaError("register_on_lua_packet needs to be called on init time");
+
+	lua_getglobal(L, "core");
+	lua_getfield(L, -1, "registered_on_lua_packet_stream");
+	luaL_checktype(L, -1, LUA_TTABLE);
+
+	int mod_hash = std::hash<std::string>{}(current_mod_name);
+	lua_pushinteger(L, mod_hash);
+	lua_pushvalue(L, 1); // Push the function onto the stack
+	lua_settable(L, -3);
+
+	lua_pop(L, 2);
+
+	return 0;
+}
+
 void ModApiClient::Initialize(lua_State *L, int top)
 {
 	API_FCT(get_current_modname);
@@ -360,4 +505,12 @@ void ModApiClient::Initialize(lua_State *L, int top)
 	API_FCT(get_builtin_path);
 	API_FCT(get_language);
 	API_FCT(get_csm_restrictions);
+	API_FCT(register_input_key);
+	API_FCT(hud_add);
+	API_FCT(hud_remove);
+	API_FCT(hud_change);
+
+	API_FCT(register_on_lua_packet);
+	API_FCT(register_on_lua_packet_stream);
+	API_FCT(send);
 }

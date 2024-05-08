@@ -253,8 +253,11 @@ private:
 	// set_breath(self, breath)
 	static int l_set_breath(lua_State *L);
 
-	// get_breath(self, breath)
+	// get_breath(self)
 	static int l_get_breath(lua_State *L);
+
+	// get_peerid(self)
+	static int l_get_peer_id(lua_State *L);
 
 	// DEPRECATED
 	// set_attribute(self, attribute, value)

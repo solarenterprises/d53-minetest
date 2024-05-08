@@ -67,6 +67,10 @@ struct SoundSpec
 
 	// Name of the sound-group
 	std::string name;
+	std::string ogg;
+	std::string raw;
+	int raw_sample_rate = 0;
+
 	float gain = 1.0f;
 	float fade = 0.0f;
 	float pitch = 1.0f;

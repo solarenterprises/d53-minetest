@@ -174,4 +174,33 @@ private:
 			std::vector<ContiguousBuffers>::iterator after_it);
 };
 
+/**
+ * Non-streaming opened sound data.
+ * All data is completely loaded in one buffer.
+ */
+struct SoundDataOpenBufferRAW final : ISoundDataOpen
+{
+	RAIIALSoundBuffer m_buffer;
+
+	SoundDataOpenBufferRAW(const OggFileDecodeInfo& decode_info, short* _buffer) : ISoundDataOpen(decode_info) {
+		m_buffer = RAIIALSoundBuffer::generate();
+
+		alBufferData(
+			m_buffer.get(),
+			decode_info.format,
+			_buffer,
+			decode_info.length_samples * decode_info.bytes_per_sample,
+			decode_info.freq);
+	}
+
+	bool isStreaming() const noexcept override { return false; }
+
+	std::tuple<ALuint, ALuint, ALuint> getOrLoadBufferAt(ALuint offset) override
+	{
+		if (offset >= m_decode_info.length_samples)
+			return { 0, m_decode_info.length_samples, 0 };
+		return { m_buffer.get(), m_decode_info.length_samples, offset };
+	}
+};
+
 } // namespace sound

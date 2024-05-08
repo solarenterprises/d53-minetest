@@ -1337,12 +1337,16 @@ int ModApiMainMenu::l_show_keys_menu(lua_State *L)
 	GUIEngine *engine = getGuiEngine(L);
 	sanity_check(engine != NULL);
 
+	auto client = getClient(L);
+	auto inputHandler = client ? client->getInputHandler() : nullptr;
+
 	GUIKeyChangeMenu *kmenu = new GUIKeyChangeMenu(
 			engine->m_rendering_engine->get_gui_env(),
 			engine->m_parent,
 			-1,
 			engine->m_menumanager,
-			engine->m_texture_source.get());
+			engine->m_texture_source.get(),
+			inputHandler);
 	kmenu->drop();
 	return 0;
 }

@@ -68,3 +68,9 @@ class DummyStreamBuffer : public std::streambuf {
 		return n;
 	}
 };
+
+class Stream {
+public:
+	virtual void write(const char* buffer, std::streamsize size) = 0;
+	virtual void flush() = 0;
+};

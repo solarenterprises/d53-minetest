@@ -51,6 +51,15 @@ enum HttpMethod : u8
 	HTTP_DELETE,
 };
 
+struct HTTPFile {
+	std::string name;
+	std::string filename;
+	std::string content_type;
+	std::string data;
+
+	size_t read_position = 0;
+};
+
 struct HTTPFetchRequest
 {
 	std::string url = "";
@@ -79,6 +88,9 @@ struct HTTPFetchRequest
 
 	// Fields of the request
 	StringMap fields;
+
+	// Upload file with multipart = true
+	std::vector<HTTPFile> files;
 
 	// Raw data of the request overrides fields
 	std::string raw_data;

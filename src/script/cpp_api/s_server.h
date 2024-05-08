@@ -21,6 +21,9 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include "cpp_api/s_base.h"
 #include <set>
+#include "../network/networkprotocol.h"
+
+class NetworkPacket;
 
 class ScriptApiServer
 		: virtual public ScriptApiBase
@@ -54,6 +57,9 @@ public:
 	static u32 allocateDynamicMediaCallback(lua_State *L, int f_idx);
 	void freeDynamicMediaCallback(u32 token);
 	void on_dynamic_media_added(u32 token, const char *playername);
+
+	void on_lua_packet(int mod_name_hash, NetworkPacket* pkt);
+	void on_lua_packet_stream(int mod_name_hash, session_t peer_id, u32 id, u16 chunk_id, NetworkPacket* pkt);
 
 private:
 	void getAuthHandler();

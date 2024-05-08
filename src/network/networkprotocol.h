@@ -226,15 +226,15 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 		[scheduled bump for 5.9.0]
 */
 
-#define LATEST_PROTOCOL_VERSION 45
+#define LATEST_PROTOCOL_VERSION 46
 #define LATEST_PROTOCOL_VERSION_STRING TOSTRING(LATEST_PROTOCOL_VERSION)
 
 // Server's supported network protocol range
-#define SERVER_PROTOCOL_VERSION_MIN 45
+#define SERVER_PROTOCOL_VERSION_MIN 46
 #define SERVER_PROTOCOL_VERSION_MAX LATEST_PROTOCOL_VERSION
 
 // Client's supported network protocol range
-#define CLIENT_PROTOCOL_VERSION_MIN 45
+#define CLIENT_PROTOCOL_VERSION_MIN 46
 #define CLIENT_PROTOCOL_VERSION_MAX LATEST_PROTOCOL_VERSION
 
 // Constant that differentiates the protocol from random data and other protocols
@@ -246,7 +246,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 // See also formspec [Version History] in doc/lua_api.md
 #define FORMSPEC_API_VERSION 7
 
-#define TEXTURENAME_ALLOWED_CHARS "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_.-"
+#define TEXTURENAME_ALLOWED_CHARS "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_.-/\\"
 
 typedef u16 session_t;
 
@@ -849,7 +849,10 @@ enum ToClientCommand : u16
 			f32 center_weight_power
 	*/
 
-	TOCLIENT_NUM_MSG_TYPES = 0x64,
+	TOCLIENT_LUA_PACKET = 0x68,
+	TOCLIENT_LUA_PACKET_STREAM = 0x69,
+
+	TOCLIENT_NUM_MSG_TYPES = 0x7A,
 };
 
 enum ToServerCommand : u16
@@ -1059,7 +1062,10 @@ enum ToServerCommand : u16
 		v2f32 max_fs_info
 	*/
 
-	TOSERVER_NUM_MSG_TYPES = 0x54,
+	TOSERVER_LUA_PACKET = 0x58,
+	TOSERVER_LUA_PACKET_STREAM = 0x59,
+
+	TOSERVER_NUM_MSG_TYPES = 0x5A,
 };
 
 enum AuthMechanism

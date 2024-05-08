@@ -50,6 +50,8 @@ public:
 	u32 getRemainingBytes() const { return m_datasize - m_read_offset; }
 	const char *getRemainingString() { return getString(m_read_offset); }
 
+	std::string substring(int length);
+
 	// Returns a c-string without copying.
 	// A better name for this would be getRawString()
 	const char *getString(u32 from_offset) const;

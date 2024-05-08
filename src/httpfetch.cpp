@@ -220,7 +220,6 @@ private:
 	curl_mime *multipart_mime = nullptr;
 };
 
-
 HTTPFetchOngoing::HTTPFetchOngoing(const HTTPFetchRequest &request_,
 		CurlHandlePool *pool_):
 	pool(pool_),
@@ -298,7 +297,18 @@ HTTPFetchOngoing::HTTPFetchOngoing(const HTTPFetchRequest &request_,
 			curl_mime_name(part, it.first.c_str());
 			curl_mime_data(part, it.second.c_str(), it.second.size());
 		}
+
+		for (auto& file : request.files) {
+			curl_mimepart* part = curl_mime_addpart(multipart_mime);
+			curl_mime_name(part, file.name.c_str());
+			curl_mime_filename(part, file.filename.c_str());
+			curl_mime_data(part, file.data.c_str(), file.data.size());
+			curl_mime_type(part, file.content_type.c_str()); // Set content type
+		}
+
 		curl_easy_setopt(curl, CURLOPT_MIMEPOST, multipart_mime);
+
+		
 	} else {
 		switch (request.method) {
 		case HTTP_GET:

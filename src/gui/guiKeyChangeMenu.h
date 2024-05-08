@@ -39,11 +39,13 @@ struct key_setting
 	gui::IGUIButton *button;
 };
 
+class InputHandler;
+
 class GUIKeyChangeMenu : public GUIModalMenu
 {
 public:
 	GUIKeyChangeMenu(gui::IGUIEnvironment *env, gui::IGUIElement *parent, s32 id,
-			IMenuManager *menumgr, ISimpleTextureSource *tsrc);
+			IMenuManager *menumgr, ISimpleTextureSource *tsrc, InputHandler* input);
 	~GUIKeyChangeMenu();
 
 	/*
@@ -76,4 +78,6 @@ private:
 	gui::IGUIStaticText *key_used_text = nullptr;
 	std::vector<key_setting *> key_settings;
 	ISimpleTextureSource *m_tsrc;
+
+	InputHandler* m_input;
 };

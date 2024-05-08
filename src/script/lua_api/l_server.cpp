@@ -30,6 +30,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "remoteplayer.h"
 #include "log.h"
 #include <algorithm>
+#include "../lua_api/l_network_packet.h"
 
 // request_shutdown()
 int ModApiServer::l_request_shutdown(lua_State *L)
@@ -710,6 +711,87 @@ int ModApiServer::l_serialize_roundtrip(lua_State *L)
 	return 1;
 }
 
+int ModApiServer::l_register_on_lua_packet(lua_State* L)
+{
+	NO_MAP_LOCK_REQUIRED;
+
+	if (!lua_isfunction(L, 1))
+		throw LuaError("callback is missing");
+
+	std::string current_mod_name = ScriptApiBase::getCurrentModNameInsecure(L);
+	if (current_mod_name.empty())
+		throw LuaError("register_on_lua_packet needs to be called on init time");
+
+	lua_getglobal(L, "core");
+	lua_getfield(L, -1, "registered_on_lua_packet");
+	luaL_checktype(L, -1, LUA_TTABLE);
+
+	int mod_hash = std::hash<std::string>{}(current_mod_name);
+	lua_pushinteger(L, mod_hash);
+	lua_pushvalue(L, 1); // Push the function onto the stack
+	lua_settable(L, -3);
+
+	lua_pop(L, 2);
+
+	return 0;
+}
+
+int ModApiServer::l_register_on_lua_packet_stream(lua_State* L)
+{
+	NO_MAP_LOCK_REQUIRED;
+
+	if (!lua_isfunction(L, 1))
+		throw LuaError("callback is missing");
+
+	std::string current_mod_name = ScriptApiBase::getCurrentModNameInsecure(L);
+	if (current_mod_name.empty())
+		throw LuaError("register_on_lua_packet needs to be called on init time");
+
+	lua_getglobal(L, "core");
+	lua_getfield(L, -1, "registered_on_lua_packet_stream");
+	luaL_checktype(L, -1, LUA_TTABLE);
+
+	int mod_hash = std::hash<std::string>{}(current_mod_name);
+	lua_pushinteger(L, mod_hash);
+	lua_pushvalue(L, 1); // Push the function onto the stack
+	lua_settable(L, -3);
+
+	lua_pop(L, 2);
+
+	return 0;
+}
+
+int ModApiServer::l_send(lua_State* L)
+{
+	if (!lua_istable(L, 1))
+		throw "send arg(1) needs to be peer array";
+
+	// Get the length of the table (number of elements)
+	int tableLength = lua_objlen(L, 1);
+
+	if (!lua_isuserdata(L, 2))
+		throw "send arg(2) needs to be Networkacket";
+	LuaNetworkPacket* lua_packet = checkObject<LuaNetworkPacket>(L, 2);
+
+	for (int i = 1; i <= tableLength; i++) {
+		lua_pushinteger(L, i); // Push index onto the stack
+		lua_gettable(L, 1); // Get the value at index i
+
+		// Check if the value is an integer
+		if (!luaL_checkinteger(L, -1))
+			throw "peer ID must be an integer";
+
+		// Retrieve the peer ID
+		int peer_id = lua_tointeger(L, -1);
+		lua_pop(L, 1); // Pop the peer ID from the stack 
+
+		// Send the packet to the peer
+		getServer(L)->Send(peer_id, lua_packet->packet.get());
+	}
+
+	return 0;
+}
+
 void ModApiServer::Initialize(lua_State *L, int top)
 {
 	API_FCT(request_shutdown);
@@ -751,6 +833,11 @@ void ModApiServer::Initialize(lua_State *L, int top)
 	API_FCT(serialize_roundtrip);
 
 	API_FCT(register_mapgen_script);
+
+	API_FCT(register_on_lua_packet);
+	API_FCT(register_on_lua_packet_stream);
+
+	API_FCT(send);
 }
 
 void ModApiServer::InitializeAsync(lua_State *L, int top)

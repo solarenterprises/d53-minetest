@@ -70,6 +70,8 @@ class Camera;
 struct PlayerControl;
 class NetworkPacket;
 struct FpsControl;
+class InputHandler;
+class StreamPacketHandler;
 
 namespace con {
 	class Connection;
@@ -127,6 +129,7 @@ public:
 			const char *playername,
 			const std::string &password,
 			const std::string ai_class,
+			InputHandler* input,
 			MapDrawControl &control,
 			IWritableTextureSource *tsrc,
 			IWritableShaderSource *shsrc,
@@ -235,6 +238,8 @@ public:
 	void handleCommand_MediaPush(NetworkPacket* pkt);
 	void handleCommand_MinimapModes(NetworkPacket* pkt);
 	void handleCommand_SetLighting(NetworkPacket* pkt);
+	void handleCommand_Lua_Packet(NetworkPacket* pkt);
+	void handleCommand_Lua_Packet_Stream(NetworkPacket* pkt);
 
 	void ProcessData(NetworkPacket* pkt);
 
@@ -410,6 +415,9 @@ public:
 	// Migrates away old files-based mod storage if necessary
 	void migrateModStorage();
 
+	// Mods that was sent by server to client
+	void cleanupServerMods();
+
 	// The following set of functions is used by ClientMediaDownloader
 	// Insert a media file appropriately into the appropriate manager
 	bool loadMedia(const std::string& data, const std::string& filename,
@@ -431,6 +439,12 @@ public:
 	bool modsLoaded() const { return m_mods_loaded; }
 
 	void pushToEventQueue(ClientEvent* event);
+
+	inline InputHandler* getInputHandler() {
+		return m_input;
+	}
+	std::string input_key_to_id_string(int index);
+	void register_input_key(std::string id, std::string display_name, std::string defaultKey);
 
 	// IP and port we're connected to
 	const Address getServerAddress();
@@ -636,8 +650,12 @@ private:
 
 	std::unique_ptr<ModChannelMgr> m_modchannel_mgr;
 
+	std::unique_ptr<StreamPacketHandler> m_streamPacketHandler;
+
 	// The number of blocks the client will combine for mesh generation.
 	MeshGrid m_mesh_grid;
 
 	FpsControl fps_control;
+
+	InputHandler* m_input;
 };

@@ -46,6 +46,9 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "lua_api/l_http.h"
 #include "lua_api/l_storage.h"
 #include "lua_api/l_sql.h"
+#include "lua_api/l_network_packet.h"
+#include "lua_api/l_ogg.h"
+#include "lua_api/l_buffer.h"
 
 #include "filesys.h"
 
@@ -173,6 +176,11 @@ void ServerScripting::InitializeModApi(lua_State *L, int top)
 	LuaSettings::Register(L);
 	StorageRef::Register(L);
 	ModChannelRef::Register(L);
+	LuaNetworkPacket::Register(L);
+	LuaNetworkStreamPacket::Register(L);
+	LuaNetworkChannel::Register(L);
+	LuaBuffer::Register(L);
+	LuaOGGWriteStream::Register(L);
 
 	// Initialize mod api modules
 	ModApiAuth::Initialize(L, top);
@@ -188,6 +196,9 @@ void ServerScripting::InitializeModApi(lua_State *L, int top)
 	ModApiHttp::Initialize(L, top);
 	ModApiStorage::Initialize(L, top);
 	ModApiChannels::Initialize(L, top);
+	ModApiNetworkChannel::Initialize(L, top);
+	ModApiOGG::Initialize(L, top);
+	ModApiBuffer::Initialize(L, top);
 
 	lua_register(L, "mysql", luaopen_luasql_mysql);
 }

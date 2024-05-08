@@ -78,6 +78,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include "database/database-mysql.h"
 
+#include "../network/stream_packet.h"
+
 class ClientNotFoundException : public BaseException
 {
 public:
@@ -264,6 +266,7 @@ Server::Server(
 	m_itemdef(createItemDefManager()),
 	m_nodedef(createNodeDefManager()),
 	m_craftdef(createCraftDefManager()),
+	m_streamPacketHandler(new StreamPacketHandler()),
 	m_thread(new ServerThread(this)),
 	m_clients(m_con),
 	m_admin_chat(iface),
@@ -756,7 +759,7 @@ void Server::AsyncRunStep(float dtime, bool initial_step)
 	// send masterserver announce
 	{
 		float &counter = m_masterserver_timer;
-		if (!isSingleplayer() && (!counter || counter >= 300.0) &&
+		if (!isSingleplayer() && (!counter || counter >= 30.0) &&
 				g_settings->getBool("server_announce")) {
 			ServerList::sendAnnounce(counter ? ServerList::AA_UPDATE :
 						ServerList::AA_START,
@@ -2269,10 +2272,18 @@ s32 Server::playSound(ServerPlayingSound &params, bool ephemeral)
 
 	float gain = params.gain * params.spec.gain;
 	NetworkPacket pkt(TOCLIENT_PLAY_SOUND, 0);
-	pkt << id << params.spec.name << gain
+	pkt << id;
+	if (params.spec.ogg.empty())
+		pkt << (u8)0 << params.spec.name;
+	else {
+		pkt << (u8)1;
+		pkt.putLongString(params.spec.ogg);
+	}
+	pkt << gain
 			<< (u8) params.type << pos << params.object
 			<< params.spec.loop << params.spec.fade << params.spec.pitch
 			<< ephemeral << params.spec.start_time;
+
 
 	const bool as_reliable = !ephemeral;
 
@@ -2606,7 +2617,7 @@ bool Server::SendBlock(session_t peer_id, const v3s16 &blockpos)
 	return true;
 }
 
-bool Server::addMediaFile(const std::string &filename,
+bool Server::addMediaFile(std::string filename,
 	const std::string &filepath, std::string *filedata_to,
 	std::string *digest_to)
 {
@@ -2623,14 +2634,25 @@ bool Server::addMediaFile(const std::string &filename,
 		".x", ".b3d", ".obj",
 		// Custom translation file format
 		".tr",
+		".lua",
 		NULL
 	};
-	if (removeStringEnd(filename, supported_ext).empty()) {
+
+	auto without_ext = removeStringEnd(filename, supported_ext);
+	if (without_ext.empty()) {
 		infostream << "Server: ignoring unsupported file extension: \""
 				<< filename << "\"" << std::endl;
 		return false;
 	}
 	// Ok, attempt to load the file and add to cache
+
+	auto ext = filename.substr(without_ext.length());
+	if (ext == ".lua") {
+		auto pos = filepath.find("mods" + std::string(1, DIR_DELIM_CHAR));
+		if (pos != std::string::npos) {
+			filename = filepath.substr(pos);
+		}
+	}
 
 	// Read data
 	std::string filedata;
@@ -2698,6 +2720,7 @@ void Server::fillMediaCache()
 
 			std::string filepath = mediapath;
 			filepath.append(DIR_DELIM).append(filename);
+
 			addMediaFile(filename, filepath);
 		}
 	}

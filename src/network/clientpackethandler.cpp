@@ -47,6 +47,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "skyparams.h"
 #include "particles.h"
 #include <memory>
+#include "../network/stream_packet.h"
 
 void Client::handleCommand_Deprecated(NetworkPacket* pkt)
 {
@@ -830,17 +831,23 @@ void Client::handleCommand_PlaySound(NetworkPacket* pkt)
 {
 	/*
 		[0] s32 server_id
-		[4] u16 name length
-		[6] char name[len]
-		[ 6 + len] f32 gain
-		[10 + len] u8 type (SoundLocation)
-		[11 + len] v3f pos (in BS-space)
-		[23 + len] u16 object_id
-		[25 + len] bool loop
-		[26 + len] f32 fade
-		[30 + len] f32 pitch
-		[34 + len] bool ephemeral
-		[35 + len] f32 start_time (in seconds)
+		[4] u8 type
+		- type 0
+			[5] u16 name length
+			[7] char name[len]
+		- type 1
+			[5] u32 wav length
+			[9] u8 wav data[len]
+
+		[ 7 + len] f32 gain
+		[11 + len] u8 type (SoundLocation)
+		[12 + len] v3f pos (in BS-space)
+		[24 + len] u16 object_id
+		[26 + len] bool loop
+		[27 + len] f32 fade
+		[31 + len] f32 pitch
+		[35 + len] bool ephemeral
+		[36 + len] f32 start_time (in seconds)
 	*/
 
 	s32 server_id;
@@ -851,7 +858,16 @@ void Client::handleCommand_PlaySound(NetworkPacket* pkt)
 	u16 object_id;
 	bool ephemeral = false;
 
-	*pkt >> server_id >> spec.name >> spec.gain >> (u8 &)type >> pos >> object_id >> spec.loop;
+	u8 audio_type = 0;
+
+	*pkt >> server_id >> audio_type;
+
+	if (audio_type == 0)
+		*pkt >> spec.name;
+	else
+		spec.ogg = pkt->readLongString();
+
+	*pkt >> spec.gain >> (u8&)type >> pos >> object_id >> spec.loop;
 	pos *= 1.0f/BS;
 
 	try {
@@ -1827,3 +1843,39 @@ void Client::handleCommand_SetLighting(NetworkPacket *pkt)
 	if (pkt->getRemainingBytes() >= 4)
 		*pkt >> lighting.volumetric_light_strength;
 }
+
+void Client::handleCommand_Lua_Packet(NetworkPacket* pkt) {
+	NetworkPacket* clone = new NetworkPacket(*pkt);
+
+	int mod_hash_name;
+	(*clone) >> mod_hash_name;
+
+	((ScriptApiClient*)m_script)->on_lua_packet(mod_hash_name, clone);
+}
+
+void Client::handleCommand_Lua_Packet_Stream(NetworkPacket* _pkt) {
+	StreamPacketHandler::HandleCallback func = [&](session_t peer_id, u32 id, u16 chunk_id, NetworkPacket* pkt, void* user_data) {
+		if (!pkt) {
+			((ScriptApiClient*)m_script)->on_lua_packet_stream(*(int*)user_data, id, chunk_id, nullptr);
+
+			// EOF
+			delete user_data;
+			return;
+		}
+
+		if (chunk_id == 0) {
+			//
+			// Init
+			int* mod_hash_name = (int*)pkt->getRemainingString();
+
+			m_streamPacketHandler->set_user_data(peer_id, id, new int(*mod_hash_name));
+
+			return;
+		}
+
+		NetworkPacket* clone = new NetworkPacket(*pkt);
+		((ScriptApiClient*)m_script)->on_lua_packet_stream(*(int*)user_data, id, chunk_id, clone);
+	};
+	m_streamPacketHandler->handle(_pkt, func);
+}
+

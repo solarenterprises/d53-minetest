@@ -26,6 +26,9 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "lua_api/l_item.h"
 #include "itemdef.h"
 #include "s_item.h"
+#include "../client/inputhandler.h"
+#include "lua_api/l_network_packet.h"
+#include "../network/networkpacket.h"
 
 void ScriptApiClient::on_mods_loaded()
 {
@@ -290,7 +293,110 @@ bool ScriptApiClient::on_inventory_open(Inventory *inventory)
 	return readParam<bool>(L, -1);
 }
 
+void ScriptApiClient::on_input(InputHandler* input)
+{
+	SCRIPTAPI_PRECHECKHEADER
+
+	lua_getglobal(L, "core");
+	lua_getfield(L, -1, "registered_on_input");
+
+	auto client = getClient();
+
+	int firstKey = KeyType::FORWARD;
+	int lastKey = KeyType::INTERNAL_ENUM_COUNT;
+	int numKeys = lastKey - firstKey;
+	lua_createtable(L, 0, numKeys);
+	for (int i = firstKey; i < lastKey; i++) {
+		std::string key_name = client->input_key_to_id_string(i);
+		if (key_name.empty())
+			continue;
+
+		bool isDown = input->isKeyDown((GameKeyType)i);
+		bool wasPressed = input->wasKeyPressed((GameKeyType)i);
+
+		lua_pushstring(L, key_name.c_str());
+
+		lua_createtable(L, 0, 2);  // Create a nested table for 'isDown' and 'wasPressed'
+
+		lua_pushstring(L, "isDown");
+		lua_pushboolean(L, isDown);
+		lua_settable(L, -3); // Set 'isDown' in the nested table
+
+
+		lua_pushstring(L, "wasPressed");
+		lua_pushboolean(L, wasPressed);
+		lua_settable(L, -3);  // Set 'wasPressed' in the nested table
+
+		lua_settable(L, -3); // Set the nested table in the main table under the key name
+	}
+
+	
+	try {
+		runCallbacks(1, RUN_CALLBACKS_MODE_FIRST);
+	}
+	catch (LuaError& e) {
+		getClient()->setFatalError(e);
+	}
+}
+
+void ScriptApiClient::on_lua_packet(int mod_name_hash, NetworkPacket* pkt)
+{
+	SCRIPTAPI_PRECHECKHEADER;
+
+	int error_handler = PUSH_ERROR_HANDLER(L);
+
+	lua_getglobal(L, "core");
+	lua_getfield(L, -1, "registered_on_lua_packet");
+	luaL_checktype(L, -1, LUA_TTABLE);
+	lua_rawgeti(L, -1, mod_name_hash);
+	if (lua_type(L, -1) != LUA_TFUNCTION) {
+		errorstream << "on lua packet has not been registered!" << std::endl;
+		return;
+	}
+
+	LuaNetworkPacket::create_object(L, pkt);
+	PCALL_RES(lua_pcall(L, 1, 0, error_handler));
+	lua_remove(L, error_handler);
+}
+
+void ScriptApiClient::on_lua_packet_stream(int mod_name_hash, u32 id, u16 chunk_id, NetworkPacket* pkt)
+{
+	SCRIPTAPI_PRECHECKHEADER;
+
+	int error_handler = PUSH_ERROR_HANDLER(L);
+
+	lua_getglobal(L, "core");
+	lua_getfield(L, -1, "registered_on_lua_packet_stream");
+	luaL_checktype(L, -1, LUA_TTABLE);
+	lua_rawgeti(L, -1, mod_name_hash);
+	if (lua_type(L, -1) != LUA_TFUNCTION) {
+		errorstream << "on lua packet stream has not been registered!" << std::endl;
+		return;
+	}
+
+	lua_createtable(L, 0, 3);
+
+	lua_pushstring(L, "id");
+	lua_pushinteger(L, id);
+	lua_settable(L, -3);
+
+	lua_pushstring(L, "chunk_id");
+	lua_pushinteger(L, chunk_id);
+	lua_settable(L, -3);
+
+	lua_pushstring(L, "packet");
+	if (pkt)
+		LuaNetworkPacket::create_object(L, pkt);
+	else
+		lua_pushnil(L);
+	lua_settable(L, -3);
+
+	PCALL_RES(lua_pcall(L, 1, 0, error_handler));
+	lua_remove(L, error_handler);
+}
+
 void ScriptApiClient::setEnv(ClientEnvironment *env)
 {
 	ScriptApiBase::setEnv(env);
 }
+

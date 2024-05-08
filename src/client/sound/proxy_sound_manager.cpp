@@ -138,6 +138,7 @@ void ProxySoundManager::playSound(sound_handle_t id, const SoundSpec &spec)
 {
 	if (id == 0)
 		id = allocateId(1);
+
 	send(sound_manager_messages_to_mgr::PlaySound{id, spec});
 }
 
@@ -146,6 +147,7 @@ void ProxySoundManager::playSoundAt(sound_handle_t id, const SoundSpec &spec, co
 {
 	if (id == 0)
 		id = allocateId(1);
+
 	send(sound_manager_messages_to_mgr::PlaySoundAt{id, spec, pos_, vel_});
 }
 

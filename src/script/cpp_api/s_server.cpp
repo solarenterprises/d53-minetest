@@ -21,6 +21,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "cpp_api/s_internal.h"
 #include "common/c_converter.h"
 #include "util/numeric.h" // myrand
+#include "../lua_api/l_network_packet.h"
 
 bool ScriptApiServer::getAuth(const std::string &playername,
 		std::string *dst_password,
@@ -259,4 +260,64 @@ void ScriptApiServer::on_dynamic_media_added(u32 token, const char *playername)
 
 	lua_pushstring(L, playername);
 	PCALL_RES(lua_pcall(L, 1, 0, error_handler));
+}
+
+void ScriptApiServer::on_lua_packet(int mod_name_hash, NetworkPacket* pkt)
+{
+	SCRIPTAPI_PRECHECKHEADER;
+
+	int error_handler = PUSH_ERROR_HANDLER(L);
+
+	lua_getglobal(L, "core");
+	lua_getfield(L, -1, "registered_on_lua_packet");
+	luaL_checktype(L, -1, LUA_TTABLE);
+	lua_rawgeti(L, -1, mod_name_hash);
+	if (lua_type(L, -1) != LUA_TFUNCTION) {
+		errorstream << "on lua packet has not been registered!" << std::endl;
+		return;
+	}
+
+	LuaNetworkPacket::create_object(L, pkt);
+	PCALL_RES(lua_pcall(L, 1, 0, error_handler));
+	lua_remove(L, error_handler);
+}
+
+void ScriptApiServer::on_lua_packet_stream(int mod_name_hash, session_t peer_id, u32 id, u16 chunk_id, NetworkPacket* pkt)
+{
+	SCRIPTAPI_PRECHECKHEADER;
+
+	int error_handler = PUSH_ERROR_HANDLER(L);
+
+	lua_getglobal(L, "core");
+	lua_getfield(L, -1, "registered_on_lua_packet_stream");
+	luaL_checktype(L, -1, LUA_TTABLE);
+	lua_rawgeti(L, -1, mod_name_hash);
+	if (lua_type(L, -1) != LUA_TFUNCTION) {
+		errorstream << "on lua packet stream has not been registered!" << std::endl;
+		return;
+	}
+
+	lua_createtable(L, 0, 4);
+
+	lua_pushstring(L, "peer_id");
+	lua_pushinteger(L, peer_id);
+	lua_settable(L, -3);
+
+	lua_pushstring(L, "id");
+	lua_pushinteger(L, id);
+	lua_settable(L, -3);
+
+	lua_pushstring(L, "chunk_id");
+	lua_pushinteger(L, chunk_id);
+	lua_settable(L, -3);
+
+	lua_pushstring(L, "packet");
+	if (pkt)
+		LuaNetworkPacket::create_object(L, pkt);
+	else
+		lua_pushnil(L);
+	lua_settable(L, -3);
+
+	PCALL_RES(lua_pcall(L, 1, 0, error_handler));
+	lua_remove(L, error_handler);
 }

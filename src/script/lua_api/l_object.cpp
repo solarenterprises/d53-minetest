@@ -1384,6 +1384,21 @@ int ObjectRef::l_get_breath(lua_State *L)
 	return 1;
 }
 
+// get_peer_id(self)
+int ObjectRef::l_get_peer_id(lua_State *L)
+{
+	NO_MAP_LOCK_REQUIRED;
+	ObjectRef *ref = checkObject<ObjectRef>(L, 1);
+	PlayerSAO* playersao = getplayersao(ref);
+	if (playersao == nullptr)
+		return 0;
+
+	int peer_id = playersao->getPeerID();
+
+	lua_pushinteger(L, peer_id);
+	return 1;
+}
+
 // set_attribute(self, attribute, value)
 int ObjectRef::l_set_attribute(lua_State *L)
 {
@@ -2696,6 +2711,7 @@ luaL_Reg ObjectRef::methods[] = {
 	luamethod(ObjectRef, set_look_pitch),
 	luamethod(ObjectRef, get_fov),
 	luamethod(ObjectRef, set_fov),
+	luamethod(ObjectRef, get_peer_id),
 	luamethod(ObjectRef, get_breath),
 	luamethod(ObjectRef, set_breath),
 	luamethod(ObjectRef, get_attribute),

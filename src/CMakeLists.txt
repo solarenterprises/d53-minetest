@@ -353,6 +353,9 @@ add_subdirectory(content)
 add_subdirectory(database)
 add_subdirectory(gui)
 add_subdirectory(mapgen)
+add_subdirectory(audiorw)
+add_subdirectory(libfishsound)
+add_subdirectory(liboggz)
 add_subdirectory(network)
 add_subdirectory(script)
 add_subdirectory(unittest)
@@ -364,6 +367,9 @@ add_subdirectory(server)
 set(common_SRCS
 	${database_SRCS}
 	${mapgen_SRCS}
+	${audiorw_SRCS}
+	${libfishsound_SRCS}
+	${liboggz_SRCS}
 	${server_SRCS}
 	${content_SRCS}
 	chat.cpp
@@ -517,12 +523,26 @@ include_directories(SYSTEM
 	${LUA_BIT_INCLUDE_DIR}
 )
 
+add_definitions(-DHAVE_VORBIS=1)
+add_definitions(-DOGGZ_CONFIG_WRITE=1)
+add_definitions(-DOGGZ_CONFIG_READ=1)
+add_definitions(-DHAVE_SPEEX=0)
+add_definitions(-DHAVE_FLAC=0)
+add_definitions(-DFS_DECODE=0)
+add_definitions(-DFS_ENCODE=1)
+add_definitions(-DHAVE_VORBISENC=1)
+
 include_directories(
 		${JSON_INCLUDE_DIR}
 		${LUA_INCLUDE_DIR}
 		${MYSQL_INCLUDE}
+		${PROJECT_SOURCE_DIR}/libfishsound/
+		${PROJECT_SOURCE_DIR}/liboggz/
 	)
-	
+
+# FFMPEG
+find_package(FFMPEG REQUIRED)
+include_directories(${FFMPEG_INCLUDE_DIR})
 
 find_package(libmysql)
 if(libmysql_FOUND)
@@ -613,6 +633,7 @@ if(BUILD_CLIENT)
 			${PLATFORM_LIBS}
 			ark_cpp_crypto
 			bip39
+			${FFMPEG_LIBRARIES}
 		)
 	else()
 		target_link_libraries(
@@ -633,6 +654,7 @@ if(BUILD_CLIENT)
 			bip39
 			OpenSSL::SSL
 			OpenSSL::Crypto
+			${FFMPEG_LIBRARIES}
 		)
 	endif()
 
@@ -705,6 +727,7 @@ if(BUILD_SERVER)
 		${LUA_BIT_LIBRARY}
 		${GMP_LIBRARY}
 		${PLATFORM_LIBS}
+		${FFMPEG_LIBRARIES}
 	)
 	
 	set_target_properties(${PROJECT_NAME}server PROPERTIES

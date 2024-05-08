@@ -77,6 +77,7 @@ class ServerInventoryManager;
 struct PackedValue;
 struct ParticleParameters;
 struct ParticleSpawnerParameters;
+class StreamPacketHandler;
 
 enum ClientDeletionReason {
 	CDR_LEAVE,
@@ -203,6 +204,8 @@ public:
 	void handleCommand_SrpBytesM(NetworkPacket* pkt);
 	void handleCommand_HaveMedia(NetworkPacket *pkt);
 	void handleCommand_UpdateClientInfo(NetworkPacket *pkt);
+	void handleCommand_Lua_Packet(NetworkPacket *pkt);
+	void handleCommand_Lua_Packet_Stream(NetworkPacket *pkt);
 
 	void ProcessData(NetworkPacket* pkt);
 
@@ -536,7 +539,7 @@ private:
 	// Sends blocks to clients (locks env and con on its own)
 	void SendBlocks(float dtime);
 
-	bool addMediaFile(const std::string &filename, const std::string &filepath,
+	bool addMediaFile(std::string filename, const std::string &filepath,
 			std::string *filedata = nullptr, std::string *digest = nullptr);
 	void fillMediaCache();
 	void sendMediaAnnouncement(session_t peer_id, const std::string &lang_code);
@@ -747,6 +750,8 @@ private:
 
 	// Global server metrics backend
 	std::unique_ptr<MetricsBackend> m_metrics_backend;
+
+	std::unique_ptr<StreamPacketHandler> m_streamPacketHandler;
 
 	// Server metrics
 	MetricCounterPtr m_uptime_counter;

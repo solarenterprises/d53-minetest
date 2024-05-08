@@ -76,6 +76,9 @@ struct ModSpec
 	// if modpack:
 	std::map<std::string, ModSpec> modpack_content;
 
+	// all of this gets transfered to client on joining server
+	std::map<std::string, std::string> client_side_content;
+
 	ModSpec()
 	{
 	}

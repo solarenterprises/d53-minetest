@@ -36,6 +36,10 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "lua_api/l_camera.h"
 #include "lua_api/l_settings.h"
 #include "lua_api/l_client_sound.h"
+#include "lua_api/l_voice.h"
+#include "lua_api/l_network_packet.h"
+#include "lua_api/l_ogg.h"
+#include "lua_api/l_buffer.h"
 
 ClientScripting::ClientScripting(Client *client):
 	ScriptApiBase(ScriptingType::Client)
@@ -76,6 +80,11 @@ void ClientScripting::InitializeModApi(lua_State *L, int top)
 	ModChannelRef::Register(L);
 	LuaSettings::Register(L);
 	ClientSoundHandle::Register(L);
+	LuaVoice::Register(L);
+	LuaNetworkPacket::Register(L);
+	LuaNetworkStreamPacket::Register(L);
+	LuaNetworkChannel::Register(L);
+	LuaBuffer::Register(L);
 
 	ModApiUtil::InitializeClient(L, top);
 	ModApiClient::Initialize(L, top);
@@ -85,6 +94,10 @@ void ClientScripting::InitializeModApi(lua_State *L, int top)
 	ModApiChannels::Initialize(L, top);
 	ModApiParticlesLocal::Initialize(L, top);
 	ModApiClientSound::Initialize(L, top);
+	ModApiVoice::Initialize(L, top);
+	ModApiNetworkChannel::Initialize(L, top);
+	ModApiOGG::Initialize(L, top);
+	ModApiBuffer::Initialize(L, top);
 }
 
 void ClientScripting::on_client_ready(LocalPlayer *localplayer)

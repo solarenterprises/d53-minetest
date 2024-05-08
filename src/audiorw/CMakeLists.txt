@@ -1,0 +1,5 @@
+set(audiorw_SRCS
+	${CMAKE_CURRENT_SOURCE_DIR}/read.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/write.cpp
+	PARENT_SCOPE
+)

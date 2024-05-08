@@ -51,6 +51,10 @@ private:
 	// show_formspec(name, formspec)
 	static int l_show_formspec(lua_State *L);
 
+	static int l_hud_add(lua_State *L);
+	static int l_hud_remove(lua_State *L);
+	static int l_hud_change(lua_State *L);
+
 	// send_respawn()
 	static int l_send_respawn(lua_State *L);
 
@@ -89,6 +93,14 @@ private:
 
 	// get_csm_restrictions()
 	static int l_get_csm_restrictions(lua_State *L);
+
+	// register_input_key(id, displayname)
+	static int l_register_input_key(lua_State *L);
+
+	// send(networkPacket)
+	static int l_send(lua_State* L);
+	static int l_register_on_lua_packet(lua_State* L);
+	static int l_register_on_lua_packet_stream(lua_State* L);
 
 public:
 	static void Initialize(lua_State *L, int top);

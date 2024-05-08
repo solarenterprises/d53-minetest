@@ -561,6 +561,8 @@ core.registered_allow_player_inventory_actions, core.register_allow_player_inven
 core.registered_on_rightclickplayers, core.register_on_rightclickplayer = make_registration()
 core.registered_on_liquid_transformed, core.register_on_liquid_transformed = make_registration()
 core.registered_on_mapblocks_changed, core.register_on_mapblocks_changed = make_registration()
+core.registered_on_lua_packet = {}
+core.registered_on_lua_packet_stream = {}
 
 core.register_on_mods_loaded(function()
 	core.after(0, function()

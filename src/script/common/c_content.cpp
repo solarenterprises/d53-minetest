@@ -25,6 +25,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "cpp_api/s_node.h"
 #include "lua_api/l_object.h"
 #include "lua_api/l_item.h"
+#include "lua_api/l_buffer.h"
 #include "common/c_internal.h"
 #include "server.h"
 #include "log.h"
@@ -1228,6 +1229,69 @@ void read_simplesoundspec(lua_State *L, int index, SoundSpec &spec)
 		getfloatfield(L, index, "gain", spec.gain);
 		getfloatfield(L, index, "fade", spec.fade);
 		getfloatfield(L, index, "pitch", spec.pitch);
+
+		//
+		// OGG
+		//
+		lua_getfield(L, index, "ogg");
+		int ogg_type = lua_type(L, -1);
+		lua_remove(L, -1);
+
+		if (ogg_type == LUA_TUSERDATA) {
+			int top = lua_gettop(L);
+			lua_getfield(L, index, "ogg");
+			// check that the argument is an LuaBuffer
+			if (!lua_getmetatable(L, -1)) {
+				lua_settop(L, top);
+				return;
+			}
+			lua_getfield(L, LUA_REGISTRYINDEX, LuaBuffer::className);
+			if (!lua_rawequal(L, -1, -2)) {
+				lua_settop(L, top);
+				return;
+			}
+
+			lua_settop(L, top + 1);
+			LuaBuffer* lua_buffer = ModApiBase::checkObject<LuaBuffer>(L, -1);
+			spec.ogg = lua_buffer->buffer;
+			lua_settop(L, top);
+		}
+		else if (ogg_type == LUA_TSTRING)
+			getstringfield(L, index, "ogg", spec.ogg);
+
+		//
+		// RAW
+		//
+		lua_getfield(L, index, "raw");
+		int raw_type = lua_type(L, -1);
+		lua_remove(L, -1);
+
+		if (raw_type == LUA_TUSERDATA) {
+			int top = lua_gettop(L);
+			lua_getfield(L, index, "raw");
+			// check that the argument is an LuaBuffer
+			if (!lua_getmetatable(L, -1)) {
+				lua_settop(L, top);
+				return;
+			}
+			lua_getfield(L, LUA_REGISTRYINDEX, LuaBuffer::className);
+			if (!lua_rawequal(L, -1, -2)) {
+				lua_settop(L, top);
+				return;
+			}
+
+			lua_settop(L, top+1);
+			LuaBuffer* lua_buffer = ModApiBase::checkObject<LuaBuffer>(L, -1);
+			spec.raw = lua_buffer->buffer;
+			lua_settop(L, top);
+		} else if (raw_type == LUA_TSTRING)
+			getstringfield(L, index, "raw", spec.raw);
+
+		if (!spec.raw.empty()) {
+			if (!getintfield(L, index, "raw_sample_rate", spec.raw_sample_rate))
+				throw "raw requires raw_sample_rate";
+		}
+
 	} else if (lua_isstring(L, index)) {
 		spec.name = lua_tostring(L, index);
 	}

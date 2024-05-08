@@ -21,6 +21,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "common/c_converter.h"
 #include "common/c_content.h"
 #include "lua_api/l_http.h"
+#include "lua_api/l_buffer.h"
 #include "cpp_api/s_security.h"
 #include "httpfetch.h"
 #include "settings.h"
@@ -35,6 +36,35 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 	lua_settable(L, -3);
 
 #if USE_CURL
+std::string ModApiHttp::field_to_string(lua_State* L, int index) {
+
+	int top = lua_gettop(L);
+
+	// checks for non-userdata argument
+	if (!lua_isuserdata(L, index))
+		goto ret_str;
+
+	// check that the argument is an ItemStack
+	if (!lua_getmetatable(L, index))
+		goto ret_str;
+
+	{
+		lua_getfield(L, LUA_REGISTRYINDEX, LuaBuffer::className);
+		bool isBuffer = lua_rawequal(L, -1, -2);
+		lua_settop(L, top);
+
+		if (isBuffer) {
+			LuaBuffer* lua_buffer = checkObject<LuaBuffer>(L, index);
+			return std::move(lua_buffer->buffer);
+		}
+	}
+
+ret_str:
+	lua_settop(L, top);
+	return std::move(readParam<std::string>(L, index));
+}
+
+
 void ModApiHttp::read_http_fetch_request(lua_State *L, HTTPFetchRequest &req)
 {
 	luaL_checktype(L, 1, LUA_TTABLE);
@@ -45,6 +75,39 @@ void ModApiHttp::read_http_fetch_request(lua_State *L, HTTPFetchRequest &req)
 	req.multipart = getboolfield_default(L, 1, "multipart", false);
 	if (getintfield(L, 1, "timeout", req.timeout))
 		req.timeout *= 1000;
+
+	if (req.multipart) {
+		lua_getfield(L, 1, "files"); // Assuming the Lua table is at index 1
+		if (lua_istable(L, -1)) { // Check if the value at the top of the stack is a table
+			lua_pushnil(L); // Push a nil value onto the stack to start iterating through the table
+			while (lua_next(L, -2) != 0) { // Iterate through the table (the table is now at index -2)
+				if (lua_istable(L, -1)) { // Check if the current value is a table
+					HTTPFile file;
+
+					lua_getfield(L, -1, "name");
+					file.name = lua_tostring(L, -1); 
+					lua_pop(L, 1);
+
+					lua_getfield(L, -1, "filename");
+					file.filename = lua_tostring(L, -1);
+					lua_pop(L, 1);
+
+					lua_getfield(L, -1, "data");
+					file.data = field_to_string(L, -1);
+					lua_pop(L, 1);
+
+					lua_getfield(L, -1, "content_type");
+					file.content_type = lua_tostring(L, -1);
+					lua_pop(L, 1);
+
+					req.files.push_back(file); // Assuming req.files is a std::vector<HTTPFile>
+				}
+
+				lua_pop(L, 1); // Pop the value from the stack, leaving the key for the next iteration
+			}
+		}
+		lua_pop(L, 1); // Pop the "files" table from the stack
+	}
 
 	lua_getfield(L, 1, "method");
 	if (lua_isstring(L, -1)) {
@@ -73,7 +136,8 @@ void ModApiHttp::read_http_fetch_request(lua_State *L, HTTPFetchRequest &req)
 	if (lua_istable(L, 2)) {
 		lua_pushnil(L);
 		while (lua_next(L, 2) != 0) {
-			req.fields[readParam<std::string>(L, -2)] = readParam<std::string>(L, -1);
+			//req.fields[readParam<std::string>(L, -2)] = readParam<std::string>(L, -1);
+			req.fields[readParam<std::string>(L, -2)] = field_to_string(L, -1);
 			lua_pop(L, 1);
 		}
 	} else if (lua_isstring(L, 2)) {

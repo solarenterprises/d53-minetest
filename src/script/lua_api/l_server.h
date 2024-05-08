@@ -21,6 +21,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include "lua_api/l_base.h"
 
+class NetworkPacket;
+
 class ModApiServer : public ModApiBase
 {
 private:
@@ -123,6 +125,12 @@ private:
 
 	// serialize_roundtrip(obj)
 	static int l_serialize_roundtrip(lua_State *L);
+
+	static int l_register_on_lua_packet(lua_State* L);
+	static int l_register_on_lua_packet_stream(lua_State* L);
+
+	// send(networkPacket)
+	static int l_send(lua_State* L);
 
 public:
 	static void Initialize(lua_State *L, int top);

@@ -31,6 +31,7 @@
 #include <IGUIFont.h>
 #include "settings.h"
 #include <algorithm>
+#include "../client/inputhandler.h"
 
 #include "mainmenumanager.h"  // for g_gamecallback
 
@@ -80,13 +81,18 @@ enum
 	GUI_ID_CB_AUX1_DESCENDS,
 	GUI_ID_CB_DOUBLETAP_JUMP,
 	GUI_ID_CB_AUTOJUMP,
+
+	// Num keys
+	GUI_ID_CB_NUM,
 };
 
 GUIKeyChangeMenu::GUIKeyChangeMenu(gui::IGUIEnvironment* env,
 		gui::IGUIElement* parent, s32 id, IMenuManager *menumgr,
-		ISimpleTextureSource *tsrc) :
+		ISimpleTextureSource *tsrc, InputHandler* input) :
 		GUIModalMenu(env, parent, id, menumgr),
-		m_tsrc(tsrc)
+		m_tsrc(tsrc),
+		m_input(input)
+		
 {
 	init_keys();
 }
@@ -417,4 +423,10 @@ void GUIKeyChangeMenu::init_keys()
 	this->add_key(GUI_ID_KEY_HUD_BUTTON,          wstrgettext("Toggle HUD"),       "keymap_toggle_hud");
 	this->add_key(GUI_ID_KEY_CHATLOG_BUTTON,      wstrgettext("Toggle chat log"),  "keymap_toggle_chat");
 	this->add_key(GUI_ID_KEY_FOG_BUTTON,          wstrgettext("Toggle fog"),       "keymap_toggle_fog");
+
+	if (m_input)
+		for (size_t i = 0; i < m_input->custom_keys.size(); i++) {
+			auto& key = m_input->custom_keys[i];
+			this->add_key(GUI_ID_CB_NUM + i, wstrgettext(key.display_name), "keymap_"+key.id);
+		}
 }
