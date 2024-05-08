@@ -2648,10 +2648,13 @@ bool Server::addMediaFile(std::string filename,
 
 	auto ext = filename.substr(without_ext.length());
 	if (ext == ".lua") {
-		auto pos = filepath.find("mods" + std::string(1, DIR_DELIM_CHAR));
-		if (pos != std::string::npos) {
+		std::string search_str = "mods" + std::string(1, DIR_DELIM_CHAR);
+		auto pos = filepath.find(search_str);
+
+		if (pos != std::string::npos)
 			filename = filepath.substr(pos);
-		}
+		else
+			errorstream << "\"mods" << DIR_DELIM_CHAR << "\" not found in .lua filepath:" << filepath.c_str() << std::endl;
 	}
 
 	// Read data

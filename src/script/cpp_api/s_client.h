@@ -63,8 +63,8 @@ public:
 	bool on_inventory_open(Inventory *inventory);
 
 	void on_input(InputHandler* input);
-	void on_lua_packet(int mod_name_hash, NetworkPacket* pkt);
-	void on_lua_packet_stream(int mod_name_hash, u32 id, u16 chunk_id, NetworkPacket* pkt);
+	void on_lua_packet(std::string& mod_name, NetworkPacket* pkt);
+	void on_lua_packet_stream(std::string& mod_name, u32 id, u16 chunk_id, NetworkPacket* pkt);
 
 	void setEnv(ClientEnvironment *env);
 };

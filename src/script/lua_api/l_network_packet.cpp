@@ -11,7 +11,7 @@
 // Lua Network Packet
 //
 
-LuaNetworkChannel::LuaNetworkChannel(int _mod_name_hash) : mod_name_hash(_mod_name_hash) {
+LuaNetworkChannel::LuaNetworkChannel(std::string _channel_name) : channel_name(_channel_name) {
 }
 
 // garbage collector
@@ -43,9 +43,7 @@ int LuaNetworkChannel::create_object(lua_State* L)
 	NO_MAP_LOCK_REQUIRED;
 
 	std::string current_mod_name = ScriptApiBase::getCurrentModNameInsecure(L);
-	int hash = (int)std::hash<std::string>{}(current_mod_name);
-
-	LuaNetworkChannel* o = new LuaNetworkChannel(hash);
+	LuaNetworkChannel* o = new LuaNetworkChannel(current_mod_name);
 	*(void**)(lua_newuserdata(L, sizeof(void*))) = o;
 	luaL_getmetatable(L, className);
 	lua_setmetatable(L, -2);
@@ -104,7 +102,7 @@ int LuaNetworkChannel::l_createNetworkPacket(lua_State* L)
 
 	LuaNetworkPacket::create_object(L);
 	LuaNetworkPacket* pkt = checkObject<LuaNetworkPacket>(L, -1);
-	(*pkt->packet) << o->mod_name_hash;
+	(*pkt->packet) << o->channel_name;
 	
 	return 1;
 }
@@ -117,7 +115,7 @@ int LuaNetworkChannel::l_createNetworkStreamPacket(lua_State* L)
 
 	LuaNetworkStreamPacket::create_object(L);
 	LuaNetworkStreamPacket* pkt = checkObject<LuaNetworkStreamPacket>(L, -1);
-	pkt->packet->init((const char*)&o->mod_name_hash, sizeof(int));
+	pkt->packet->init(o->channel_name.c_str(), o->channel_name.length());
 	
 	return 1;
 }

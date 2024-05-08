@@ -262,7 +262,7 @@ void ScriptApiServer::on_dynamic_media_added(u32 token, const char *playername)
 	PCALL_RES(lua_pcall(L, 1, 0, error_handler));
 }
 
-void ScriptApiServer::on_lua_packet(int mod_name_hash, NetworkPacket* pkt)
+void ScriptApiServer::on_lua_packet(std::string& mod_name, NetworkPacket* pkt)
 {
 	SCRIPTAPI_PRECHECKHEADER;
 
@@ -271,9 +271,9 @@ void ScriptApiServer::on_lua_packet(int mod_name_hash, NetworkPacket* pkt)
 	lua_getglobal(L, "core");
 	lua_getfield(L, -1, "registered_on_lua_packet");
 	luaL_checktype(L, -1, LUA_TTABLE);
-	lua_rawgeti(L, -1, mod_name_hash);
+	lua_getfield(L, -1, mod_name.c_str());
 	if (lua_type(L, -1) != LUA_TFUNCTION) {
-		errorstream << "on lua packet has not been registered!" << std::endl;
+		errorstream << "on lua packet has not been registered!" << mod_name.c_str() << std::endl;
 		return;
 	}
 
@@ -282,7 +282,7 @@ void ScriptApiServer::on_lua_packet(int mod_name_hash, NetworkPacket* pkt)
 	lua_remove(L, error_handler);
 }
 
-void ScriptApiServer::on_lua_packet_stream(int mod_name_hash, session_t peer_id, u32 id, u16 chunk_id, NetworkPacket* pkt)
+void ScriptApiServer::on_lua_packet_stream(std::string& mod_name, session_t peer_id, u32 id, u16 chunk_id, NetworkPacket* pkt)
 {
 	SCRIPTAPI_PRECHECKHEADER;
 
@@ -291,9 +291,23 @@ void ScriptApiServer::on_lua_packet_stream(int mod_name_hash, session_t peer_id,
 	lua_getglobal(L, "core");
 	lua_getfield(L, -1, "registered_on_lua_packet_stream");
 	luaL_checktype(L, -1, LUA_TTABLE);
-	lua_rawgeti(L, -1, mod_name_hash);
+	lua_getfield(L, -1, mod_name.c_str());
 	if (lua_type(L, -1) != LUA_TFUNCTION) {
-		errorstream << "on lua packet stream has not been registered!" << std::endl;
+		errorstream << "on lua packet stream has not been registered!" << mod_name.c_str() << std::endl;
+
+		// Loop through the table to list all functions
+		lua_pushnil(L);  // first key
+		while (lua_next(L, -3) != 0) {
+			// Check if the value at the top of the stack is a function
+			if (lua_type(L, -1) == LUA_TFUNCTION) {
+				lua_pushvalue(L, -2);  // Copy the key to the top of the stack
+				const char* key = lua_tostring(L, -1);
+				errorstream << "Found keys -" << key << std::endl;
+				lua_pop(L, 1);  // pop the copied key
+			}
+			lua_pop(L, 1);  // remove value, keep key for next iteration
+		}
+		lua_pop(L, 2); // clean up the stack (pop 'registered_on_lua_packet_stream' and 'core' tables)
 		return;
 	}
 

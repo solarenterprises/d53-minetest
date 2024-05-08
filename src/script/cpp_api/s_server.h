@@ -58,8 +58,8 @@ public:
 	void freeDynamicMediaCallback(u32 token);
 	void on_dynamic_media_added(u32 token, const char *playername);
 
-	void on_lua_packet(int mod_name_hash, NetworkPacket* pkt);
-	void on_lua_packet_stream(int mod_name_hash, session_t peer_id, u32 id, u16 chunk_id, NetworkPacket* pkt);
+	void on_lua_packet(std::string& mod_name, NetworkPacket* pkt);
+	void on_lua_packet_stream(std::string& mod_name, session_t peer_id, u32 id, u16 chunk_id, NetworkPacket* pkt);
 
 private:
 	void getAuthHandler();

@@ -1906,16 +1906,16 @@ void Server::handleCommand_UpdateClientInfo(NetworkPacket *pkt)
 void Server::handleCommand_Lua_Packet(NetworkPacket* pkt) {
 	NetworkPacket* clone = new NetworkPacket(*pkt);
 
-	int mod_hash_name;
-	(*clone) >> mod_hash_name;
+	std::string channel_name;
+	(*clone) >> channel_name;
 
-	((ScriptApiServer*)m_script)->on_lua_packet(mod_hash_name, clone);
+	((ScriptApiServer*)m_script)->on_lua_packet(channel_name, clone);
 }
 
 void Server::handleCommand_Lua_Packet_Stream(NetworkPacket* _pkt) {
 	StreamPacketHandler::HandleCallback func = [&](session_t peer_id, u32 id, u16 chunk_id, NetworkPacket* pkt, void* user_data) {
 		if (!pkt) {
-			((ScriptApiServer*)m_script)->on_lua_packet_stream(*(int*)user_data, peer_id, id, chunk_id, nullptr);
+			((ScriptApiServer*)m_script)->on_lua_packet_stream(*(std::string*)user_data, peer_id, id, chunk_id, nullptr);
 
 			// EOF
 			delete user_data;
@@ -1925,15 +1925,15 @@ void Server::handleCommand_Lua_Packet_Stream(NetworkPacket* _pkt) {
 		if (chunk_id == 0) {
 			//
 			// Init
-			int* mod_hash_name = (int*)pkt->getRemainingString();
+			std::string channel_name = std::string((char*)pkt->getRemainingString(), pkt->getRemainingBytes());
 
-			m_streamPacketHandler->set_user_data(peer_id, id, new int(*mod_hash_name));
+			m_streamPacketHandler->set_user_data(peer_id, id, new std::string(channel_name));
 
 			return;
 		}
 
 		NetworkPacket* clone = new NetworkPacket(*pkt);
-		((ScriptApiServer*)m_script)->on_lua_packet_stream(*(int*)user_data, peer_id, id, chunk_id, clone);
+		((ScriptApiServer*)m_script)->on_lua_packet_stream(*(std::string*)user_data, peer_id, id, chunk_id, clone);
 	};
 	m_streamPacketHandler->handle(_pkt, func);
 }

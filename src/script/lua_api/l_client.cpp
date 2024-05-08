@@ -448,8 +448,7 @@ int ModApiClient::l_register_on_lua_packet(lua_State* L)
 	lua_getfield(L, -1, "registered_on_lua_packet");
 	luaL_checktype(L, -1, LUA_TTABLE);
 
-	int mod_hash = std::hash<std::string>{}(current_mod_name);
-	lua_pushinteger(L, mod_hash);
+	lua_pushstring(L, current_mod_name.c_str());
 	lua_pushvalue(L, 1); // Push the function onto the stack
 	lua_settable(L, -3);
 
@@ -473,8 +472,7 @@ int ModApiClient::l_register_on_lua_packet_stream(lua_State* L)
 	lua_getfield(L, -1, "registered_on_lua_packet_stream");
 	luaL_checktype(L, -1, LUA_TTABLE);
 
-	int mod_hash = std::hash<std::string>{}(current_mod_name);
-	lua_pushinteger(L, mod_hash);
+	lua_pushstring(L, current_mod_name.c_str());
 	lua_pushvalue(L, 1); // Push the function onto the stack
 	lua_settable(L, -3);
 

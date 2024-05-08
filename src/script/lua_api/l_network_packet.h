@@ -8,9 +8,9 @@ class NetworkStreamPacket;
 
 class LuaNetworkChannel : public ModApiBase {
 private:
-	int mod_name_hash;
+	std::string channel_name;
 
-	LuaNetworkChannel(int _mod_name_hash);
+	LuaNetworkChannel(std::string channel_name);
 
 	static const luaL_Reg methods[];
 

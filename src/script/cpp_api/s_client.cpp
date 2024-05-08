@@ -339,7 +339,7 @@ void ScriptApiClient::on_input(InputHandler* input)
 	}
 }
 
-void ScriptApiClient::on_lua_packet(int mod_name_hash, NetworkPacket* pkt)
+void ScriptApiClient::on_lua_packet(std::string& mod_name, NetworkPacket* pkt)
 {
 	SCRIPTAPI_PRECHECKHEADER;
 
@@ -348,9 +348,9 @@ void ScriptApiClient::on_lua_packet(int mod_name_hash, NetworkPacket* pkt)
 	lua_getglobal(L, "core");
 	lua_getfield(L, -1, "registered_on_lua_packet");
 	luaL_checktype(L, -1, LUA_TTABLE);
-	lua_rawgeti(L, -1, mod_name_hash);
+	lua_getfield(L, -1, mod_name.c_str());
 	if (lua_type(L, -1) != LUA_TFUNCTION) {
-		errorstream << "on lua packet has not been registered!" << std::endl;
+		errorstream << "on lua packet has not been registered!" << mod_name.c_str() << std::endl;
 		return;
 	}
 
@@ -359,7 +359,7 @@ void ScriptApiClient::on_lua_packet(int mod_name_hash, NetworkPacket* pkt)
 	lua_remove(L, error_handler);
 }
 
-void ScriptApiClient::on_lua_packet_stream(int mod_name_hash, u32 id, u16 chunk_id, NetworkPacket* pkt)
+void ScriptApiClient::on_lua_packet_stream(std::string& mod_name, u32 id, u16 chunk_id, NetworkPacket* pkt)
 {
 	SCRIPTAPI_PRECHECKHEADER;
 
@@ -368,9 +368,9 @@ void ScriptApiClient::on_lua_packet_stream(int mod_name_hash, u32 id, u16 chunk_
 	lua_getglobal(L, "core");
 	lua_getfield(L, -1, "registered_on_lua_packet_stream");
 	luaL_checktype(L, -1, LUA_TTABLE);
-	lua_rawgeti(L, -1, mod_name_hash);
+	lua_getfield(L, -1, mod_name.c_str());
 	if (lua_type(L, -1) != LUA_TFUNCTION) {
-		errorstream << "on lua packet stream has not been registered!" << std::endl;
+		errorstream << "on lua packet stream has not been registered!" << mod_name.c_str() << std::endl;
 		return;
 	}
 

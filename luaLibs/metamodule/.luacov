@@ -1,0 +1,12 @@
+codefromstrings = false
+runreport = true
+deletestats = true
+modules = {
+    metamodule = 'metamodule.lua',
+    ['metamodule.deepcopy'] = 'lib/deepcopy.lua',
+    ['metamodule.eval'] = 'lib/eval.lua',
+    ['metamodule.is'] = 'lib/is.lua',
+    ['metamodule.normalize'] = 'lib/normalize.lua',
+    ['metamodule.seal'] = 'lib/seal.lua',
+    ['metamodule.split'] = 'lib/split.lua',
+}

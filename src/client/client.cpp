@@ -282,7 +282,7 @@ void Client::loadMods()
 		if (!d.dir)
 			continue;
 
-		 infostream << d.name << " ";
+		infostream << d.name << " ";
 
 		scanModIntoMemory(d.name, client_mods_path + d.name + DIR_DELIM + "client" + DIR_DELIM);
 		m_script->loadModFromMemory(d.name);
@@ -845,6 +845,17 @@ bool Client::loadMedia(const std::string& data, const std::string& filename,
 		io::IFileSystem* irrfs = m_rendering_engine->get_filesystem();
 
 		std::string filepath = porting::path_cache + DIR_DELIM + filename;
+
+#ifdef WIN32
+			const std::string s = "/";
+			const std::string t = DIR_DELIM;
+			std::string::size_type n = 0;
+			while ((n = filepath.find(s, n)) != std::string::npos) {
+				filepath.replace(n, s.size(), t);
+				n += t.size();
+			}
+#endif
+
 		std::string filedir = filepath.substr(0, filepath.find_last_of(DIR_DELIM));
 		fs::CreateAllDirs(filedir);
 
