@@ -48,6 +48,10 @@ AppDir:
       - libmysqlclient-dev
       - libfuse2
       - libjsoncpp25
+      - libavcodec58
+      - libavformat58
+      - libavutil56
+      - libswscale5
 
   files:
     exclude:
