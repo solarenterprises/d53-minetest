@@ -85,6 +85,7 @@ Player::~Player()
 void Player::setWieldIndex(u16 index)
 {
 	const InventoryList *mlist = inventory.getList("main");
+
 	m_wield_index = MYMIN(index, mlist ? mlist->getSize() : 0);
 }
 

@@ -155,6 +155,8 @@ struct IMoveAction : public InventoryAction, public MoveAction
 	u16 count = 0;
 	bool move_somewhere = false;
 
+	bool can_move = true;
+
 	// treat these as private
 	// related to movement to somewhere
 	bool caused_by_move_somewhere = false;

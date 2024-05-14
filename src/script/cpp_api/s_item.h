@@ -30,6 +30,7 @@ struct ItemDefinition;
 class LuaItemStack;
 class ModApiItem;
 class InventoryList;
+class PlayerSAO;
 struct InventoryLocation;
 
 class ScriptApiItem
@@ -47,6 +48,8 @@ public:
 			ServerActiveObject *dropper, v3f pos);
 	bool item_OnPlace(std::optional<ItemStack> &item,
 			ServerActiveObject *placer, const PointedThing &pointed);
+	bool item_OnWield(const ItemStack &item, PlayerSAO* user);
+	bool item_OnEquip(const ItemStack &item, PlayerSAO* user);
 	bool item_OnUse(std::optional<ItemStack> &item,
 			ServerActiveObject *user, const PointedThing &pointed);
 	bool item_OnSecondaryUse(std::optional<ItemStack> &item,

@@ -24,6 +24,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "lua_api/l_item.h"
 #include "lua_api/l_inventory.h"
 #include "server.h"
+#include "server/player_sao.h"
+#include "remoteplayer.h"
 #include "log.h"
 #include "util/pointedthing.h"
 #include "inventory.h"
@@ -93,6 +95,57 @@ bool ScriptApiItem::item_OnPlace(std::optional<ItemStack> &ret_item,
 	}
 	lua_pop(L, 2);  // Pop item and error handler
 	return true;
+}
+
+bool ScriptApiItem::item_OnWield(const ItemStack& item, PlayerSAO* user) {
+	SCRIPTAPI_PRECHECKHEADER
+
+	int error_handler = PUSH_ERROR_HANDLER(L);
+
+	// Push callback function on stack
+	if (!getItemCallback(item.name.c_str(), "on_wield")) {
+		lua_pop(L, 1);  // Pop error handler
+		return false;
+	}
+
+	// Call function
+	LuaItemStack::create(L, item);
+	objectrefGetOrCreate(L, user);
+
+	PCALL_RES(lua_pcall(L, 2, 0, error_handler));
+	lua_pop(L, 2);  // Pop item and error handler
+	return true;
+}
+
+bool ScriptApiItem::item_OnEquip(const ItemStack& item, PlayerSAO* user) {
+	SCRIPTAPI_PRECHECKHEADER
+
+	int error_handler = PUSH_ERROR_HANDLER(L);
+
+	// Push callback function on stack
+	if (!getItemCallback(item.name.c_str(), "on_equip")) {
+		lua_pop(L, 1);  // Pop error handler
+		return true;
+	}
+
+	// Call function
+	LuaItemStack::create(L, item);
+	objectrefGetOrCreate(L, user);
+
+	bool can_equip = true;
+
+	PCALL_RES(lua_pcall(L, 2, 1, error_handler));
+	if (!lua_isnil(L, -1)) {
+		try {
+			can_equip = lua_toboolean(L, -1);
+		}
+		catch (LuaError& e) {
+			throw WRAP_LUAERROR(e, "item=" + item.name);
+		}
+	}
+
+	lua_pop(L, 2);  // Pop item and error handler
+	return can_equip;
 }
 
 bool ScriptApiItem::item_OnUse(std::optional<ItemStack> &ret_item,

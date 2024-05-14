@@ -669,6 +669,14 @@ void Server::handleCommand_InventoryAction(NetworkPacket* pkt)
 		ma->from_inv.applyCurrentPlayer(player->getName());
 		ma->to_inv.applyCurrentPlayer(player->getName());
 
+		if (ma->to_list == "main" && ma->to_i < playersao->getPlayer()->getHotbarItemcount()) {
+			const InventoryList* mlist = playersao->getPlayer()->inventory.getList(ma->from_list);
+			const ItemStack& item_stack = mlist->getItem(ma->from_i);
+			if (!m_script->item_OnEquip(item_stack, playersao)) {
+				ma->can_move = false;
+			}
+		}
+
 		m_inventory_mgr->setInventoryModified(ma->from_inv);
 		if (ma->from_inv != ma->to_inv)
 			m_inventory_mgr->setInventoryModified(ma->to_inv);
@@ -866,6 +874,12 @@ void Server::handleCommand_PlayerItem(NetworkPacket* pkt)
 	}
 
 	playersao->getPlayer()->setWieldIndex(item);
+	
+	const InventoryList* mlist = playersao->getPlayer()->inventory.getList("main");
+	const ItemStack& item_stack = mlist->getItem(playersao->getPlayer()->getWieldIndex());
+	if (item_stack.count > 0) {
+		m_script->item_OnWield(item_stack, playersao);
+	}
 }
 
 void Server::handleCommand_Respawn(NetworkPacket* pkt)
@@ -996,6 +1010,11 @@ void Server::handleCommand_Interact(NetworkPacket *pkt)
 			<< "; ignoring." << std::endl;
 		return;
 	}
+
+	const InventoryList* mlist = playersao->getPlayer()->inventory.getList("main");
+	const ItemStack& item_stack = mlist->getItem(item_i);
+	if (item_stack.count == 0 || !m_script->item_OnEquip(item_stack, playersao))
+		return;
 
 	player->setWieldIndex(item_i);
 
