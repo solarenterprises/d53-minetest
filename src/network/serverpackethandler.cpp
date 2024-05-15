@@ -1013,8 +1013,10 @@ void Server::handleCommand_Interact(NetworkPacket *pkt)
 
 	const InventoryList* mlist = playersao->getPlayer()->inventory.getList("main");
 	const ItemStack& item_stack = mlist->getItem(item_i);
-	if (item_stack.count == 0 || !m_script->item_OnEquip(item_stack, playersao))
-		return;
+	if (!item_stack.name.empty()) {
+		if (item_stack.count == 0 || !m_script->item_OnEquip(item_stack, playersao))
+			return;
+	}
 
 	player->setWieldIndex(item_i);
 
