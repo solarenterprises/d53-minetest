@@ -52,6 +52,59 @@ function core.get_node_drops(node, toolname)
 	local def = core.registered_nodes[nodename]
 	local drop = def and def.drop
 	local ptype = def and def.paramtype2
+
+    -- Early return if there's no node definition
+    if not def then
+        return {}
+    end
+
+    --
+    -- Check if tool or default has enough max_drop_levels.
+    -- max_drop_levels is a table or number that filters out drops by group level.
+    --
+
+    -- Get the tool definition
+    local tool_def = core.registered_tools[toolname]
+    local tool_def_default = core.registered_items[""]
+
+    -- Get the max drop levels for the tool
+    local max_drop_levels = nil
+    if tool_def then
+        max_drop_levels = tool_def.tool_capabilities.max_drop_level or {}
+    end
+    local max_drop_levels_default = tool_def_default.tool_capabilities.max_drop_level or {}
+
+    -- Determine the drop groups from the node
+    local drop_groups = def.groups or {}
+
+    -- Check the tool's capabilities against the node's groups
+    local can_drop = false
+    for group, level in pairs(drop_groups) do
+        local tool_max_level = nil
+        if type(max_drop_levels) == "table" then
+            tool_max_level = max_drop_levels[group]
+        else
+            tool_max_level = max_drop_levels
+        end
+
+        if not tool_max_level then
+            if type(max_drop_levels_default) == "table" then
+                tool_max_level = max_drop_levels_default[group] or 0
+            else
+                tool_max_level = max_drop_levels_default or 0
+            end
+        end
+
+        if tool_max_level >= level then
+            can_drop = true
+            break
+        end
+    end
+
+    if not can_drop then
+        return {}
+    end
+
 	-- get color, if there is color (otherwise nil)
 	local palette_index = core.strip_param2_color(param2, ptype)
 	if drop == nil then

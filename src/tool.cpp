@@ -408,8 +408,8 @@ DigParams getDigParams(const ItemGroupList& groups,
 		if (!time_exists)
 			continue;
 
-		if (leveldiff > 1)
-			time /= leveldiff;
+		/*if (leveldiff > 1)
+			time /= leveldiff;*/
 		if (!result_diggable || time < result_time) {
 			result_time = time;
 			result_diggable = true;

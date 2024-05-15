@@ -79,6 +79,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "database/database-mysql.h"
 
 #include "../network/stream_packet.h"
+#include <regex>
 
 class ClientNotFoundException : public BaseException
 {
@@ -2648,13 +2649,13 @@ bool Server::addMediaFile(std::string filename,
 
 	auto ext = filename.substr(without_ext.length());
 	if (ext == ".lua") {
-		std::string search_str = "mods" + std::string(1, DIR_DELIM_CHAR);
-		auto pos = filepath.find(search_str);
+		const std::regex pattern(R"(.*[\\/]+(mods[\\/]+.*[\\/]+client[\\/]+.*\.lua))");
 
-		if (pos != std::string::npos)
-			filename = filepath.substr(pos);
-		else
-			errorstream << "\"mods" << DIR_DELIM_CHAR << "\" not found in .lua filepath:" << filepath.c_str() << std::endl;
+		std::smatch match;
+		if (!std::regex_search(filepath, match, pattern))
+			return false;
+
+		filename = match[1];
 	}
 
 	// Read data
