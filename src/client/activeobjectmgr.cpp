@@ -68,7 +68,9 @@ bool ActiveObjectMgr::registerObject(std::unique_ptr<ClientActiveObject> obj)
 	}
 	infostream << "Client::ActiveObjectMgr::registerObject(): "
 			<< "added (id=" << obj->getId() << ")" << std::endl;
-	m_active_objects.put(obj->getId(), std::move(obj));
+
+	u16 id = obj->getId();
+	m_active_objects.put(id, std::move(obj));
 	return true;
 }
 
@@ -77,7 +79,7 @@ void ActiveObjectMgr::removeObject(u16 id)
 	verbosestream << "Client::ActiveObjectMgr::removeObject(): "
 			<< "id=" << id << std::endl;
 
-	std::unique_ptr<ClientActiveObject> obj = m_active_objects.take(id);
+	std::shared_ptr<ClientActiveObject> obj = m_active_objects.take(id);
 	if (!obj) {
 		infostream << "Client::ActiveObjectMgr::removeObject(): "
 				<< "id=" << id << " not found" << std::endl;

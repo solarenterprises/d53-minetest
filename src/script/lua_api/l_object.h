@@ -67,6 +67,9 @@ private:
 	// remove(self)
 	static int l_remove(lua_State *L);
 
+	// get_id(self)
+	static int l_get_id(lua_State *L);
+
 	// get_pos(self)
 	static int l_get_pos(lua_State *L);
 

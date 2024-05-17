@@ -40,6 +40,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "lua_api/l_network_packet.h"
 #include "lua_api/l_ogg.h"
 #include "lua_api/l_buffer.h"
+#include "lua_api/l_generic_cao.h"
 
 ClientScripting::ClientScripting(Client *client):
 	ScriptApiBase(ScriptingType::Client)
@@ -85,6 +86,7 @@ void ClientScripting::InitializeModApi(lua_State *L, int top)
 	LuaNetworkStreamPacket::Register(L);
 	LuaNetworkChannel::Register(L);
 	LuaBuffer::Register(L);
+	LuaGenericCAO::Register(L);
 
 	ModApiUtil::InitializeClient(L, top);
 	ModApiClient::Initialize(L, top);
@@ -98,6 +100,7 @@ void ClientScripting::InitializeModApi(lua_State *L, int top)
 	ModApiNetworkChannel::Initialize(L, top);
 	ModApiOGG::Initialize(L, top);
 	ModApiBuffer::Initialize(L, top);
+	ModApiGenericCAO::Initialize(L, top);
 }
 
 void ClientScripting::on_client_ready(LocalPlayer *localplayer)

@@ -88,10 +88,17 @@ public:
 	*/
 
 	GenericCAO* getGenericCAO(u16 id);
+	std::weak_ptr<GenericCAO> getGenericCAOWeakPtr(u16 id);
 	ClientActiveObject* getActiveObject(u16 id)
 	{
 		return m_ao_manager.getActiveObject(id);
 	}
+	std::weak_ptr<ClientActiveObject> getActiveObjectWeakPtr(u16 id)
+	{
+		return m_ao_manager.getActiveObjectWeakPtr(id);
+	}
+
+	void add_lua_activeObjectCallback(u16 id, int lua_callback_ref);
 
 	/*
 		Adds an active object to the environment.
@@ -148,6 +155,9 @@ public:
 	u64 getFrameTimeDelta() const { return m_frame_dtime; }
 
 private:
+	void on_add_active_object(u16 id);
+
+private:
 	Map *m_map;
 	bool mapTypeClientMap = false;
 	LocalPlayer *m_local_player = nullptr;
@@ -163,4 +173,7 @@ private:
 	u64 m_frame_time = 0;
 	u64 m_frame_dtime = 0;
 	u64 m_frame_time_pause_accumulator = 0;
+
+	// This gets added if object was not found when getActiveObjectWeakPtrWithCallback was called
+	std::unordered_map<u16, std::vector<int>> on_lua_add_active_object_callbacks;
 };

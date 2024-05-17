@@ -35,6 +35,7 @@ class Inventory;
 struct ItemDefinition;
 class InputHandler;
 class NetworkPacket;
+class ClientActiveObject;
 
 class ScriptApiClient : virtual public ScriptApiBase
 {
@@ -67,4 +68,6 @@ public:
 	void on_lua_packet_stream(std::string& mod_name, u32 id, u16 chunk_id, NetworkPacket* pkt);
 
 	void setEnv(ClientEnvironment *env);
+
+	void call_callback_get_generic_cao(int callback_ref, std::shared_ptr<ClientActiveObject>& m);
 };

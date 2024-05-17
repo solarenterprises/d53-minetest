@@ -12,6 +12,7 @@ LuaOGGWriteStream::LuaOGGWriteStream(int sample_rate, int num_channels) : stream
 int LuaOGGWriteStream::gc_object(lua_State* L)
 {
 	LuaOGGWriteStream* o = checkObject<LuaOGGWriteStream>(L, 1);
+	delete o;
 	return 0;
 }
 

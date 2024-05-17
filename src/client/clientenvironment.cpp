@@ -322,6 +322,44 @@ GenericCAO* ClientEnvironment::getGenericCAO(u16 id)
 	return NULL;
 }
 
+std::weak_ptr<GenericCAO> ClientEnvironment::getGenericCAOWeakPtr(u16 id)
+{
+	std::weak_ptr<ClientActiveObject> obj = getActiveObjectWeakPtr(id);
+	auto ptr = obj.lock();
+	if (ptr && ptr->getType() == ACTIVEOBJECT_TYPE_GENERIC)
+		return std::static_pointer_cast<GenericCAO>(ptr);
+
+	return std::weak_ptr<GenericCAO>();
+}
+
+void ClientEnvironment::add_lua_activeObjectCallback(u16 id, int lua_callback_ref)
+{
+	auto ptr = m_ao_manager.getActiveObjectWeakPtr(id).lock();
+	if (ptr) {
+		ScriptApiClient* api_client = (ScriptApiClient*)m_script;
+		api_client->call_callback_get_generic_cao(lua_callback_ref, ptr);
+		return;
+	}
+
+	auto& vec = on_lua_add_active_object_callbacks[id];
+	vec.push_back(lua_callback_ref);
+}
+
+void ClientEnvironment::on_add_active_object(u16 id) {
+	if (on_lua_add_active_object_callbacks.find(id) == on_lua_add_active_object_callbacks.end())
+		return;
+
+	auto ptr = getActiveObjectWeakPtr(id).lock();
+
+	ScriptApiClient* api_client = (ScriptApiClient*)m_script;
+
+	auto& vec = on_lua_add_active_object_callbacks[id];
+	for (auto& lua_callback_ref : vec)
+		api_client->call_callback_get_generic_cao(lua_callback_ref, ptr);
+
+	on_lua_add_active_object_callbacks.erase(id);
+}
+
 u16 ClientEnvironment::addActiveObject(std::unique_ptr<ClientActiveObject> object)
 {
 	auto obj = object.get();
@@ -335,6 +373,8 @@ u16 ClientEnvironment::addActiveObject(std::unique_ptr<ClientActiveObject> objec
 		// Update lighting immediately
 		obj->updateLight(getDayNightRatio());
 	}
+
+	on_add_active_object(obj->getId());
 
 	return obj->getId();
 }

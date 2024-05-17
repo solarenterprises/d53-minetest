@@ -409,6 +409,26 @@ GenericCAO::~GenericCAO()
 	removeFromScene(true);
 }
 
+void GenericCAO::setPositionOffset(v3f offset)
+{
+	auto node = getSceneNode();
+
+	if (!node)
+		return;
+
+	node->setPosition(offset * BS);
+}
+
+void GenericCAO::setRotationOffset(v3f offset)
+{
+	auto node = getSceneNode();
+
+	if (!node)
+		return;
+
+	node->setPosition(offset);
+}
+
 bool GenericCAO::getSelectionBox(aabb3f *toset) const
 {
 	if (!m_prop.is_visible || !m_is_visible || m_is_local_player) {
@@ -646,6 +666,8 @@ void GenericCAO::addToScene(ITextureSource *tsrc, scene::ISceneManager *smgr)
 	auto grabMatrixNode = [this] {
 		m_matrixnode = m_smgr->addDummyTransformationSceneNode();
 		m_matrixnode->grab();
+
+		m_matrixnode->setParent(m_matrixnode);
 	};
 
 	auto setMaterial = [this] (video::SMaterial &mat) {

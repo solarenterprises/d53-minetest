@@ -29,6 +29,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "../client/inputhandler.h"
 #include "lua_api/l_network_packet.h"
 #include "../network/networkpacket.h"
+#include "script/lua_api/l_generic_cao.h"
+#include "client/content_cao.h"
 
 void ScriptApiClient::on_mods_loaded()
 {
@@ -398,5 +400,39 @@ void ScriptApiClient::on_lua_packet_stream(std::string& mod_name, u32 id, u16 ch
 void ScriptApiClient::setEnv(ClientEnvironment *env)
 {
 	ScriptApiBase::setEnv(env);
+}
+
+void ScriptApiClient::call_callback_get_generic_cao(int callback_ref, std::shared_ptr<ClientActiveObject>& m) {
+	try {
+		SCRIPTAPI_PRECHECKHEADER
+
+		int error_handler = PUSH_ERROR_HANDLER(L);
+
+		lua_rawgeti(L, LUA_REGISTRYINDEX, callback_ref); // Get the callback
+
+		if (!lua_isfunction(L, -1))
+			throw LuaError("callback not a function!");
+
+		if (!m || m->getType() != ACTIVEOBJECT_TYPE_GENERIC) {
+			lua_pushnil(L);
+			PCALL_RES(lua_pcall(L, 1, 0, error_handler));
+			luaL_unref(L, LUA_REGISTRYINDEX, callback_ref);
+			lua_remove(L, error_handler);
+			return;
+		}
+
+		LuaGenericCAO* o = new LuaGenericCAO(std::static_pointer_cast<GenericCAO>(m));
+		*(void**)(lua_newuserdata(L, sizeof(void*))) = o;
+		luaL_getmetatable(L, LuaGenericCAO::className);
+		lua_setmetatable(L, -2);
+
+
+		PCALL_RES(lua_pcall(L, 1, 0, error_handler));
+		luaL_unref(L, LUA_REGISTRYINDEX, callback_ref);
+		lua_remove(L, error_handler);
+	}
+	catch (LuaError& e) {
+		getClient()->setFatalError(e);
+	}
 }
 

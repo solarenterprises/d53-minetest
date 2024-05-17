@@ -12,6 +12,7 @@ int LuaVoice::gc_object(lua_State* L)
 	LuaVoice* o = checkObject<LuaVoice>(L, 1);
 	delete o->voice;
 	o->voice = nullptr;
+	delete o;
 	return 0;
 }
 

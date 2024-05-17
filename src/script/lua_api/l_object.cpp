@@ -106,6 +106,20 @@ int ObjectRef::l_remove(lua_State *L)
 	return 0;
 }
 
+// get_id(self)
+int ObjectRef::l_get_id(lua_State *L)
+{
+	GET_ENV_PTR;
+
+	ObjectRef *ref = checkObject<ObjectRef>(L, 1);
+	ServerActiveObject *sao = getobject(ref);
+	if (sao == nullptr)
+		return 0;
+
+	lua_pushinteger(L, sao->getId());
+	return 1;
+}
+
 // get_pos(self)
 int ObjectRef::l_get_pos(lua_State *L)
 {
@@ -2760,6 +2774,7 @@ luaL_Reg ObjectRef::methods[] = {
 	luamethod(ObjectRef, set_lighting),
 	luamethod(ObjectRef, get_lighting),
 	luamethod(ObjectRef, respawn),
+	luamethod(ObjectRef, get_id),
 
 	{0,0}
 };

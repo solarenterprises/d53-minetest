@@ -66,6 +66,11 @@ public:
 		return m_active_objects.get(id).get();
 	}
 
+	std::weak_ptr<T> getActiveObjectWeakPtr(u16 id)
+	{
+		return std::weak_ptr<T>(m_active_objects.get(id));
+	}
+
 protected:
 	u16 getFreeId() const
 	{
@@ -86,5 +91,5 @@ protected:
 	}
 
 	// Note that this is ordered to fix #10985
-	ModifySafeMap<u16, std::unique_ptr<T>> m_active_objects;
+	ModifySafeMap<u16, std::shared_ptr<T>> m_active_objects;
 };

@@ -164,6 +164,9 @@ public:
 
 	virtual bool getSelectionBox(aabb3f *toset) const override;
 
+	void setPositionOffset(v3f offset);
+	void setRotationOffset(v3f offset);
+
 	const v3f getPosition() const override final;
 
 	const v3f getVelocity() const override final { return m_velocity; }
@@ -174,6 +177,7 @@ public:
 
 	inline const ObjectProperties &getProperties() const { return m_prop; }
 
+	inline const int getHP() const { return m_hp; }
 	inline const std::string &getName() const { return m_name; }
 
 	scene::ISceneNode *getSceneNode() const override;
