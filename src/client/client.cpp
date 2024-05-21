@@ -1238,6 +1238,9 @@ AuthMechanism Client::choseAuthMech(const u32 mechs)
 	if (mechs & AUTH_MECHANISM_LEGACY_PASSWORD)
 		return AUTH_MECHANISM_LEGACY_PASSWORD;
 
+	if (mechs & AUTH_MECHANISM_TOKEN)
+		return AUTH_MECHANISM_TOKEN;
+
 	return AUTH_MECHANISM_NONE;
 }
 
@@ -1262,12 +1265,21 @@ void Client::startAuth(AuthMechanism chosen_auth_mechanism)
 	std::string playername = m_env.getLocalPlayer()->getName();
 
 	switch (chosen_auth_mechanism) {
-		case AUTH_MECHANISM_FIRST_SRP: {
-			// send srp verifier to server
-			std::string verifier;
-			std::string salt;
-			generate_srp_verifier_and_salt(playername, m_password,
-				&verifier, &salt);
+	case AUTH_MECHANISM_TOKEN: {
+		std::string token = "test";
+
+		NetworkPacket resp_pkt(TOSERVER_TOKEN, 0);
+		resp_pkt << token;
+		Send(&resp_pkt);
+		break;
+	}
+
+	case AUTH_MECHANISM_FIRST_SRP: {
+		// send srp verifier to server
+		std::string verifier;
+		std::string salt;
+		generate_srp_verifier_and_salt(playername, m_password,
+			&verifier, &salt);
 
 		NetworkPacket resp_pkt(TOSERVER_FIRST_SRP, 0);
 		resp_pkt << salt << verifier << (u8)((m_password.empty()) ? 1 : 0);

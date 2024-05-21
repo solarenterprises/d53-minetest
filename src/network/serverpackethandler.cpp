@@ -43,6 +43,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "util/srp.h"
 #include "clientdynamicinfo.h"
 #include "network/stream_packet.h"
+#include "httpfetch.h"
+#include "convert_json.h"
 
 void Server::handleCommand_Deprecated(NetworkPacket* pkt)
 {
@@ -232,44 +234,55 @@ void Server::handleCommand_Init(NetworkPacket* pkt)
 	/*
 		Compose auth methods for answer
 	*/
-	std::string encpwd; // encrypted Password field for the user
-	bool has_auth = m_script->getAuth(playername, &encpwd, nullptr);
-	u32 auth_mechs = 0;
+	u32 auth_mechs = AUTH_MECHANISM_NONE;
 
-	client->chosen_mech = AUTH_MECHANISM_NONE;
-
-	if (has_auth) {
-		std::vector<std::string> pwd_components = str_split(encpwd, '#');
-		if (pwd_components.size() == 4) {
-			if (pwd_components[1] == "1") { // 1 means srp
-				auth_mechs |= AUTH_MECHANISM_SRP;
+	if (g_settings->getBool("use_token_auth")) {
+		auth_mechs = AUTH_MECHANISM_TOKEN;
+		bool has_auth = m_script->getAuth(playername, nullptr, nullptr);
+		client->create_player_on_auth_success = !has_auth;
+	}
+	else {
+		std::string encpwd; // encrypted Password field for the user
+		bool has_auth = m_script->getAuth(playername, &encpwd, nullptr);
+		
+		if (has_auth) {
+			std::vector<std::string> pwd_components = str_split(encpwd, '#');
+			if (pwd_components.size() == 4) {
+				if (pwd_components[1] == "1") { // 1 means srp
+					auth_mechs |= AUTH_MECHANISM_SRP;
+					client->enc_pwd = encpwd;
+				}
+				else {
+					actionstream << "User " << playername << " tried to log in, "
+						"but password field was invalid (unknown mechcode)." <<
+						std::endl;
+					DenyAccess(peer_id, SERVER_ACCESSDENIED_SERVER_FAIL);
+					return;
+				}
+			}
+			else if (base64_is_valid(encpwd)) {
+				auth_mechs |= AUTH_MECHANISM_LEGACY_PASSWORD;
 				client->enc_pwd = encpwd;
-			} else {
-				actionstream << "User " << playername << " tried to log in, "
-					"but password field was invalid (unknown mechcode)." <<
-					std::endl;
+			}
+			else {
+				actionstream << "User " << playername << " tried to log in, but "
+					"password field was invalid (invalid base64)." << std::endl;
 				DenyAccess(peer_id, SERVER_ACCESSDENIED_SERVER_FAIL);
 				return;
 			}
-		} else if (base64_is_valid(encpwd)) {
-			auth_mechs |= AUTH_MECHANISM_LEGACY_PASSWORD;
-			client->enc_pwd = encpwd;
-		} else {
-			actionstream << "User " << playername << " tried to log in, but "
-				"password field was invalid (invalid base64)." << std::endl;
-			DenyAccess(peer_id, SERVER_ACCESSDENIED_SERVER_FAIL);
-			return;
 		}
-	} else {
-		std::string default_password = g_settings->get("default_password");
-		if (default_password.length() == 0) {
-			auth_mechs |= AUTH_MECHANISM_FIRST_SRP;
-		} else {
-			// Take care of default passwords.
-			client->enc_pwd = get_encoded_srp_verifier(playerName, default_password);
-			auth_mechs |= AUTH_MECHANISM_SRP;
-			// Allocate player in db, but only on successful login.
-			client->create_player_on_auth_success = true;
+		else {
+			std::string default_password = g_settings->get("default_password");
+			if (default_password.length() == 0) {
+				auth_mechs |= AUTH_MECHANISM_FIRST_SRP;
+			}
+			else {
+				// Take care of default passwords.
+				client->enc_pwd = get_encoded_srp_verifier(playerName, default_password);
+				auth_mechs |= AUTH_MECHANISM_SRP;
+				// Allocate player in db, but only on successful login.
+				client->create_player_on_auth_success = true;
+			}
 		}
 	}
 
@@ -1514,6 +1527,127 @@ void Server::handleCommand_InventoryFields(NetworkPacket* pkt)
 			<< "') but server hasn't sent formspec to client";
 	}
 	actionstream << ", possible exploitation attempt" << std::endl;
+}
+
+void Server::handleCommand_Token(NetworkPacket* pkt)
+{
+	std::string token;
+	(*pkt) >> token;
+
+	session_t peer_id = pkt->getPeerId();
+	RemoteClient* client = getClient(peer_id, CS_Invalid);
+	ClientState cstate = client->getState();
+	const std::string playerName = client->getName();
+	std::string addr_s = getPeerAddress(peer_id).serializeString();
+
+	if (token.empty()) {
+		actionstream << "Server: " << playerName.c_str() << " tried to join from " <<
+			addr_s << ", but token is empty." << std::endl;
+		DenyAccess(peer_id, SERVER_ACCESSDENIED_CUSTOM_STRING, "no token");
+		return;
+	}
+
+	if (cstate != CS_HelloSent) {
+		infostream << "Server::ProcessData(): Ignoring TOSERVER_TOKEN from "
+			<< addr_s << ": " << "Client has wrong state " << cstate << "."
+			<< std::endl;
+		return;
+	}
+
+	if (!client->isMechAllowed(AUTH_MECHANISM_TOKEN)) {
+		actionstream << "Server: Client tried to authenticate from " <<
+			getPeerAddress(peer_id).serializeString() <<
+			" using unallowed mech " << AUTH_MECHANISM_TOKEN << "." << std::endl;
+		DenyAccess(peer_id, SERVER_ACCESSDENIED_UNEXPECTED_DATA);
+		return;
+	}
+
+
+	HTTPFetchRequest fetch_request;
+	fetch_request.url = g_settings->get("backend_url") + "/login";
+	fetch_request.method = HTTP_POST;
+	fetch_request.extra_headers.emplace_back("Content-Type: application/json");
+
+	Json::Value json;
+	json["token"] = token;
+	fetch_request.raw_data = fastWriteJson(json);
+
+	httpfetch(fetch_request, std::make_unique<Http_Request_Callback>(
+		[this, client, peer_id, token](HTTPFetchResult& result) {
+		std::string addr_s = getPeerAddress(peer_id).serializeString();
+		const std::string playerName = client->getName();
+
+		if (!result.succeeded) {
+			actionstream << "Server: " << playerName.c_str() << " tried to join from " <<
+				addr_s << ", but failed to fetch backend" << std::endl;
+			DenyAccess(peer_id, SERVER_ACCESSDENIED_SERVER_FAIL);
+			return;
+		}
+
+		if (result.response_code != 200) {
+			actionstream << "Server: " << playerName.c_str() << " tried to join from " <<
+				addr_s << ", but fetch backend error" << result.response_code << ": " << result.data.c_str() << std::endl;
+			DenyAccess(peer_id, SERVER_ACCESSDENIED_SERVER_FAIL);
+			return;
+		}
+
+		try {
+			Json::Value j_response;
+			std::string errs;
+			Json::CharReaderBuilder readerBuilder;
+			std::istringstream ss(result.data);
+			if (!Json::parseFromStream(readerBuilder, ss, &j_response, &errs)) {
+				actionstream << "Server: " << playerName.c_str() << " tried to join from " <<
+					addr_s << ", but json parse error: " << errs.c_str() << std::endl;
+				DenyAccess(peer_id, SERVER_ACCESSDENIED_SERVER_FAIL);
+				return;
+			}
+
+			auto j_name = j_response["name"];
+
+			if (!j_name.isString()) {
+				actionstream << "Server: " << playerName.c_str() << " tried to join from " <<
+					addr_s << ", but fetch backend error. Invalid json: " << result.data.c_str() << std::endl;
+				DenyAccess(peer_id, SERVER_ACCESSDENIED_SERVER_FAIL);
+				return;
+			}
+
+			std::string r_name = j_name.asString();
+
+			if (r_name.compare(playerName) != 0) {
+				actionstream << "Server: " << playerName.c_str() << " tried to join from " <<
+					addr_s << ", but token is invalid." << std::endl;
+				DenyAccess(peer_id, SERVER_ACCESSDENIED_CUSTOM_STRING, "Token is invalid.");
+				return;
+			}
+
+			//
+			// Success
+			//
+			if (client->create_player_on_auth_success) {
+				m_script->createAuth(playerName, client->enc_pwd);
+
+				if (!m_script->getAuth(playerName, nullptr, nullptr)) {
+					errorstream << "Server: " << playerName.c_str() <<
+						" cannot be authenticated (auth handler does not work?)" <<
+						std::endl;
+					DenyAccess(peer_id, SERVER_ACCESSDENIED_SERVER_FAIL);
+					return;
+				}
+				client->create_player_on_auth_success = false;
+			}
+
+			client->token = token;
+			m_script->on_authplayer(playerName, addr_s, true);
+			acceptAuth(peer_id, false);
+		}
+		catch (std::exception e) {
+			actionstream << "Server: " << playerName.c_str() << " tried to join from " <<
+				addr_s << ", but error:" << e.what() << std::endl;
+			DenyAccess(peer_id, SERVER_ACCESSDENIED_SERVER_FAIL);
+			return;
+		}
+	}));
 }
 
 void Server::handleCommand_FirstSrp(NetworkPacket* pkt)

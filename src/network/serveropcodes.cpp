@@ -106,12 +106,12 @@ const ToServerCommandHandler toServerCommandTable[TOSERVER_NUM_MSG_TYPES] =
 	null_command_handler, // 0x4d
 	null_command_handler, // 0x4e
 	null_command_handler, // 0x4f
-	{ "TOSERVER_FIRST_SRP",                TOSERVER_STATE_NOT_CONNECTED, &Server::handleCommand_FirstSrp }, // 0x50
-	{ "TOSERVER_SRP_BYTES_A",              TOSERVER_STATE_NOT_CONNECTED, &Server::handleCommand_SrpBytesA }, // 0x51
-	{ "TOSERVER_SRP_BYTES_M",              TOSERVER_STATE_NOT_CONNECTED, &Server::handleCommand_SrpBytesM }, // 0x52
-	{ "TOSERVER_UPDATE_CLIENT_INFO",       TOSERVER_STATE_INGAME, &Server::handleCommand_UpdateClientInfo }, // 0x53,
+	{ "TOSERVER_TOKEN",					   TOSERVER_STATE_NOT_CONNECTED, &Server::handleCommand_Token }, // 0x50
+	{ "TOSERVER_FIRST_SRP",                TOSERVER_STATE_NOT_CONNECTED, &Server::handleCommand_FirstSrp }, // 0x51
+	{ "TOSERVER_SRP_BYTES_A",              TOSERVER_STATE_NOT_CONNECTED, &Server::handleCommand_SrpBytesA }, // 0x52
+	{ "TOSERVER_SRP_BYTES_M",              TOSERVER_STATE_NOT_CONNECTED, &Server::handleCommand_SrpBytesM }, // 0x53
+	{ "TOSERVER_UPDATE_CLIENT_INFO",       TOSERVER_STATE_INGAME, &Server::handleCommand_UpdateClientInfo }, // 0x54,
 
-	null_command_handler, // 0x54
 	null_command_handler, // 0x55
 	null_command_handler, // 0x56
 	null_command_handler, // 0x57

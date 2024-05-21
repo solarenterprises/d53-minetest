@@ -132,6 +132,8 @@ private:
 	// send(networkPacket)
 	static int l_send(lua_State* L);
 
+	static int l_get_player_token(lua_State* L);
+
 public:
 	static void Initialize(lua_State *L, int top);
 	static void InitializeAsync(lua_State *L, int top);

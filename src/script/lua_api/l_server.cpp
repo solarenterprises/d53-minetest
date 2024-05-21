@@ -790,6 +790,14 @@ int ModApiServer::l_send(lua_State* L)
 	return 0;
 }
 
+int ModApiServer::l_get_player_token(lua_State* L)
+{
+	int peer_id = readParam<int>(L, 1);
+	std::string token = getServer(L)->getClientToken(peer_id);
+	lua_pushlstring(L, token.c_str(), token.size());
+	return 1;
+}
+
 void ModApiServer::Initialize(lua_State *L, int top)
 {
 	API_FCT(request_shutdown);
@@ -836,6 +844,7 @@ void ModApiServer::Initialize(lua_State *L, int top)
 	API_FCT(register_on_lua_packet_stream);
 
 	API_FCT(send);
+	API_FCT(get_player_token);
 }
 
 void ModApiServer::InitializeAsync(lua_State *L, int top)

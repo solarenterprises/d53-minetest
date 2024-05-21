@@ -60,12 +60,14 @@ private:
 
 	static int l_to_string(lua_State* L);
 
-	static int l_getPeerId(lua_State* L);
+	static int l_get_peer_id(lua_State* L);
 	static int l_write_string(lua_State* L);
 	static int l_write_int(lua_State* L);
+	static int l_write_u8(lua_State* L);
 	static int l_write_v3f(lua_State* L);
 	static int l_read_string(lua_State* L);
 	static int l_read_int(lua_State* L);
+	static int l_read_u8(lua_State* L);
 	static int l_read_v3f(lua_State* L);
 	static int l_read_remaining_string(lua_State* L);
 	static int l_read_remaining_buffer(lua_State* L);

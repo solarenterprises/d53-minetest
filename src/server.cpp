@@ -75,6 +75,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "gameparams.h"
 #include "particles.h"
 #include "gettext.h"
+#include "httpfetch.h"
 
 #include "database/database-mysql.h"
 
@@ -597,6 +598,30 @@ void Server::stop()
 	infostream<<"Server: Threads stopped"<<std::endl;
 }
 
+
+void Server::handle_http_requests() {
+	for (int i = 0; i < http_requests.size(); i++) {
+		auto& http_pair = http_requests[i];
+
+		HTTPFetchResult result;
+		if (!httpfetch_async_get(http_pair.first, result))
+			continue;
+
+		(*http_pair.second.get())(result);
+
+		httpfetch_caller_free(http_pair.first);
+
+		http_requests.erase(http_requests.begin() + i);
+		i--;
+	}
+}
+
+void Server::httpfetch(HTTPFetchRequest& request, std::unique_ptr<Http_Request_Callback> &callback) {
+	request.caller = httpfetch_caller_alloc();
+	http_requests.push_back({ request.caller, std::move(callback) });
+	httpfetch_async(request);
+}
+
 void Server::step()
 {
 	// Throw if fatal error occurred in thread
@@ -777,6 +802,8 @@ void Server::AsyncRunStep(float dtime, bool initial_step)
 		}
 		counter += dtime;
 	}
+
+	handle_http_requests();
 #endif
 
 	/*

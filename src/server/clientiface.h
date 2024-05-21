@@ -244,6 +244,8 @@ public:
 	void *auth_data = nullptr;
 	u32 allowed_auth_mechs = 0;
 
+	std::string token = "";
+
 	void resetChosenMech();
 
 	bool isMechAllowed(AuthMechanism mech)
