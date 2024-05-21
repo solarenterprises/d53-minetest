@@ -140,3 +140,4 @@ minetest.dmp
 
 /games/*
 !/games/devtest*
+minetest.dmp

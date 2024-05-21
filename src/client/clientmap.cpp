@@ -1055,7 +1055,7 @@ void ClientMap::updateCacheBuffers(video::IVideoDriver* driver) {
 				auto subData = vertexSubData;
 
 				//
-				// Move vertex & index memory to GPU
+				// Move vertex memory to GPU
 				//
 				video::S3DVertex* vertices;
 				if (subData->isEmpty()) {
@@ -1080,7 +1080,7 @@ void ClientMap::updateCacheBuffers(video::IVideoDriver* driver) {
 				auto subData = indexSubData;
 
 				//
-				// Move vertex & index memory to GPU
+				// Move index memory to GPU
 				//
 				u32* indices;
 				if (subData->isEmpty()) {

@@ -473,17 +473,8 @@ public:
 		get_sunlight_color(&sunlight, daynight_ratio);
 		m_day_light.set(sunlight, services);
 
-		{
-			video::SColor color;
-			video::E_FOG_TYPE fogType;
-			f32 start;
-			f32 end;
-			f32 density;
-			bool pixelFog;
-			bool rangeFog;
-			services->getVideoDriver()->getFog(color, fogType, start, end, density, pixelFog, rangeFog);
-			m_skyBgColor.set(color, services);
-		}
+		if (m_sky)
+			m_skyBgColor.set(m_sky->getSkyColor(), services);
 
 		u32 animation_timer = m_client->getEnv().getFrameTime() % 1000000;
 		float animation_timer_f = (float)animation_timer / 100000.f;
