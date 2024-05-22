@@ -265,8 +265,16 @@ bool ClientLauncher::run(GameStartData &start_data, const Settings &cmd_args)
 
 		// If no main menu, show error and exit
 		if (skip_main_menu) {
-			if (!error_message.empty())
+			if (!error_message.empty()) {
 				retval = false;
+
+				MainMenuData menudata;
+				menudata.script_data.errormessage = error_message;
+				menudata.script_data.reconnect_requested = false;
+				menudata.script_data.exit_after_error = true;
+
+				main_menu(&menudata);
+			}
 			break;
 		}
 	} // Menu-game loop

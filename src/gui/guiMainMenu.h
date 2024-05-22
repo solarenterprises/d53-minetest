@@ -31,6 +31,7 @@ struct MainMenuDataForScript {
 	// Whether the server has requested a reconnect
 	bool reconnect_requested = false;
 	std::string errormessage = "";
+	bool exit_after_error = false;
 };
 
 struct MainMenuData {

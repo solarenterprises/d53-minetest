@@ -176,7 +176,17 @@ core.button_handler = function(fields)
 		gamedata.do_reconnect = true
 		core.start()
 		return
-	elseif fields["btn_reconnect_no"] or fields["btn_error_confirm"] then
+	elseif fields["btn_error_confirm"] then
+		gamedata.errormessage = nil
+		gamedata.reconnect_requested = false
+
+        if gamedata.exit_after_error then
+            core.close()
+            return
+        end
+		ui.update()
+		return
+	elseif fields["btn_reconnect_no"] then
 		gamedata.errormessage = nil
 		gamedata.reconnect_requested = false
 		ui.update()
