@@ -49,11 +49,23 @@ public:
 	bool removeModEntries(const std::string &modname);
 	void listMods(std::vector<std::string> *res);
 
+	bool get_player_meta_data(const std::string& player_name, const std::string& attr, std::string& result);
+
 	void beginSave() {}
 	void endSave() {}
 
 private:
+	struct pair_hash {
+		template <class T1, class T2>
+		std::size_t operator()(const std::pair<T1, T2>& p) const {
+			auto hash1 = std::hash<T1>{}(p.first);
+			auto hash2 = std::hash<T2>{}(p.second);
+			return hash1 ^ (hash2 << 1); // Combining the two hashes
+		}
+	};
+
 	std::map<s64, std::string> m_database;
 	std::set<std::string> m_player_database;
+	std::unordered_map<std::pair<std::string, std::string>, std::string, pair_hash> m_player_metadata;
 	std::unordered_map<std::string, StringMap> m_mod_storage_database;
 };

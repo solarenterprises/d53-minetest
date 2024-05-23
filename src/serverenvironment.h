@@ -250,6 +250,8 @@ public:
 	void removePlayer(RemotePlayer *player);
 	bool removePlayerFromDatabase(const std::string &name);
 
+	std::string get_player_metadata(const std::string& player_name, const std::string& key);
+
 	/*
 		Save and load time of day and game timer
 	*/

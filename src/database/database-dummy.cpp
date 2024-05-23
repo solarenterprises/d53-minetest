@@ -68,6 +68,15 @@ bool Database_Dummy::loadPlayer(RemotePlayer *player, PlayerSAO *sao)
 	return m_player_database.find(player->getName()) != m_player_database.end();
 }
 
+bool Database_Dummy::get_player_meta_data(const std::string& player_name, const std::string& attr, std::string& result)
+{
+	if (m_player_metadata.find({ player_name, attr }) == m_player_metadata.end())
+		return false;
+
+	result = m_player_metadata[{ player_name, attr }];
+	return true;
+}
+
 bool Database_Dummy::removePlayer(const std::string &name)
 {
 	m_player_database.erase(name);

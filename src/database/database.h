@@ -61,6 +61,7 @@ public:
 	virtual bool loadPlayer(RemotePlayer *player, PlayerSAO *sao) = 0;
 	virtual bool removePlayer(const std::string &name) = 0;
 	virtual void listPlayers(std::vector<std::string> &res) = 0;
+	virtual bool get_player_meta_data(const std::string& player_name, const std::string& attr, std::string &result) = 0;
 };
 
 struct AuthEntry

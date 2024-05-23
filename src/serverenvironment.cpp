@@ -648,6 +648,19 @@ void ServerEnvironment::saveLoadedPlayers(bool force)
 	}
 }
 
+std::string ServerEnvironment::get_player_metadata(const std::string& player_name, const std::string& key) {
+	try {
+		std::string result;
+		m_player_database->get_player_meta_data(player_name, key, result);
+		return result;
+	}
+	catch (DatabaseException& e) {
+		errorstream << "Failed to get player metadata " << player_name.c_str() << ":" << key.c_str() << " exception: "
+			<< e.what() << std::endl;
+		throw;
+	}
+}
+
 void ServerEnvironment::savePlayer(RemotePlayer *player)
 {
 	try {

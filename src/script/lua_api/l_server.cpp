@@ -798,6 +798,21 @@ int ModApiServer::l_get_player_token(lua_State* L)
 	return 1;
 }
 
+int ModApiServer::l_get_player_metadata(lua_State* L)
+{
+	std::string player_name = readParam<std::string>(L, 1);
+	std::string key = readParam<std::string>(L, 2);
+
+	ServerEnvironment& env = getServer(L)->getEnv();
+	std::string result = env.get_player_metadata(player_name, key);
+	if (result.empty())
+		lua_pushnil(L);
+	else
+		lua_pushlstring(L, result.c_str(), result.size());
+
+	return 1;
+}
+
 void ModApiServer::Initialize(lua_State *L, int top)
 {
 	API_FCT(request_shutdown);
@@ -845,6 +860,7 @@ void ModApiServer::Initialize(lua_State *L, int top)
 
 	API_FCT(send);
 	API_FCT(get_player_token);
+	API_FCT(get_player_metadata);
 }
 
 void ModApiServer::InitializeAsync(lua_State *L, int top)
@@ -856,4 +872,5 @@ void ModApiServer::InitializeAsync(lua_State *L, int top)
 	API_FCT(get_modpath);
 	API_FCT(get_modnames);
 	API_FCT(get_game_info);
+	API_FCT(get_player_metadata);
 }

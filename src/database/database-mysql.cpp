@@ -689,6 +689,24 @@ void PlayerDatabaseMySQL::listPlayers(std::vector<std::string> &res)
 	mysql_free_result(results);
 }
 
+bool PlayerDatabaseMySQL::get_player_meta_data(const std::string& player_name, const std::string& attr, std::string& result)
+{
+	result = "";
+
+	// Load player metadata
+	MYSQL_RES* results = execWithParamAndResult("SELECT value FROM player_metadata WHERE player = $1 AND attr = $2 LIMIT 1", { player_name, attr });
+
+	MYSQL_ROW row;
+	while ((row = mysql_fetch_row(results)) != nullptr) {
+		result = row[0];
+		break;
+	}
+
+	mysql_free_result(results);
+
+	return !result.empty();
+}
+
 /*
  * Auth Database
  */
