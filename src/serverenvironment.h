@@ -245,7 +245,7 @@ public:
 	void saveLoadedPlayers(bool force = false);
 	void savePlayer(RemotePlayer *player);
 	PlayerSAO *loadPlayer(RemotePlayer *player, bool *new_player, session_t peer_id,
-		bool is_singleplayer);
+		bool is_singleplayer, const SimpleMetadata& init_meta_data);
 	void addPlayer(RemotePlayer *player);
 	void removePlayer(RemotePlayer *player);
 	bool removePlayerFromDatabase(const std::string &name);

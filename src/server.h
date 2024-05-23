@@ -612,6 +612,8 @@ private:
 	void httpfetch(HTTPFetchRequest& request, std::unique_ptr<Http_Request_Callback>& callback);
 	void handle_http_requests();
 
+
+	bool validatePlayerName(session_t peer_id, std::string addr_s, std::string playerName);
 	/*
 		Variables
 	*/

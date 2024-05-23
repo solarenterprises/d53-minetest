@@ -33,7 +33,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 Player::Player(const char *name, IItemDefManager *idef):
 	inventory(idef)
 {
-	strlcpy(m_name, name, PLAYERNAME_SIZE);
+	setName(name);
 
 	inventory.clear();
 	inventory.addList("main", PLAYER_INVENTORY_SIZE);
@@ -80,6 +80,11 @@ Player::Player(const char *name, IItemDefManager *idef):
 Player::~Player()
 {
 	clearHud();
+}
+
+void Player::setName(const char* name)
+{
+	strlcpy(m_name, name, PLAYERNAME_SIZE);
 }
 
 void Player::setWieldIndex(u16 index)

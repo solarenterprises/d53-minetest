@@ -103,6 +103,7 @@ Client::Client(
 		const char *playername,
 		const std::string &password,
 		const std::string ai_class,
+		const std::string token,
 		InputHandler* input,
 		MapDrawControl &control,
 		IWritableTextureSource *tsrc,
@@ -133,6 +134,7 @@ Client::Client(
 	m_server_ser_ver(SER_FMT_VER_INVALID),
 	m_last_chat_message_sent(time(NULL)),
 	m_password(password),
+	m_token(token),
 	m_chosen_auth_mech(AUTH_MECHANISM_NONE),
 	m_media_downloader(new ClientMediaDownloader()),
 	m_state(LC_Created),
@@ -1266,10 +1268,11 @@ void Client::startAuth(AuthMechanism chosen_auth_mechanism)
 
 	switch (chosen_auth_mechanism) {
 	case AUTH_MECHANISM_TOKEN: {
-		std::string token = "test";
+		if (m_token.empty())
+			errorstream << "--token is required for token servers" << std::endl;
 
 		NetworkPacket resp_pkt(TOSERVER_TOKEN, 0);
-		resp_pkt << token;
+		resp_pkt << m_token;
 		Send(&resp_pkt);
 		break;
 	}

@@ -40,6 +40,7 @@ struct MainMenuData {
 	std::string address;
 	std::string port;
 	std::string name;
+	std::string token;
 	std::string password;
 	// Whether to reconnect
 	bool do_reconnect = false;

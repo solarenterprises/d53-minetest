@@ -660,7 +660,7 @@ void ServerEnvironment::savePlayer(RemotePlayer *player)
 }
 
 PlayerSAO *ServerEnvironment::loadPlayer(RemotePlayer *player, bool *new_player,
-	session_t peer_id, bool is_singleplayer)
+	session_t peer_id, bool is_singleplayer, const SimpleMetadata& init_meta_data)
 {
 	auto playersao = std::make_unique<PlayerSAO>(this, player, peer_id, is_singleplayer);
 	// Create player if it doesn't exist
@@ -683,6 +683,21 @@ PlayerSAO *ServerEnvironment::loadPlayer(RemotePlayer *player, bool *new_player,
 			playersao->setBasePosition(m_server->findSpawnPos());
 		}
 	}
+
+	//
+	// Initalize player meta values
+	SimpleMetadata& meta = playersao->getMeta();
+	std::vector<std::string> meta_keys;
+	for (auto key : init_meta_data.getKeys(&meta_keys)) {
+		std::string value = init_meta_data.getString(key);
+
+		if (meta.contains(key) && meta.getString(key) == value)
+			continue;
+
+		meta.setString(key, value);
+		player->setModified(true);
+	}
+
 
 	// Add player to environment
 	addPlayer(player);

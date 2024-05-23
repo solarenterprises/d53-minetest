@@ -29,6 +29,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "porting.h"
 #include "threading/mutex_auto_lock.h"
 #include "clientdynamicinfo.h"
+#include "metadata.h"
 
 #include <list>
 #include <vector>
@@ -245,6 +246,7 @@ public:
 	u32 allowed_auth_mechs = 0;
 
 	std::string token = "";
+	SimpleMetadata init_meta_data;
 
 	void resetChosenMech();
 

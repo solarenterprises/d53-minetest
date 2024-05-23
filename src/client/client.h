@@ -129,6 +129,7 @@ public:
 			const char *playername,
 			const std::string &password,
 			const std::string ai_class,
+			const std::string token,
 			InputHandler* input,
 			MapDrawControl &control,
 			IWritableTextureSource *tsrc,
@@ -576,6 +577,7 @@ private:
 	// Auth data
 	std::string m_playername;
 	std::string m_password;
+	std::string m_token;
 	// If set, this will be sent (and cleared) upon a TOCLIENT_ACCEPT_SUDO_MODE
 	std::string m_new_password;
 	// Usable by auth mechanisms.

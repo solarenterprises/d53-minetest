@@ -411,6 +411,8 @@ static void set_allowed_options(OptionList *allowed_options)
 		_("Starts with the console & creates no window for rendering"))));
 	allowed_options->insert(std::make_pair("playerai", ValueSpec(VALUETYPE_FLAG,
 		_("ai will control your character"))));
+	allowed_options->insert(std::make_pair("token", ValueSpec(VALUETYPE_STRING,
+		_("if server uses token login, this is required."))));
 #endif
 
 }

@@ -52,6 +52,74 @@ void Server::handleCommand_Deprecated(NetworkPacket* pkt)
 		<< " not supported anymore" << std::endl;
 }
 
+bool Server::validatePlayerName(session_t peer_id, std::string addr_s, std::string playerName) {
+	size_t pns = playerName.size();
+	if (pns == 0 || pns > PLAYERNAME_SIZE) {
+		actionstream << "Server: Player with " <<
+			((pns > PLAYERNAME_SIZE) ? "a too long" : "an empty") <<
+			" name tried to connect from " << addr_s << std::endl;
+		DenyAccess(peer_id, SERVER_ACCESSDENIED_WRONG_NAME);
+		return false;
+	}
+
+	if (!string_allowed(playerName, PLAYERNAME_ALLOWED_CHARS)) {
+		actionstream << "Server: Player with an invalid name tried to connect "
+			"from " << addr_s << std::endl;
+		DenyAccess(peer_id, SERVER_ACCESSDENIED_WRONG_CHARS_IN_NAME);
+		return false;
+	}
+
+	const char* playername = playerName.c_str();
+	RemotePlayer* player = m_env->getPlayer(playername, true);
+
+	// If player is already connected, cancel
+	if (player && player->getPeerId() != PEER_ID_INEXISTENT) {
+		actionstream << "Server: Player with name \"" << playername <<
+			"\" tried to connect, but player with same name is already connected" << std::endl;
+		DenyAccess(peer_id, SERVER_ACCESSDENIED_ALREADY_CONNECTED);
+		return false;
+	}
+
+	m_clients.setPlayerName(peer_id, playername);
+	//TODO (later) case insensitivity
+
+	if (!isSingleplayer() && strcasecmp(playername, "singleplayer") == 0) {
+		actionstream << "Server: Player with the name \"singleplayer\" tried "
+			"to connect from " << addr_s << std::endl;
+		DenyAccess(peer_id, SERVER_ACCESSDENIED_WRONG_NAME);
+		return false;
+	}
+
+	{
+		std::string reason;
+		if (m_script->on_prejoinplayer(playername, addr_s, &reason)) {
+			actionstream << "Server: Player with the name \"" << playerName <<
+				"\" tried to connect from " << addr_s <<
+				" but it was disallowed for the following reason: " << reason <<
+				std::endl;
+			DenyAccess(peer_id, SERVER_ACCESSDENIED_CUSTOM_STRING, reason);
+			return false;
+		}
+	}
+
+	infostream << "Server: New connection: \"" << playerName << "\" from " <<
+		addr_s << " (peer_id=" << peer_id << ")" << std::endl;
+
+	// Enforce user limit.
+	// Don't enforce for users that have some admin right or mod permits it.
+	if (m_clients.isUserLimitReached() &&
+		playername != g_settings->get("name") &&
+		!m_script->can_bypass_userlimit(playername, addr_s)) {
+		actionstream << "Server: " << playername << " tried to join from " <<
+			addr_s << ", but there are already max_users=" <<
+			g_settings->getU16("max_users") << " players." << std::endl;
+		DenyAccess(peer_id, SERVER_ACCESSDENIED_TOO_MANY_USERS);
+		return false;
+	}
+
+	return true;
+}
+
 void Server::handleCommand_Init(NetworkPacket* pkt)
 {
 
@@ -166,71 +234,6 @@ void Server::handleCommand_Init(NetworkPacket* pkt)
 	*/
 	const char* playername = playerName.c_str();
 
-	size_t pns = playerName.size();
-	if (pns == 0 || pns > PLAYERNAME_SIZE) {
-		actionstream << "Server: Player with " <<
-			((pns > PLAYERNAME_SIZE) ? "a too long" : "an empty") <<
-			" name tried to connect from " << addr_s << std::endl;
-		DenyAccess(peer_id, SERVER_ACCESSDENIED_WRONG_NAME);
-		return;
-	}
-
-	if (!string_allowed(playerName, PLAYERNAME_ALLOWED_CHARS)) {
-		actionstream << "Server: Player with an invalid name tried to connect "
-			"from " << addr_s << std::endl;
-		DenyAccess(peer_id, SERVER_ACCESSDENIED_WRONG_CHARS_IN_NAME);
-		return;
-	}
-
-	RemotePlayer *player = m_env->getPlayer(playername, true);
-
-	// If player is already connected, cancel
-	if (player && player->getPeerId() != PEER_ID_INEXISTENT) {
-		actionstream << "Server: Player with name \"" << playername <<
-			"\" tried to connect, but player with same name is already connected" << std::endl;
-		DenyAccess(peer_id, SERVER_ACCESSDENIED_ALREADY_CONNECTED);
-		return;
-	}
-
-	m_clients.setPlayerName(peer_id, playername);
-	//TODO (later) case insensitivity
-
-	std::string legacyPlayerNameCasing = playerName;
-
-	if (!isSingleplayer() && strcasecmp(playername, "singleplayer") == 0) {
-		actionstream << "Server: Player with the name \"singleplayer\" tried "
-			"to connect from " << addr_s << std::endl;
-		DenyAccess(peer_id, SERVER_ACCESSDENIED_WRONG_NAME);
-		return;
-	}
-
-	{
-		std::string reason;
-		if (m_script->on_prejoinplayer(playername, addr_s, &reason)) {
-			actionstream << "Server: Player with the name \"" << playerName <<
-				"\" tried to connect from " << addr_s <<
-				" but it was disallowed for the following reason: " << reason <<
-				std::endl;
-			DenyAccess(peer_id, SERVER_ACCESSDENIED_CUSTOM_STRING, reason);
-			return;
-		}
-	}
-
-	infostream << "Server: New connection: \"" << playerName << "\" from " <<
-		addr_s << " (peer_id=" << peer_id << ")" << std::endl;
-
-	// Enforce user limit.
-	// Don't enforce for users that have some admin right or mod permits it.
-	if (m_clients.isUserLimitReached() &&
-			playername != g_settings->get("name") &&
-			!m_script->can_bypass_userlimit(playername, addr_s)) {
-		actionstream << "Server: " << playername << " tried to join from " <<
-			addr_s << ", but there are already max_users=" <<
-			g_settings->getU16("max_users") << " players." << std::endl;
-		DenyAccess(peer_id, SERVER_ACCESSDENIED_TOO_MANY_USERS);
-		return;
-	}
-
 	/*
 		Compose auth methods for answer
 	*/
@@ -238,10 +241,11 @@ void Server::handleCommand_Init(NetworkPacket* pkt)
 
 	if (g_settings->getBool("use_token_auth")) {
 		auth_mechs = AUTH_MECHANISM_TOKEN;
-		bool has_auth = m_script->getAuth(playername, nullptr, nullptr);
-		client->create_player_on_auth_success = !has_auth;
 	}
 	else {
+		if (!validatePlayerName(peer_id, addr_s, playerName))
+			return;
+
 		std::string encpwd; // encrypted Password field for the user
 		bool has_auth = m_script->getAuth(playername, &encpwd, nullptr);
 		
@@ -294,11 +298,11 @@ void Server::handleCommand_Init(NetworkPacket* pkt)
 		<< auth_mechs << std::endl;
 
 	NetworkPacket resp_pkt(TOCLIENT_HELLO,
-		1 + 4 + legacyPlayerNameCasing.size(), peer_id);
+		1 + 4, peer_id);
 
 	u16 depl_compress_mode = NETPROTO_COMPRESSION_NONE;
 	resp_pkt << depl_serial_v << depl_compress_mode << net_proto_version
-		<< auth_mechs << legacyPlayerNameCasing;
+		<< auth_mechs;
 
 	Send(&resp_pkt);
 
@@ -1537,11 +1541,10 @@ void Server::handleCommand_Token(NetworkPacket* pkt)
 	session_t peer_id = pkt->getPeerId();
 	RemoteClient* client = getClient(peer_id, CS_Invalid);
 	ClientState cstate = client->getState();
-	const std::string playerName = client->getName();
 	std::string addr_s = getPeerAddress(peer_id).serializeString();
 
 	if (token.empty()) {
-		actionstream << "Server: " << playerName.c_str() << " tried to join from " <<
+		actionstream << "Server: player tried to join from " <<
 			addr_s << ", but token is empty." << std::endl;
 		DenyAccess(peer_id, SERVER_ACCESSDENIED_CUSTOM_STRING, "no token");
 		return;
@@ -1575,17 +1578,16 @@ void Server::handleCommand_Token(NetworkPacket* pkt)
 	httpfetch(fetch_request, std::make_unique<Http_Request_Callback>(
 		[this, client, peer_id, token](HTTPFetchResult& result) {
 		std::string addr_s = getPeerAddress(peer_id).serializeString();
-		const std::string playerName = client->getName();
 
 		if (!result.succeeded) {
-			actionstream << "Server: " << playerName.c_str() << " tried to join from " <<
+			actionstream << "Server: player tried to join from " <<
 				addr_s << ", but failed to fetch backend" << std::endl;
 			DenyAccess(peer_id, SERVER_ACCESSDENIED_SERVER_FAIL);
 			return;
 		}
 
 		if (result.response_code != 200) {
-			actionstream << "Server: " << playerName.c_str() << " tried to join from " <<
+			actionstream << "Server: player tried to join from " <<
 				addr_s << ", but fetch backend error" << result.response_code << ": " << result.data.c_str() << std::endl;
 			DenyAccess(peer_id, SERVER_ACCESSDENIED_SERVER_FAIL);
 			return;
@@ -1597,33 +1599,43 @@ void Server::handleCommand_Token(NetworkPacket* pkt)
 			Json::CharReaderBuilder readerBuilder;
 			std::istringstream ss(result.data);
 			if (!Json::parseFromStream(readerBuilder, ss, &j_response, &errs)) {
-				actionstream << "Server: " << playerName.c_str() << " tried to join from " <<
+				actionstream << "Server: player tried to join from " <<
 					addr_s << ", but json parse error: " << errs.c_str() << std::endl;
 				DenyAccess(peer_id, SERVER_ACCESSDENIED_SERVER_FAIL);
+				return;
+			}
+
+			if (!j_response["error"].isNull()) {
+				actionstream << "Server: player tried to join from " <<
+					addr_s << ", but token is invalid." << std::endl;
+				DenyAccess(peer_id, SERVER_ACCESSDENIED_CUSTOM_STRING, "Token is invalid.");
 				return;
 			}
 
 			auto j_name = j_response["name"];
 
 			if (!j_name.isString()) {
-				actionstream << "Server: " << playerName.c_str() << " tried to join from " <<
+				actionstream << "Server: player tried to join from " <<
 					addr_s << ", but fetch backend error. Invalid json: " << result.data.c_str() << std::endl;
 				DenyAccess(peer_id, SERVER_ACCESSDENIED_SERVER_FAIL);
 				return;
 			}
 
-			std::string r_name = j_name.asString();
+			//
+			// Check player name and check if we need to create a new account
+			//
+			std::string playerName = j_name.asString();
 
-			if (r_name.compare(playerName) != 0) {
-				actionstream << "Server: " << playerName.c_str() << " tried to join from " <<
-					addr_s << ", but token is invalid." << std::endl;
-				DenyAccess(peer_id, SERVER_ACCESSDENIED_CUSTOM_STRING, "Token is invalid.");
+			bool has_auth = m_script->getAuth(playerName, nullptr, nullptr);
+			client->create_player_on_auth_success = !has_auth;
+
+			if (!validatePlayerName(peer_id, addr_s, playerName))
 				return;
-			}
 
 			//
 			// Success
 			//
+
 			if (client->create_player_on_auth_success) {
 				m_script->createAuth(playerName, client->enc_pwd);
 
@@ -1638,11 +1650,20 @@ void Server::handleCommand_Token(NetworkPacket* pkt)
 			}
 
 			client->token = token;
+			//
+			// Set client metadata
+			auto j_metadata = j_response["metadata"];
+			if (j_metadata.isObject()) {
+				for (auto j_it = j_metadata.begin(); j_it != j_metadata.end(); j_it++) {
+					client->init_meta_data.setString(j_it.key().asString(), (*j_it).asString());
+				}
+			}
+
 			m_script->on_authplayer(playerName, addr_s, true);
 			acceptAuth(peer_id, false);
 		}
 		catch (std::exception e) {
-			actionstream << "Server: " << playerName.c_str() << " tried to join from " <<
+			actionstream << "Server: player tried to join from " <<
 				addr_s << ", but error:" << e.what() << std::endl;
 			DenyAccess(peer_id, SERVER_ACCESSDENIED_SERVER_FAIL);
 			return;
