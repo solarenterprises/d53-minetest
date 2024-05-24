@@ -2637,10 +2637,13 @@ bool Server::SendBlock(session_t peer_id, const v3s16 &blockpos)
 
 	ClientInterface::AutoLock clientlock(m_clients);
 	RemoteClient *client = m_clients.lockedGetClientNoEx(peer_id, CS_Active);
-	if (!client || client->isBlockSent(blockpos))
+	if (!client || client->isBlockSent(blockpos, block->getModifiedVersion()))
 		return false;
+
 	SendBlockNoLock(peer_id, block, client->serialization_version,
 			client->net_proto_version);
+
+	client->SentBlock(blockpos, block->getModifiedVersion());
 
 	return true;
 }

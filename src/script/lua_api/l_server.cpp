@@ -761,6 +761,8 @@ int ModApiServer::l_register_on_lua_packet_stream(lua_State* L)
 
 int ModApiServer::l_send(lua_State* L)
 {
+	NO_MAP_LOCK_REQUIRED;
+
 	if (!lua_istable(L, 1))
 		throw "send arg(1) needs to be peer array";
 
@@ -792,7 +794,25 @@ int ModApiServer::l_send(lua_State* L)
 
 int ModApiServer::l_get_player_token(lua_State* L)
 {
-	int peer_id = readParam<int>(L, 1);
+	NO_MAP_LOCK_REQUIRED;
+
+	int peer_id = -1;
+
+	if (lua_isnumber(L, 1))
+		peer_id = readParam<int>(L, 1);
+	else {
+		std::string player_name = readParam<std::string>(L, 1);
+		RemotePlayer* player = getServer(L)->getEnv().getPlayer(player_name.c_str());
+		if (!player) {
+			lua_pushnil(L);
+			lua_pushstring(L, "player not found");
+			return 2;
+		}
+
+		peer_id = player->getPeerId();
+	}
+		
+
 	std::string token = getServer(L)->getClientToken(peer_id);
 	lua_pushlstring(L, token.c_str(), token.size());
 	return 1;
@@ -800,10 +820,14 @@ int ModApiServer::l_get_player_token(lua_State* L)
 
 int ModApiServer::l_get_player_metadata(lua_State* L)
 {
+	NO_MAP_LOCK_REQUIRED;
+
 	std::string player_name = readParam<std::string>(L, 1);
 	std::string key = readParam<std::string>(L, 2);
 
-	ServerEnvironment& env = getServer(L)->getEnv();
+	Server* server = getServer(L);
+	ServerEnvironment& env = server->getEnv();
+
 	std::string result = env.get_player_metadata(player_name, key);
 	if (result.empty())
 		lua_pushnil(L);

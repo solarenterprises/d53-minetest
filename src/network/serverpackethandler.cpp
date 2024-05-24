@@ -1581,8 +1581,8 @@ void Server::handleCommand_Token(NetworkPacket* pkt)
 
 		if (!result.succeeded) {
 			actionstream << "Server: player tried to join from " <<
-				addr_s << ", but failed to fetch backend" << std::endl;
-			DenyAccess(peer_id, SERVER_ACCESSDENIED_SERVER_FAIL);
+				addr_s << ", but failed to fetch backend. Authentication server is down..." << std::endl;
+			DenyAccess(peer_id, SERVER_ACCESSDENIED_CUSTOM_STRING, "authentication server is down...");
 			return;
 		}
 

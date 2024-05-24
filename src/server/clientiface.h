@@ -292,6 +292,18 @@ public:
 		return !it->second.empty();
 	}
 
+	bool isBlockSent(v3s16 p, u16 modified_version) const
+	{
+		auto it = m_blocks_sent.find(p);
+		if (it == m_blocks_sent.end())
+			return false;
+
+		if (it->second.find(modified_version) != it->second.end())
+			return false;
+
+		return true;
+	}
+
 	bool markMediaSent(const std::string &name) {
 		auto insert_result = m_media_sent.emplace(name);
 		return insert_result.second; // true = was inserted
