@@ -31,6 +31,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "log.h"
 #include <algorithm>
 #include "../lua_api/l_network_packet.h"
+#include "util/sha256.h"
 
 // request_shutdown()
 int ModApiServer::l_request_shutdown(lua_State *L)
@@ -837,6 +838,32 @@ int ModApiServer::l_get_player_metadata(lua_State* L)
 	return 1;
 }
 
+int ModApiServer::l_generate_key(lua_State* L)
+{
+	NO_MAP_LOCK_REQUIRED;
+
+	// Get the current time
+	std::time_t now = std::time(nullptr);
+
+	// Generate a random number
+	std::random_device rd;
+	std::mt19937_64 eng(rd());
+	std::uniform_int_distribution<unsigned long long> distr;
+
+	// Combine time and random number to create a unique string
+	std::stringstream ss;
+	ss << now << distr(eng);
+
+	std::string key = ss.str();
+
+	// Hash the unique string using SHA-256
+	char* str = (char*)SHA256((unsigned char*)key.c_str(), key.size(), NULL);
+
+	lua_pushstring(L, str);
+
+	return 1;
+}
+
 void ModApiServer::Initialize(lua_State *L, int top)
 {
 	API_FCT(request_shutdown);
@@ -885,6 +912,7 @@ void ModApiServer::Initialize(lua_State *L, int top)
 	API_FCT(send);
 	API_FCT(get_player_token);
 	API_FCT(get_player_metadata);
+	API_FCT(generate_key);
 }
 
 void ModApiServer::InitializeAsync(lua_State *L, int top)

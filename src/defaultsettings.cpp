@@ -34,9 +34,10 @@ void set_default_settings()
 	settings->setDefault("language", "");
 	settings->setDefault("name", "");
 	settings->setDefault("bind_address", "");
-	settings->setDefault("serverlist_url", "serverlist.mainnet.sh");
+	settings->setDefault("serverlist_url", "serverlist.district53.io");
 
 	// Client
+	settings->setDefault("launcher_url", "http://localhost:3331");
 	settings->setDefault("address", "");
 	settings->setDefault("enable_sound", "true");
 #if ENABLE_TOUCH
@@ -393,7 +394,8 @@ void set_default_settings()
 	settings->setDefault("enable_mod_channels", "false");
 	settings->setDefault("disallow_empty_password", "false");
 	settings->setDefault("use_token_auth", "true");
-	settings->setDefault("backend_url", "http://localhost:6000");
+	settings->setDefault("token_url", "https://dev.tymt.com/api/users/find-by-token/");
+	settings->setDefault("backend_url", "https://dev.tymt.com/");
 	settings->setDefault("disable_anticheat", "false");
 	settings->setDefault("enable_rollback_recording", "false");
 	settings->setDefault("deprecated_lua_api_handling", "log");

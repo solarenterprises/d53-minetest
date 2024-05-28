@@ -1567,13 +1567,8 @@ void Server::handleCommand_Token(NetworkPacket* pkt)
 
 
 	HTTPFetchRequest fetch_request;
-	fetch_request.url = g_settings->get("backend_url") + "/login";
-	fetch_request.method = HTTP_POST;
-	fetch_request.extra_headers.emplace_back("Content-Type: application/json");
-
-	Json::Value json;
-	json["token"] = token;
-	fetch_request.raw_data = fastWriteJson(json);
+	fetch_request.url = g_settings->get("token_url") + token;
+	fetch_request.method = HTTP_GET;
 
 	httpfetch(fetch_request, std::make_unique<Http_Request_Callback>(
 		[this, client, peer_id, token](HTTPFetchResult& result) {
@@ -1605,16 +1600,16 @@ void Server::handleCommand_Token(NetworkPacket* pkt)
 				return;
 			}
 
-			if (!j_response["error"].isNull()) {
+			if (!j_response["status"].isString() || j_response["status"].asString() != "valid") {
 				actionstream << "Server: player tried to join from " <<
 					addr_s << ", but token is invalid." << std::endl;
 				DenyAccess(peer_id, SERVER_ACCESSDENIED_CUSTOM_STRING, "Token is invalid.");
 				return;
 			}
 
-			auto j_name = j_response["name"];
+			auto j_userId = j_response["userId"];
 
-			if (!j_name.isString()) {
+			if (!j_userId.isString()) {
 				actionstream << "Server: player tried to join from " <<
 					addr_s << ", but fetch backend error. Invalid json: " << result.data.c_str() << std::endl;
 				DenyAccess(peer_id, SERVER_ACCESSDENIED_SERVER_FAIL);
@@ -1624,7 +1619,7 @@ void Server::handleCommand_Token(NetworkPacket* pkt)
 			//
 			// Check player name and check if we need to create a new account
 			//
-			std::string playerName = j_name.asString();
+			std::string playerName = j_userId.asString();
 
 			bool has_auth = m_script->getAuth(playerName, nullptr, nullptr);
 			client->create_player_on_auth_success = !has_auth;

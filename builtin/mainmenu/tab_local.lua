@@ -376,7 +376,7 @@ local function main_button_handler(this, fields, name, tabdata)
 
             if not token then
                 gamedata.errormessage = "Token name '"..fields["te_playername"].."' doesn't exist"
-                return
+                return true
             end
 
 			gamedata.playername = token.name

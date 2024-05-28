@@ -41,6 +41,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "lua_api/l_ogg.h"
 #include "lua_api/l_buffer.h"
 #include "lua_api/l_generic_cao.h"
+#include "lua_api/l_http.h"
 
 ClientScripting::ClientScripting(Client *client):
 	ScriptApiBase(ScriptingType::Client)
@@ -101,6 +102,7 @@ void ClientScripting::InitializeModApi(lua_State *L, int top)
 	ModApiOGG::Initialize(L, top);
 	ModApiBuffer::Initialize(L, top);
 	ModApiGenericCAO::Initialize(L, top);
+	ModApiHttp::Initialize(L, top);
 }
 
 void ClientScripting::on_client_ready(LocalPlayer *localplayer)
