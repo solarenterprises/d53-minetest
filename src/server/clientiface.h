@@ -246,7 +246,6 @@ public:
 	u32 allowed_auth_mechs = 0;
 
 	std::string token = "";
-	SimpleMetadata init_meta_data;
 
 	void resetChosenMech();
 

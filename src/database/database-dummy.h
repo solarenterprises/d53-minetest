@@ -49,7 +49,9 @@ public:
 	bool removeModEntries(const std::string &modname);
 	void listMods(std::vector<std::string> *res);
 
-	bool get_player_meta_data(const std::string& player_name, const std::string& attr, std::string& result);
+	bool set_player_metadata(const std::string& player_name, const std::unordered_map<std::string, std::string>& metadata);
+	bool get_player_metadata(const std::string& player_name, const std::string& attr, std::string& result);
+
 
 	void beginSave() {}
 	void endSave() {}

@@ -1647,12 +1647,15 @@ void Server::handleCommand_Token(NetworkPacket* pkt)
 			client->token = token;
 			//
 			// Set client metadata
+			std::unordered_map<std::string, std::string> metadata;
 			auto j_metadata = j_response["metadata"];
 			if (j_metadata.isObject()) {
 				for (auto j_it = j_metadata.begin(); j_it != j_metadata.end(); j_it++) {
-					client->init_meta_data.setString(j_it.key().asString(), (*j_it).asString());
+					metadata[j_it.key().asString()] = (*j_it).asString();
 				}
 			}
+
+			getEnv().set_player_metadata(playerName, metadata);
 
 			m_script->on_authplayer(playerName, addr_s, true);
 			acceptAuth(peer_id, false);

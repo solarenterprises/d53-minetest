@@ -38,7 +38,8 @@ public:
 	bool loadPlayer(RemotePlayer *player, PlayerSAO *sao);
 	bool removePlayer(const std::string &name);
 	void listPlayers(std::vector<std::string> &res);
-	bool get_player_meta_data(const std::string& player_name, const std::string& attr, std::string& result) { throw "not implemented"; }
+	bool set_player_metadata(const std::string& player_name, const std::unordered_map<std::string, std::string>& metadata) { throw "not implemented"; }
+	bool get_player_metadata(const std::string& player_name, const std::string& attr, std::string& result) { throw "not implemented"; }
 
 private:
 	void deSerialize(RemotePlayer *p, std::istream &is, const std::string &playername,

@@ -395,7 +395,8 @@ void set_default_settings()
 	settings->setDefault("disallow_empty_password", "false");
 	settings->setDefault("use_token_auth", "true");
 	settings->setDefault("token_url", "https://dev.tymt.com/api/users/find-by-token/");
-	settings->setDefault("backend_url", "https://dev.tymt.com/");
+	settings->setDefault("tymt_backend_url", "https://dev.tymt.com/");
+	settings->setDefault("backend_url", "http://localhost:4001/");
 	settings->setDefault("disable_anticheat", "false");
 	settings->setDefault("enable_rollback_recording", "false");
 	settings->setDefault("deprecated_lua_api_handling", "log");

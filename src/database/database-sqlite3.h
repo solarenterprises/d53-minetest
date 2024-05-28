@@ -193,7 +193,8 @@ public:
 	bool loadPlayer(RemotePlayer *player, PlayerSAO *sao);
 	bool removePlayer(const std::string &name);
 	void listPlayers(std::vector<std::string> &res);
-	bool get_player_meta_data(const std::string& player_name, const std::string& attr, std::string& result);
+	bool set_player_metadata(const std::string& player_name, const std::unordered_map<std::string, std::string>& metadata);
+	bool get_player_metadata(const std::string& player_name, const std::string& attr, std::string& result);
 
 protected:
 	virtual void createDatabase();
@@ -215,6 +216,7 @@ private:
 	sqlite3_stmt *m_stmt_player_remove_inventory = nullptr;
 	sqlite3_stmt *m_stmt_player_remove_inventory_items = nullptr;
 	sqlite3_stmt *m_stmt_player_metadata_load = nullptr;
+	sqlite3_stmt *m_stmt_player_metadata_set = nullptr;
 	sqlite3_stmt *m_stmt_player_metadata_get = nullptr;
 	sqlite3_stmt *m_stmt_player_metadata_remove = nullptr;
 	sqlite3_stmt *m_stmt_player_metadata_add = nullptr;

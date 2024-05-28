@@ -325,6 +325,7 @@ PlayerDatabaseSQLite3::~PlayerDatabaseSQLite3()
 	FINALIZE_STATEMENT(m_stmt_player_load_inventory)
 	FINALIZE_STATEMENT(m_stmt_player_load_inventory_items)
 	FINALIZE_STATEMENT(m_stmt_player_metadata_load)
+	FINALIZE_STATEMENT(m_stmt_player_metadata_set)
 	FINALIZE_STATEMENT(m_stmt_player_metadata_get)
 	FINALIZE_STATEMENT(m_stmt_player_metadata_add)
 	FINALIZE_STATEMENT(m_stmt_player_metadata_remove)
@@ -413,7 +414,9 @@ void PlayerDatabaseSQLite3::initStatements()
 
 	PREPARE_STATEMENT(player_metadata_load, "SELECT `metadata`, `value` FROM "
 		"`player_metadata` WHERE `player` = ?")
-	PREPARE_STATEMENT(player_metadata_get, "SELECT `value` FROM "
+	PREPARE_STATEMENT(player_metadata_set, "INSERT OR REPLACE INTO `player_metadata` "
+		"(`player`, `metadata`, `value`) VALUES (?, ?, ?) ")
+		PREPARE_STATEMENT(player_metadata_get, "SELECT `value` FROM "
 		"`player_metadata` WHERE `player` = ? AND `attr` = ? LIMIT 1")
 	PREPARE_STATEMENT(player_metadata_add, "INSERT INTO `player_metadata` "
 		"(`player`, `metadata`, `value`) VALUES (?, ?, ?)")
@@ -595,7 +598,22 @@ void PlayerDatabaseSQLite3::listPlayers(std::vector<std::string> &res)
 	sqlite3_reset(m_stmt_player_list);
 }
 
-bool PlayerDatabaseSQLite3::get_player_meta_data(const std::string& player_name, const std::string& attr, std::string& result)
+bool PlayerDatabaseSQLite3::set_player_metadata(const std::string& player_name, const std::unordered_map<std::string, std::string>& metadata)
+{
+	bool success = true;
+	for (auto it : metadata) {
+		str_to_sqlite(m_stmt_player_metadata_set, 1, player_name);
+		str_to_sqlite(m_stmt_player_metadata_set, 2, it.first);
+		str_to_sqlite(m_stmt_player_metadata_set, 3, it.second);
+		sqlite3_vrfy(sqlite3_step(m_stmt_player_metadata_set), SQLITE_DONE);
+		sqlite3_reset(m_stmt_player_metadata_set);
+	}
+
+	return success;
+}
+
+
+bool PlayerDatabaseSQLite3::get_player_metadata(const std::string& player_name, const std::string& attr, std::string& result)
 {
 	result = "";
 

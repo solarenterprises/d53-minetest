@@ -245,12 +245,14 @@ public:
 	void saveLoadedPlayers(bool force = false);
 	void savePlayer(RemotePlayer *player);
 	PlayerSAO *loadPlayer(RemotePlayer *player, bool *new_player, session_t peer_id,
-		bool is_singleplayer, const SimpleMetadata& init_meta_data);
+		bool is_singleplayer);
 	void addPlayer(RemotePlayer *player);
 	void removePlayer(RemotePlayer *player);
 	bool removePlayerFromDatabase(const std::string &name);
 
+	void set_player_metadata(const std::string& player_name, const std::unordered_map<std::string, std::string> &metadata);
 	std::string get_player_metadata(const std::string& player_name, const std::string& key);
+	void rename_player(const std::string& old_name, const std::string& new_name);
 
 	/*
 		Save and load time of day and game timer

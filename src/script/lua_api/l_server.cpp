@@ -32,6 +32,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include <algorithm>
 #include "../lua_api/l_network_packet.h"
 #include "util/sha256.h"
+#include "util/base64.h"
 
 // request_shutdown()
 int ModApiServer::l_request_shutdown(lua_State *L)
@@ -859,9 +860,22 @@ int ModApiServer::l_generate_key(lua_State* L)
 	// Hash the unique string using SHA-256
 	char* str = (char*)SHA256((unsigned char*)key.c_str(), key.size(), NULL);
 
-	lua_pushstring(L, str);
+	std::string base64 = base64_encode(std::string_view(str));
+
+	lua_pushlstring(L, base64.c_str(), base64.size());
 
 	return 1;
+}
+
+int ModApiServer::l_rename_player(lua_State* L) {
+	NO_MAP_LOCK_REQUIRED;
+
+	std::string old_name = readParam<std::string>(L, 1);
+	std::string new_name = readParam<std::string>(L, 2);
+
+	ServerEnvironment& server_environment = getServer(L)->getEnv();
+	server_environment.rename_player(old_name, new_name);
+	return 0;
 }
 
 void ModApiServer::Initialize(lua_State *L, int top)
@@ -913,6 +927,7 @@ void ModApiServer::Initialize(lua_State *L, int top)
 	API_FCT(get_player_token);
 	API_FCT(get_player_metadata);
 	API_FCT(generate_key);
+	API_FCT(rename_player);
 }
 
 void ModApiServer::InitializeAsync(lua_State *L, int top)

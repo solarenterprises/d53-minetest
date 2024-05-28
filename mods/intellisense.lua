@@ -2,6 +2,10 @@
 -- Minetest
 ----------------------------------------------
 
+-- will move all player data to the new player name
+-- @return string
+function minetest.rename_player(from_player, to_player) end
+
 -- generates an unique key
 -- @return string
 function minetest.generate_key() end
@@ -14,6 +18,10 @@ function minetest.get_player_token(player_name_or_peer_id) end
 -- @param attr string
 -- @return string or nil
 function minetest.get_player_metadata(player_name, attr) end
+
+-- @param peer_id number
+-- @return ObjectRef
+function minetest.get_player_by_peer_id(peer_id) end
 
 -- Sends network packet to all to_peer_ids
 -- @param to_peer_ids array

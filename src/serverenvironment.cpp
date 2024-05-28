@@ -648,14 +648,38 @@ void ServerEnvironment::saveLoadedPlayers(bool force)
 	}
 }
 
+void ServerEnvironment::set_player_metadata(const std::string& player_name, const std::unordered_map<std::string, std::string>& metadata) {
+	try {
+		std::string result;
+		m_player_database->set_player_metadata(player_name, metadata);
+	}
+	catch (DatabaseException& e) {
+		errorstream << "Failed to set player metadata " << player_name.c_str() << " exception: "
+			<< e.what() << std::endl;
+		throw;
+	}
+}
+
 std::string ServerEnvironment::get_player_metadata(const std::string& player_name, const std::string& key) {
 	try {
 		std::string result;
-		m_player_database->get_player_meta_data(player_name, key, result);
+		m_player_database->get_player_metadata(player_name, key, result);
 		return result;
 	}
 	catch (DatabaseException& e) {
 		errorstream << "Failed to get player metadata " << player_name.c_str() << ":" << key.c_str() << " exception: "
+			<< e.what() << std::endl;
+		throw;
+	}
+}
+
+void ServerEnvironment::rename_player(const std::string& old_name, const std::string& new_name) {
+	try {
+		m_player_database->rename_player(old_name, new_name);
+		return;
+	}
+	catch (DatabaseException& e) {
+		errorstream << "Failed to rename player " << old_name.c_str() << "->" << new_name.c_str() << " exception: "
 			<< e.what() << std::endl;
 		throw;
 	}
@@ -673,7 +697,7 @@ void ServerEnvironment::savePlayer(RemotePlayer *player)
 }
 
 PlayerSAO *ServerEnvironment::loadPlayer(RemotePlayer *player, bool *new_player,
-	session_t peer_id, bool is_singleplayer, const SimpleMetadata& init_meta_data)
+	session_t peer_id, bool is_singleplayer)
 {
 	auto playersao = std::make_unique<PlayerSAO>(this, player, peer_id, is_singleplayer);
 	// Create player if it doesn't exist
@@ -695,20 +719,6 @@ PlayerSAO *ServerEnvironment::loadPlayer(RemotePlayer *player, bool *new_player,
 				<< player->getName() << "\" outside limits, resetting" << std::endl;
 			playersao->setBasePosition(m_server->findSpawnPos());
 		}
-	}
-
-	//
-	// Initalize player meta values
-	SimpleMetadata& meta = playersao->getMeta();
-	std::vector<std::string> meta_keys;
-	for (auto key : init_meta_data.getKeys(&meta_keys)) {
-		std::string value = init_meta_data.getString(key);
-
-		if (meta.contains(key) && meta.getString(key) == value)
-			continue;
-
-		meta.setString(key, value);
-		player->setModified(true);
 	}
 
 
