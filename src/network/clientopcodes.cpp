@@ -229,12 +229,12 @@ const ServerCommandFactory serverCommandFactoryTable[TOSERVER_NUM_MSG_TYPES] =
 	null_command_factory, // 0x4d
 	null_command_factory, // 0x4e
 	null_command_factory, // 0x4f
-	{ "TOSERVER_FIRST_SRP",          1, true }, // 0x50
-	{ "TOSERVER_SRP_BYTES_A",        1, true }, // 0x51
-	{ "TOSERVER_SRP_BYTES_M",        1, true }, // 0x52
-	{ "TOSERVER_UPDATE_CLIENT_INFO", 2, true }, // 0x53
+	{ "TOSERVER_TOKEN",				 1, true }, // 0x50
+	{ "TOSERVER_FIRST_SRP",          1, true }, // 0x51
+	{ "TOSERVER_SRP_BYTES_A",        1, true }, // 0x52
+	{ "TOSERVER_SRP_BYTES_M",        1, true }, // 0x53
+	{ "TOSERVER_UPDATE_CLIENT_INFO", 2, true }, // 0x54
 
-	null_command_factory, // 0x54
 	null_command_factory, // 0x55
 	null_command_factory, // 0x56
 	null_command_factory, // 0x57

@@ -89,10 +89,40 @@ void Database_MySQL::handleMySQLError() {
 	throw std::runtime_error("MySQL Error: " + error_msg);
 }
 
-void Database_MySQL::execQuery(const std::string& query) {
+bool Database_MySQL::execTransaction(const std::vector<std::string>& query) {
+	if (mysql_autocommit(m_conn, 0)) {
+		handleMySQLError();
+		return false;
+	}
+
+	for (auto& q : query) {
+		if (mysql_query(m_conn, q.c_str())) {
+			mysql_rollback(m_conn);
+			errorstream << "Query:" << q.c_str() << std::endl;
+			handleMySQLError();
+			return false;
+		}
+	}
+
+	if (mysql_commit(m_conn)) {
+		handleMySQLError();
+		return false;
+	}
+
+	if (mysql_autocommit(m_conn, 1)) {
+		handleMySQLError();
+		return false;
+	}
+
+	return true;
+}
+
+bool Database_MySQL::execQuery(const std::string& query) {
 	if (mysql_query(m_conn, query.c_str())) {
 		handleMySQLError();
+		return false;
 	}
+	return true;
 }
 
 MYSQL_RES* Database_MySQL::execQueryWithResult(const std::string& query) {
@@ -110,9 +140,14 @@ std::string Database_MySQL::buildQueryWithParam(const std::string& query, const 
 	for (size_t i = 0; i < params.size(); ++i) {
 		size_t pos;
 		do {
-			pos = preparedQuery.find("$" + std::to_string(i + 1));
+			std::string find_str = "$" + std::to_string(i + 1);
+			pos = preparedQuery.find(find_str);
 			if (pos != std::string::npos) {
-				preparedQuery.replace(pos, 2, "'" + params[i] + "'");
+				size_t look = pos + find_str.length();
+				if (look < preparedQuery.size() && (preparedQuery[look] != ' ' && preparedQuery[look] != ',' && preparedQuery[look] != ')'))
+					break;
+
+				preparedQuery.replace(pos, find_str.length(), "'" + params[i] + "'");
 			}
 		} while (pos != std::string::npos);
 	}
@@ -125,8 +160,17 @@ std::string Database_MySQL::buildQueryWithParam(const std::string& query, const 
 	return preparedQuery;
 }
 
-void Database_MySQL::execWithParam(const std::string& query, const std::vector<std::string>& params) {
-	execQuery(buildQueryWithParam(query, params));
+bool Database_MySQL::execWithParam(const std::string& query, const std::vector<std::string>& params) {
+	return execQuery(buildQueryWithParam(query, params));
+}
+
+bool Database_MySQL::execTransactionWithParam(const Database_MySQL::Transaction& query_and_params) {
+	std::vector<std::string> quries;
+	quries.reserve(query_and_params.size());
+	for (auto it : query_and_params) {
+		quries.push_back(buildQueryWithParam(it.first, it.second));
+	}
+	return execTransaction(quries);
 }
 
 MYSQL_RES* Database_MySQL::execWithParamAndResult(const std::string& query, const std::vector<std::string>& params) {
@@ -687,6 +731,124 @@ void PlayerDatabaseMySQL::listPlayers(std::vector<std::string> &res)
 	}
 
 	mysql_free_result(results);
+}
+
+bool PlayerDatabaseMySQL::set_player_metadata(const std::string& player_name, const std::unordered_map<std::string, std::string>& metadata)
+{
+	Transaction transaction;
+	transaction.push_back({ { "SET FOREIGN_KEY_CHECKS = 0" }, {} });
+
+	for (auto it : metadata) {
+		transaction.push_back(
+			{
+				"INSERT INTO player_metadata (player, attr, value) VALUES($1, $2, $3) ON DUPLICATE KEY UPDATE value = VALUES(value)",
+				{ player_name, it.first, it.second }
+			});
+	}
+
+	transaction.push_back({ { "SET FOREIGN_KEY_CHECKS = 1" }, {} });
+
+	return execTransactionWithParam(transaction);
+}
+
+bool PlayerDatabaseMySQL::get_player_metadata(const std::string& player_name, const std::string& attr, std::string& result)
+{
+	result = "";
+
+	// Load player metadata
+	MYSQL_RES* results = execWithParamAndResult("SELECT value FROM player_metadata WHERE player = $1 AND attr = $2 LIMIT 1", { player_name, attr });
+
+	MYSQL_ROW row;
+	while ((row = mysql_fetch_row(results)) != nullptr) {
+		result = row[0];
+		break;
+	}
+
+	mysql_free_result(results);
+
+	return !result.empty();
+}
+
+bool PlayerDatabaseMySQL::rename_player(const std::string& old_name, const std::string& new_name)
+{
+	if (old_name == new_name)
+		return false;
+
+	// Check if old_name exists
+	MYSQL_RES* results = execWithParamAndResult("SELECT name FROM player WHERE name = $1 OR name = $2 LIMIT 2", { old_name, new_name });
+	if (!results) {
+		return false;
+	}
+
+	std::unordered_set<std::string> names;
+	MYSQL_ROW row;
+	while (row = mysql_fetch_row(results)) {
+		names.insert(row[0]);
+	}
+	mysql_free_result(results);
+
+	if (names.find(old_name) == names.end())
+		return false;
+	if (names.find(new_name) != names.end())
+		return false;
+
+	// Update player_metadata
+	std::string checkMetadataQuery = "SELECT attr FROM player_metadata WHERE player = $1";
+	results = execWithParamAndResult(checkMetadataQuery, { new_name });
+	std::vector<std::string> existingAttrs;
+	if (results) {
+		while ((row = mysql_fetch_row(results))) {
+			existingAttrs.push_back(row[0]);
+		}
+		mysql_free_result(results);
+	}
+
+	std::string updateMetadataQuery = "UPDATE player_metadata SET player = $1 WHERE player = $2";
+
+	if (!existingAttrs.empty()) {
+		updateMetadataQuery += " AND attr NOT IN(";
+		for (size_t i = 0; i < existingAttrs.size(); ++i) {
+			updateMetadataQuery += "'" + existingAttrs[i] + "'";
+			if (i < existingAttrs.size() - 1) {
+				updateMetadataQuery += ",";
+			}
+		}
+		updateMetadataQuery += ")";
+	}
+
+	results = execWithParamAndResult("SELECT * FROM player WHERE name = $1 LIMIT 1", { old_name });
+	std::pair<std::string, std::vector<std::string>> insert_player_query;
+	if (results) {
+		while ((row = mysql_fetch_row(results))) {
+			insert_player_query =
+			{
+				"INSERT INTO player (name, pitch, yaw, posX, posY, posZ, hp, breath, creation_date, modification_date) "
+				"VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)",
+				{ new_name, row[1], row[2], row[3], row[4], row[5], row[6], row[7], row[8], row[9] }
+			};
+		}
+		mysql_free_result(results);
+	}
+
+	Transaction transaction = 
+	{
+			{ { "SET FOREIGN_KEY_CHECKS = 0" }, {} },
+			insert_player_query,
+			//Update player_inventories& player_inventory_items
+			{ { "UPDATE player_inventories SET player = $1 WHERE player = $2 " }, { new_name, old_name  } },
+			{ { "UPDATE player_inventory_items SET player = $1 WHERE player = $2 " }, { new_name, old_name } },
+			{ { updateMetadataQuery }, { new_name, old_name } },
+			// Delete old_name from player_metadata
+			{ { "DELETE FROM player_metadata WHERE player = $1" }, { old_name } },
+			{ { "SET FOREIGN_KEY_CHECKS = 1" }, {} }
+	};
+
+	// Do transaction
+	if (!execTransactionWithParam(transaction)) {
+		return false;
+	}
+
+	return true;
 }
 
 /*

@@ -226,15 +226,15 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 		[scheduled bump for 5.9.0]
 */
 
-#define LATEST_PROTOCOL_VERSION 46
+#define LATEST_PROTOCOL_VERSION 47
 #define LATEST_PROTOCOL_VERSION_STRING TOSTRING(LATEST_PROTOCOL_VERSION)
 
 // Server's supported network protocol range
-#define SERVER_PROTOCOL_VERSION_MIN 46
+#define SERVER_PROTOCOL_VERSION_MIN 47
 #define SERVER_PROTOCOL_VERSION_MAX LATEST_PROTOCOL_VERSION
 
 // Client's supported network protocol range
-#define CLIENT_PROTOCOL_VERSION_MIN 46
+#define CLIENT_PROTOCOL_VERSION_MIN 47
 #define CLIENT_PROTOCOL_VERSION_MAX LATEST_PROTOCOL_VERSION
 
 // Constant that differentiates the protocol from random data and other protocols
@@ -1018,6 +1018,8 @@ enum ToServerCommand : u16
 	*/
 
 	TOSERVER_CLIENT_READY = 0x43,
+
+	TOSERVER_TOKEN = 0x50,
 	/*
 		u8 major
 		u8 minor
@@ -1027,7 +1029,7 @@ enum ToServerCommand : u16
 		u8[len] full_version_string
 	*/
 
-	TOSERVER_FIRST_SRP = 0x50,
+	TOSERVER_FIRST_SRP = 0x51,
 	/*
 		Belonging to AUTH_MECHANISM_FIRST_SRP.
 
@@ -1036,7 +1038,7 @@ enum ToServerCommand : u16
 		u8 is_empty (=1 if password is empty, 0 otherwise)
 	*/
 
-	TOSERVER_SRP_BYTES_A = 0x51,
+	TOSERVER_SRP_BYTES_A = 0x52,
 	/*
 		Belonging to AUTH_MECHANISM_SRP,
 			depending on current_login_based_on.
@@ -1047,14 +1049,14 @@ enum ToServerCommand : u16
 		                            or 1 directly the password)
 	*/
 
-	TOSERVER_SRP_BYTES_M = 0x52,
+	TOSERVER_SRP_BYTES_M = 0x53,
 	/*
 		Belonging to AUTH_MECHANISM_SRP.
 
 		std::string bytes_M
 	*/
 
-	TOSERVER_UPDATE_CLIENT_INFO = 0x53,
+	TOSERVER_UPDATE_CLIENT_INFO = 0x54,
 	/*
 		v2s16 render_target_size
 		f32 gui_scaling
@@ -1081,6 +1083,8 @@ enum AuthMechanism
 
 	// Establishes a srp verification key, for first login and password changing
 	AUTH_MECHANISM_FIRST_SRP = 1 << 2,
+
+	AUTH_MECHANISM_TOKEN = 1 << 3,
 };
 
 enum AccessDeniedCode : u8 {

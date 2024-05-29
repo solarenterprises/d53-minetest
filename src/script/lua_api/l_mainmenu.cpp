@@ -733,40 +733,12 @@ int ModApiMainMenu::l_start(lua_State *L)
 	data->serverdescription = getTextData(L,"serverdescription");
 	data->servername        = getTextData(L,"servername");*/
 
-	// new
-
-	std::string userpass = getTextData(L, "password");
-	std::string playername = getTextData(L, "playername");
-
-	if (!data->simple_singleplayer_mode) {
-		std::string sxpaddress = playername;
-		std::string encrypted_key = getTextData(L, "encrypted_key");
-		std::string iv = getTextData(L, "iv");
-
-		const aes256_cbc encryptor(str_to_bytes(iv));
-		const std::string key = md5(userpass);
-		std::vector<std::uint8_t> dec_result;
-		encryptor.decrypt(str_to_bytes(key), str_to_bytes(base64_decode(encrypted_key)), dec_result);
-		std::string dtext = bytes_to_str(dec_result);
-
-		const std::uint8_t version = 0x3F;
-		const Ark::Crypto::identities::Address address = Ark::Crypto::identities::Address::fromPassphrase(dtext.c_str(), version);
-
-		// Message - sign
-		Ark::Crypto::Message message;
-		message.sign(address.toString(), dtext);
-
-		const std::string newpass = bytes_to_str(message.signature);
-
-		userpass = newpass;
-		playername = address.toString();
-	}
 
 	if (!data->do_reconnect) {
-		data->name = playername;
-	
 		//data->alias = getTextData(L, "aliasname");
-		data->password = userpass;
+		data->name = getTextData(L, "playername");
+		data->token = getTextData(L, "token");
+		data->password = getTextData(L, "password");
 		data->address = getTextData(L, "address");
 		data->port = getTextData(L, "port");
 

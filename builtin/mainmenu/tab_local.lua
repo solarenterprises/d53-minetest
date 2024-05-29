@@ -227,7 +227,7 @@ local function get_formspec(tabview, name, tabdata)
 		-- regardless of whether some of the checkboxes are hidden.
 		y = 0.2 + 4 * yo
 
-		retval = retval .. "field[0," .. y .. ";4.5,0.75;te_playername;" .. fgettext("Name") .. ";" ..
+		retval = retval .. "field[0," .. y .. ";4.5,0.75;te_playername;" .. fgettext("Token Name") .. ";" ..
 				core.formspec_escape(current_name) .. "]"
 
 		y = y + 1.15
@@ -372,20 +372,16 @@ local function main_button_handler(this, fields, name, tabdata)
 		end
 
 		if core.settings:get_bool("enable_server") then
-            addresslistmgr.get_addresses()
-            local addressinfo = addresslistmgr.get_address(fields["te_playername"])
+            local token = tokenmgr.get_token_by_name(fields["te_playername"])
 
-            local sxpaddrvalidate = core.validate_sxp_password(addressinfo.encrypted_key, addressinfo.address, addressinfo.iv, fields.te_passwd)
-			if sxpaddrvalidate ~= 1 then
-                print("Invalid Password")
-                gamedata.errormessage = fgettext_ne("Invalid Password")
-                return true;
+            if not token then
+                gamedata.errormessage = "Token name '"..fields["te_playername"].."' doesn't exist"
+                return true
             end
 
-			gamedata.playername = addressinfo.address
-            gamedata.aliasname = gamedata.playername
-            gamedata.encrypted_key = addressinfo.encrypted_key
-            gamedata.iv = addressinfo.iv
+			gamedata.playername = token.name
+            gamedata.aliasname  = gamedata.playername
+            gamedata.token      = token.token
 			gamedata.password   = fields.te_passwd
 			gamedata.port       = fields["te_serverport"]
 			gamedata.address    = ""

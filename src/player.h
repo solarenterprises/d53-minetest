@@ -176,6 +176,7 @@ public:
 	v3f getSpeed() const { return m_speed; }
 
 	const char *getName() const { return m_name; }
+	void setName(const char* name);
 
 	u32 getFreeHudID()
 	{

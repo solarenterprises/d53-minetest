@@ -65,9 +65,8 @@ void Client::handleCommand_Hello(NetworkPacket* pkt)
 	u16 proto_ver;
 	u16 compression_mode;
 	u32 auth_mechs;
-	std::string username_legacy; // for case insensitivity
 	*pkt >> serialization_ver >> compression_mode >> proto_ver
-		>> auth_mechs >> username_legacy;
+		>> auth_mechs;
 
 	// Chose an auth method we support
 	AuthMechanism chosen_auth_mechanism = choseAuthMech(auth_mechs);
@@ -105,22 +104,29 @@ void Client::handleCommand_Hello(NetworkPacket* pkt)
 
 	// Authenticate using that method, or abort if there wasn't any method found
 	if (chosen_auth_mechanism != AUTH_MECHANISM_NONE) {
-		bool is_register = chosen_auth_mechanism == AUTH_MECHANISM_FIRST_SRP;
-		ELoginRegister mode = is_register ? ELoginRegister::Register : ELoginRegister::Login;
-		if (m_allow_login_or_register != ELoginRegister::Any &&
-				m_allow_login_or_register != mode) {
-			m_chosen_auth_mech = AUTH_MECHANISM_NONE;
-			m_access_denied = true;
-			if (m_allow_login_or_register == ELoginRegister::Login) {
-				m_access_denied_reason =
-						gettext("Name is not registered. To create an account on this server, click 'Register'");
-			} else {
-				m_access_denied_reason =
-						gettext("Name is taken. Please choose another name");
-			}
-			m_con->Disconnect();
-		} else {
+		if (chosen_auth_mechanism == AUTH_MECHANISM_TOKEN) {
 			startAuth(chosen_auth_mechanism);
+		}
+		else {
+			bool is_register = chosen_auth_mechanism == AUTH_MECHANISM_FIRST_SRP;
+			ELoginRegister mode = is_register ? ELoginRegister::Register : ELoginRegister::Login;
+			if (m_allow_login_or_register != ELoginRegister::Any &&
+				m_allow_login_or_register != mode) {
+				m_chosen_auth_mech = AUTH_MECHANISM_NONE;
+				m_access_denied = true;
+				if (m_allow_login_or_register == ELoginRegister::Login) {
+					m_access_denied_reason =
+						gettext("Name is not registered. To create an account on this server, click 'Register'");
+				}
+				else {
+					m_access_denied_reason =
+						gettext("Name is taken. Please choose another name");
+				}
+				m_con->Disconnect();
+			}
+			else {
+				startAuth(chosen_auth_mechanism);
+			}
 		}
 	} else {
 		m_chosen_auth_mech = AUTH_MECHANISM_NONE;
@@ -135,15 +141,21 @@ void Client::handleCommand_AuthAccept(NetworkPacket* pkt)
 {
 	deleteAuthData();
 
+	std::string playerName;
 	v3f playerpos;
-	*pkt >> playerpos >> m_map_seed >> m_recommended_send_interval
-		>> m_sudo_auth_methods;
+	*pkt
+		>> playerpos
+		>> m_map_seed
+		>> m_recommended_send_interval
+		>> m_sudo_auth_methods
+		>> playerName;
 
 	playerpos -= v3f(0, BS / 2, 0);
 
 	// Set player position
 	LocalPlayer *player = m_env.getLocalPlayer();
 	assert(player != NULL);
+	player->setName(playerName.c_str());
 	player->setPosition(playerpos);
 
 	infostream << "Client: received map seed: " << m_map_seed << std::endl;

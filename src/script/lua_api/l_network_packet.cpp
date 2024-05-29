@@ -196,6 +196,16 @@ int LuaNetworkPacket::l_write_int(lua_State* L)
 	return 0;
 }
 
+int LuaNetworkPacket::l_write_u8(lua_State* L)
+{
+	NO_MAP_LOCK_REQUIRED;
+
+	LuaNetworkPacket* o = checkObject<LuaNetworkPacket>(L, 1);
+	u8 i = readParam<int>(L, 2);
+	(*o->packet) << i;
+	return 0;
+}
+
 int LuaNetworkPacket::l_write_v3f(lua_State* L)
 {
 	NO_MAP_LOCK_REQUIRED;
@@ -206,7 +216,7 @@ int LuaNetworkPacket::l_write_v3f(lua_State* L)
 	return 0;
 }
 
-int LuaNetworkPacket::l_getPeerId(lua_State* L)
+int LuaNetworkPacket::l_get_peer_id(lua_State* L)
 {
 	NO_MAP_LOCK_REQUIRED;
 
@@ -234,6 +244,17 @@ int LuaNetworkPacket::l_read_int(lua_State* L)
 	int i;
 	(*o->packet) >> i;
 	lua_pushinteger(L, i);
+	return 1;
+}
+
+int LuaNetworkPacket::l_read_u8(lua_State* L)
+{
+	NO_MAP_LOCK_REQUIRED;
+
+	LuaNetworkPacket* o = checkObject<LuaNetworkPacket>(L, 1);
+	u8 i;
+	(*o->packet) >> i;
+	lua_pushinteger(L, (int)i);
 	return 1;
 }
 
@@ -354,11 +375,13 @@ const luaL_Reg LuaNetworkPacket::methods[] = {
 	luamethod(LuaNetworkPacket, equals),
 	luamethod(LuaNetworkPacket, write_string),
 	luamethod(LuaNetworkPacket, write_int),
+	luamethod(LuaNetworkPacket, write_u8),
 	luamethod(LuaNetworkPacket, write_v3f),
 	luamethod(LuaNetworkPacket, read_string),
 	luamethod(LuaNetworkPacket, read_int),
 	luamethod(LuaNetworkPacket, read_v3f),
-	luamethod(LuaNetworkPacket, getPeerId),
+	luamethod(LuaNetworkPacket, read_u8),
+	luamethod(LuaNetworkPacket, get_peer_id),
 	luamethod(LuaNetworkPacket, read_remaining_string),
 	luamethod(LuaNetworkPacket, read_remaining_buffer),
 	{0,0}

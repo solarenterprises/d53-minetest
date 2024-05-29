@@ -263,6 +263,9 @@ int main(int argc, char *argv[])
 		game_params.playerai = cmd_args.get("playerai");
 	if (noRender && game_params.playerai.empty())
 		game_params.playerai = "playerai";
+
+	if (cmd_args.exists("launcher_url"))
+		g_settings->set("launcher_url", cmd_args.get("launcher_url"));
 #endif
 
 	if (!game_configure(&game_params, cmd_args))
@@ -411,6 +414,10 @@ static void set_allowed_options(OptionList *allowed_options)
 		_("Starts with the console & creates no window for rendering"))));
 	allowed_options->insert(std::make_pair("playerai", ValueSpec(VALUETYPE_FLAG,
 		_("ai will control your character"))));
+	allowed_options->insert(std::make_pair("token", ValueSpec(VALUETYPE_STRING,
+		_("if server uses token login, this is required."))));
+	allowed_options->insert(std::make_pair("launcher_url", ValueSpec(VALUETYPE_STRING,
+		_("it's the url to the launcher. Usually localhost."))));
 #endif
 
 }

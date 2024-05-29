@@ -406,6 +406,9 @@ void ClientLauncher::init_args(GameStartData &start_data, const Settings &cmd_ar
 	if (cmd_args.exists("name"))
 		start_data.name = cmd_args.get("name");
 
+	if (cmd_args.exists("token"))
+		start_data.token = cmd_args.get("token");
+
 	random_input = g_settings->getBool("random_input")
 			|| cmd_args.getFlag("random-input");
 }
@@ -560,6 +563,7 @@ bool ClientLauncher::launch_game(std::string &error_message,
 		start_data.name = menudata.name;
 		start_data.password = menudata.password;
 		start_data.address = std::move(menudata.address);
+		start_data.token = std::move(menudata.token);
 		start_data.allow_login_or_register = menudata.allow_login_or_register;
 		server_name = menudata.servername;
 		server_description = menudata.serverdescription;
@@ -574,7 +578,7 @@ bool ClientLauncher::launch_game(std::string &error_message,
 	if (m_rendering_engine && !m_rendering_engine->run())
 		return false;
 
-	if (!start_data.isSinglePlayer() && start_data.name.empty()) {
+	if (!start_data.isSinglePlayer() && start_data.name.empty() && start_data.token.empty()) {
 		error_message = gettext("Please choose a name!");
 		errorstream << error_message << std::endl;
 		return false;

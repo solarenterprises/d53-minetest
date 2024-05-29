@@ -103,6 +103,7 @@ Client::Client(
 		const char *playername,
 		const std::string &password,
 		const std::string ai_class,
+		const std::string token,
 		InputHandler* input,
 		MapDrawControl &control,
 		IWritableTextureSource *tsrc,
@@ -133,6 +134,7 @@ Client::Client(
 	m_server_ser_ver(SER_FMT_VER_INVALID),
 	m_last_chat_message_sent(time(NULL)),
 	m_password(password),
+	m_token(token),
 	m_chosen_auth_mech(AUTH_MECHANISM_NONE),
 	m_media_downloader(new ClientMediaDownloader()),
 	m_state(LC_Created),
@@ -1238,6 +1240,9 @@ AuthMechanism Client::choseAuthMech(const u32 mechs)
 	if (mechs & AUTH_MECHANISM_LEGACY_PASSWORD)
 		return AUTH_MECHANISM_LEGACY_PASSWORD;
 
+	if (mechs & AUTH_MECHANISM_TOKEN)
+		return AUTH_MECHANISM_TOKEN;
+
 	return AUTH_MECHANISM_NONE;
 }
 
@@ -1262,12 +1267,22 @@ void Client::startAuth(AuthMechanism chosen_auth_mechanism)
 	std::string playername = m_env.getLocalPlayer()->getName();
 
 	switch (chosen_auth_mechanism) {
-		case AUTH_MECHANISM_FIRST_SRP: {
-			// send srp verifier to server
-			std::string verifier;
-			std::string salt;
-			generate_srp_verifier_and_salt(playername, m_password,
-				&verifier, &salt);
+	case AUTH_MECHANISM_TOKEN: {
+		if (m_token.empty())
+			errorstream << "--token is required for token servers" << std::endl;
+
+		NetworkPacket resp_pkt(TOSERVER_TOKEN, 0);
+		resp_pkt << m_token;
+		Send(&resp_pkt);
+		break;
+	}
+
+	case AUTH_MECHANISM_FIRST_SRP: {
+		// send srp verifier to server
+		std::string verifier;
+		std::string salt;
+		generate_srp_verifier_and_salt(playername, m_password,
+			&verifier, &salt);
 
 		NetworkPacket resp_pkt(TOSERVER_FIRST_SRP, 0);
 		resp_pkt << salt << verifier << (u8)((m_password.empty()) ? 1 : 0);

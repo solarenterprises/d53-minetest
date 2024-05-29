@@ -29,6 +29,9 @@ class Settings;
 class Database_MySQL : public Database
 {
 public:
+	typedef std::vector<std::pair<std::string, std::vector<std::string>>> Transaction;
+
+public:
 	Database_MySQL(const std::string &connect_string, const char *type);
 	~Database_MySQL();
 
@@ -38,13 +41,15 @@ public:
 
 	bool initialized() const;
 
+	bool execTransaction(const std::vector<std::string>& query);
 	// Simplified query execution function
-	void execQuery(const std::string& query);
+	bool execQuery(const std::string& query);
 	// Simplified function to execute a query that expects results (e.g., SELECT)
 	MYSQL_RES* execQueryWithResult(const std::string& query);
 
 	MYSQL_RES* execWithParamAndResult(const std::string& query, const std::vector<std::string>& params);
-	void execWithParam(const std::string& query, const std::vector<std::string>& params);
+	bool execWithParam(const std::string& query, const std::vector<std::string>& params);
+	bool execTransactionWithParam(const Transaction& query_and_params);
 	std::string buildQueryWithParam(const std::string& query, const std::vector<std::string>& params);
 
 
@@ -102,6 +107,9 @@ public:
 	bool loadPlayer(RemotePlayer *player, PlayerSAO *sao);
 	bool removePlayer(const std::string &name);
 	void listPlayers(std::vector<std::string> &res);
+	bool set_player_metadata(const std::string& player_name, const std::unordered_map<std::string, std::string>& metadata);
+	bool get_player_metadata(const std::string& player_name, const std::string& attr, std::string& result);
+	bool rename_player(const std::string& old_name, const std::string& new_name);
 
 protected:
 	virtual void createDatabase();

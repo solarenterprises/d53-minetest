@@ -75,6 +75,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "gameparams.h"
 #include "particles.h"
 #include "gettext.h"
+#include "httpfetch.h"
 
 #include "database/database-mysql.h"
 
@@ -597,6 +598,30 @@ void Server::stop()
 	infostream<<"Server: Threads stopped"<<std::endl;
 }
 
+
+void Server::handle_http_requests() {
+	for (int i = 0; i < http_requests.size(); i++) {
+		auto& http_pair = http_requests[i];
+
+		HTTPFetchResult result;
+		if (!httpfetch_async_get(http_pair.first, result))
+			continue;
+
+		(*http_pair.second.get())(result);
+
+		httpfetch_caller_free(http_pair.first);
+
+		http_requests.erase(http_requests.begin() + i);
+		i--;
+	}
+}
+
+void Server::httpfetch(HTTPFetchRequest& request, std::unique_ptr<Http_Request_Callback> &callback) {
+	request.caller = httpfetch_caller_alloc();
+	http_requests.push_back({ request.caller, std::move(callback) });
+	httpfetch_async(request);
+}
+
 void Server::step()
 {
 	// Throw if fatal error occurred in thread
@@ -777,6 +802,8 @@ void Server::AsyncRunStep(float dtime, bool initial_step)
 		}
 		counter += dtime;
 	}
+
+	handle_http_requests();
 #endif
 
 	/*
@@ -2610,10 +2637,13 @@ bool Server::SendBlock(session_t peer_id, const v3s16 &blockpos)
 
 	ClientInterface::AutoLock clientlock(m_clients);
 	RemoteClient *client = m_clients.lockedGetClientNoEx(peer_id, CS_Active);
-	if (!client || client->isBlockSent(blockpos))
+	if (!client || client->isBlockSent(blockpos, block->getModifiedVersion()))
 		return false;
+
 	SendBlockNoLock(peer_id, block, client->serialization_version,
 			client->net_proto_version);
+
+	client->SentBlock(blockpos, block->getModifiedVersion());
 
 	return true;
 }
@@ -3046,7 +3076,7 @@ void Server::acceptAuth(session_t peer_id, bool forSudoMode)
 
 		resp_pkt << v3f(0,0,0) << (u64) m_env->getServerMap().getSeed()
 				<< g_settings->getFloat("dedicated_server_step")
-				<< client->allowed_auth_mechs;
+				<< client->allowed_auth_mechs << client->getName();
 
 		Send(&resp_pkt);
 		m_clients.event(peer_id, CSE_AuthAccept);

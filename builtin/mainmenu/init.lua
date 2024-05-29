@@ -40,7 +40,7 @@ dofile(menupath .. DIR_DELIM .. "common.lua")
 dofile(menupath .. DIR_DELIM .. "serverlistmgr.lua")
 dofile(menupath .. DIR_DELIM .. "game_theme.lua")
 dofile(menupath .. DIR_DELIM .. "content" .. DIR_DELIM .. "init.lua")
-dofile(menupath .. DIR_DELIM .. "addresslistmgr.lua")
+dofile(menupath .. DIR_DELIM .. "tokenmgr.lua")
 
 dofile(menupath .. DIR_DELIM .. "dlg_config_world.lua")
 dofile(menupath .. DIR_DELIM .. "settings" .. DIR_DELIM .. "init.lua")

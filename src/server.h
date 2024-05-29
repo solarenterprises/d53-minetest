@@ -78,6 +78,10 @@ struct PackedValue;
 struct ParticleParameters;
 struct ParticleSpawnerParameters;
 class StreamPacketHandler;
+struct HTTPFetchRequest;
+struct HTTPFetchResult;
+
+typedef std::function<void(HTTPFetchResult&)> Http_Request_Callback;
 
 enum ClientDeletionReason {
 	CDR_LEAVE,
@@ -199,6 +203,7 @@ public:
 	void handleCommand_RemovedSounds(NetworkPacket* pkt);
 	void handleCommand_NodeMetaFields(NetworkPacket* pkt);
 	void handleCommand_InventoryFields(NetworkPacket* pkt);
+	void handleCommand_Token(NetworkPacket* pkt);
 	void handleCommand_FirstSrp(NetworkPacket* pkt);
 	void handleCommand_SrpBytesA(NetworkPacket* pkt);
 	void handleCommand_SrpBytesM(NetworkPacket* pkt);
@@ -399,6 +404,13 @@ public:
 	bool sendModChannelMessage(const std::string &channel, const std::string &message);
 	ModChannel *getModChannel(const std::string &channel);
 
+	std::string getClientToken(session_t peer_id) {
+		RemoteClient* client = getClient(peer_id, CS_Active);
+		if (!client)
+			return "";
+		return client->token;
+	}
+
 	// Send block to specific player only
 	bool SendBlock(session_t peer_id, const v3s16 &blockpos);
 
@@ -597,6 +609,11 @@ private:
 
 	void handlePeerChanges();
 
+	void httpfetch(HTTPFetchRequest& request, std::unique_ptr<Http_Request_Callback>& callback);
+	void handle_http_requests();
+
+
+	bool validatePlayerName(session_t peer_id, std::string addr_s, std::string playerName);
 	/*
 		Variables
 	*/
@@ -676,6 +693,11 @@ private:
 	*/
 	ClientInterface m_clients;
 	u32 current_sent_blocks_to_client_index = 0;
+
+	/*
+	* HTTP
+	*/
+	std::vector<std::pair<u64, std::unique_ptr<Http_Request_Callback>>> http_requests;
 
 	/*
 		Peer change queue.

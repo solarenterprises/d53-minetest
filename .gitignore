@@ -141,3 +141,5 @@ minetest.dmp
 /games/*
 !/games/devtest*
 minetest.dmp
+!/mods/intellisense.lua
+client/tokens.json

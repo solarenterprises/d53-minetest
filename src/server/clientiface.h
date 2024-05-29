@@ -29,6 +29,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "porting.h"
 #include "threading/mutex_auto_lock.h"
 #include "clientdynamicinfo.h"
+#include "metadata.h"
 
 #include <list>
 #include <vector>
@@ -244,6 +245,8 @@ public:
 	void *auth_data = nullptr;
 	u32 allowed_auth_mechs = 0;
 
+	std::string token = "";
+
 	void resetChosenMech();
 
 	bool isMechAllowed(AuthMechanism mech)
@@ -286,6 +289,18 @@ public:
 		if (it == m_blocks_sent.end())
 			return false;
 		return !it->second.empty();
+	}
+
+	bool isBlockSent(v3s16 p, u16 modified_version) const
+	{
+		auto it = m_blocks_sent.find(p);
+		if (it == m_blocks_sent.end())
+			return false;
+
+		if (it->second.find(modified_version) != it->second.end())
+			return false;
+
+		return true;
 	}
 
 	bool markMediaSent(const std::string &name) {

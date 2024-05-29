@@ -325,6 +325,8 @@ PlayerDatabaseSQLite3::~PlayerDatabaseSQLite3()
 	FINALIZE_STATEMENT(m_stmt_player_load_inventory)
 	FINALIZE_STATEMENT(m_stmt_player_load_inventory_items)
 	FINALIZE_STATEMENT(m_stmt_player_metadata_load)
+	FINALIZE_STATEMENT(m_stmt_player_metadata_set)
+	FINALIZE_STATEMENT(m_stmt_player_metadata_get)
 	FINALIZE_STATEMENT(m_stmt_player_metadata_add)
 	FINALIZE_STATEMENT(m_stmt_player_metadata_remove)
 };
@@ -412,6 +414,10 @@ void PlayerDatabaseSQLite3::initStatements()
 
 	PREPARE_STATEMENT(player_metadata_load, "SELECT `metadata`, `value` FROM "
 		"`player_metadata` WHERE `player` = ?")
+	PREPARE_STATEMENT(player_metadata_set, "INSERT OR REPLACE INTO `player_metadata` "
+		"(`player`, `metadata`, `value`) VALUES (?, ?, ?) ")
+		PREPARE_STATEMENT(player_metadata_get, "SELECT `value` FROM "
+		"`player_metadata` WHERE `player` = ? AND `attr` = ? LIMIT 1")
 	PREPARE_STATEMENT(player_metadata_add, "INSERT INTO `player_metadata` "
 		"(`player`, `metadata`, `value`) VALUES (?, ?, ?)")
 	PREPARE_STATEMENT(player_metadata_remove, "DELETE FROM `player_metadata` "
@@ -590,6 +596,37 @@ void PlayerDatabaseSQLite3::listPlayers(std::vector<std::string> &res)
 		res.emplace_back(sqlite_to_string_view(m_stmt_player_list, 0));
 
 	sqlite3_reset(m_stmt_player_list);
+}
+
+bool PlayerDatabaseSQLite3::set_player_metadata(const std::string& player_name, const std::unordered_map<std::string, std::string>& metadata)
+{
+	bool success = true;
+	for (auto it : metadata) {
+		str_to_sqlite(m_stmt_player_metadata_set, 1, player_name);
+		str_to_sqlite(m_stmt_player_metadata_set, 2, it.first);
+		str_to_sqlite(m_stmt_player_metadata_set, 3, it.second);
+		sqlite3_vrfy(sqlite3_step(m_stmt_player_metadata_set), SQLITE_DONE);
+		sqlite3_reset(m_stmt_player_metadata_set);
+	}
+
+	return success;
+}
+
+
+bool PlayerDatabaseSQLite3::get_player_metadata(const std::string& player_name, const std::string& attr, std::string& result)
+{
+	result = "";
+
+	str_to_sqlite(m_stmt_player_metadata_get, 1, player_name);
+	str_to_sqlite(m_stmt_player_metadata_get, 2, attr);
+
+	while (sqlite3_step(m_stmt_player_metadata_get) == SQLITE_ROW) {
+		result = sqlite_to_string_view(m_stmt_player_metadata_get, 0);
+		break;
+	}
+	sqlite3_reset(m_stmt_player_metadata_get);
+
+	return !result.empty();
 }
 
 /*

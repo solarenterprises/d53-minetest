@@ -68,6 +68,21 @@ bool Database_Dummy::loadPlayer(RemotePlayer *player, PlayerSAO *sao)
 	return m_player_database.find(player->getName()) != m_player_database.end();
 }
 
+bool Database_Dummy::set_player_metadata(const std::string& player_name, const std::unordered_map<std::string, std::string>& metadata) {
+	for (auto it : metadata)
+		m_player_metadata[{player_name, it.first}] = it.second;
+	return true;
+}
+
+bool Database_Dummy::get_player_metadata(const std::string& player_name, const std::string& attr, std::string& result)
+{
+	if (m_player_metadata.find({ player_name, attr }) == m_player_metadata.end())
+		return false;
+
+	result = m_player_metadata[{ player_name, attr }];
+	return true;
+}
+
 bool Database_Dummy::removePlayer(const std::string &name)
 {
 	m_player_database.erase(name);

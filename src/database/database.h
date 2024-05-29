@@ -25,6 +25,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "irr_v3d.h"
 #include "irrlichttypes.h"
 #include "util/string.h"
+#include "log.h"
 
 class Database
 {
@@ -61,6 +62,13 @@ public:
 	virtual bool loadPlayer(RemotePlayer *player, PlayerSAO *sao) = 0;
 	virtual bool removePlayer(const std::string &name) = 0;
 	virtual void listPlayers(std::vector<std::string> &res) = 0;
+	virtual bool set_player_metadata(const std::string& player_name, const std::unordered_map<std::string, std::string>& metadata) = 0;
+	virtual bool get_player_metadata(const std::string& player_name, const std::string& attr, std::string &result) = 0;
+
+	virtual bool rename_player(const std::string& old_name, const std::string& new_name) {
+		errorstream << "database doesn't support rename player" << std::endl;
+		return false;
+	}
 };
 
 struct AuthEntry

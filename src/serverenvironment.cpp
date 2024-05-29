@@ -648,6 +648,43 @@ void ServerEnvironment::saveLoadedPlayers(bool force)
 	}
 }
 
+void ServerEnvironment::set_player_metadata(const std::string& player_name, const std::unordered_map<std::string, std::string>& metadata) {
+	try {
+		std::string result;
+		m_player_database->set_player_metadata(player_name, metadata);
+	}
+	catch (DatabaseException& e) {
+		errorstream << "Failed to set player metadata " << player_name.c_str() << " exception: "
+			<< e.what() << std::endl;
+		throw;
+	}
+}
+
+std::string ServerEnvironment::get_player_metadata(const std::string& player_name, const std::string& key) {
+	try {
+		std::string result;
+		m_player_database->get_player_metadata(player_name, key, result);
+		return result;
+	}
+	catch (DatabaseException& e) {
+		errorstream << "Failed to get player metadata " << player_name.c_str() << ":" << key.c_str() << " exception: "
+			<< e.what() << std::endl;
+		throw;
+	}
+}
+
+void ServerEnvironment::rename_player(const std::string& old_name, const std::string& new_name) {
+	try {
+		m_player_database->rename_player(old_name, new_name);
+		return;
+	}
+	catch (DatabaseException& e) {
+		errorstream << "Failed to rename player " << old_name.c_str() << "->" << new_name.c_str() << " exception: "
+			<< e.what() << std::endl;
+		throw;
+	}
+}
+
 void ServerEnvironment::savePlayer(RemotePlayer *player)
 {
 	try {
@@ -683,6 +720,7 @@ PlayerSAO *ServerEnvironment::loadPlayer(RemotePlayer *player, bool *new_player,
 			playersao->setBasePosition(m_server->findSpawnPos());
 		}
 	}
+
 
 	// Add player to environment
 	addPlayer(player);
