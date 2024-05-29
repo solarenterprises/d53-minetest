@@ -29,6 +29,9 @@ class Settings;
 class Database_MySQL : public Database
 {
 public:
+	typedef std::vector<std::pair<std::string, std::vector<std::string>>> Transaction;
+
+public:
 	Database_MySQL(const std::string &connect_string, const char *type);
 	~Database_MySQL();
 
@@ -46,7 +49,7 @@ public:
 
 	MYSQL_RES* execWithParamAndResult(const std::string& query, const std::vector<std::string>& params);
 	bool execWithParam(const std::string& query, const std::vector<std::string>& params);
-	bool execTransactionWithParam(const std::vector<std::pair<std::string, std::vector<std::string>>> &query_and_params);
+	bool execTransactionWithParam(const Transaction& query_and_params);
 	std::string buildQueryWithParam(const std::string& query, const std::vector<std::string>& params);
 
 

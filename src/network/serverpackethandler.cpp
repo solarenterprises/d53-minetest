@@ -686,7 +686,10 @@ void Server::handleCommand_InventoryAction(NetworkPacket* pkt)
 		ma->from_inv.applyCurrentPlayer(player->getName());
 		ma->to_inv.applyCurrentPlayer(player->getName());
 
-		if (ma->to_list == "main" && ma->to_i < playersao->getPlayer()->getHotbarItemcount()) {
+		if (ma->from_inv.type != InventoryLocation::Type::DETACHED &&
+			ma->to_inv.type == InventoryLocation::Type::PLAYER &&
+			ma->to_list == "main" &&
+			ma->to_i < playersao->getPlayer()->getHotbarItemcount()) {
 			const InventoryList* mlist = playersao->getPlayer()->inventory.getList(ma->from_list);
 			const ItemStack& item_stack = mlist->getItem(ma->from_i);
 			if (!m_script->item_OnEquip(item_stack, playersao)) {

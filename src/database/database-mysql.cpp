@@ -164,7 +164,7 @@ bool Database_MySQL::execWithParam(const std::string& query, const std::vector<s
 	return execQuery(buildQueryWithParam(query, params));
 }
 
-bool Database_MySQL::execTransactionWithParam(const std::vector<std::pair<std::string, std::vector<std::string>>>& query_and_params) {
+bool Database_MySQL::execTransactionWithParam(const Database_MySQL::Transaction& query_and_params) {
 	std::vector<std::string> quries;
 	quries.reserve(query_and_params.size());
 	for (auto it : query_and_params) {
@@ -735,12 +735,20 @@ void PlayerDatabaseMySQL::listPlayers(std::vector<std::string> &res)
 
 bool PlayerDatabaseMySQL::set_player_metadata(const std::string& player_name, const std::unordered_map<std::string, std::string>& metadata)
 {
-	bool success = true;
+	Transaction transaction;
+	transaction.push_back({ { "SET FOREIGN_KEY_CHECKS = 0" }, {} });
+
 	for (auto it : metadata) {
-		if (!execWithParam("INSERT INTO player_metadata (player, attr, value) VALUES($1, $2, $3) ON DUPLICATE KEY UPDATE value = VALUES(value)", { player_name, it.first, it.second }))
-			success = false;
+		transaction.push_back(
+			{
+				"INSERT INTO player_metadata (player, attr, value) VALUES($1, $2, $3) ON DUPLICATE KEY UPDATE value = VALUES(value)",
+				{ player_name, it.first, it.second }
+			});
 	}
-	return success;
+
+	transaction.push_back({ { "SET FOREIGN_KEY_CHECKS = 1" }, {} });
+
+	return execTransactionWithParam(transaction);
 }
 
 bool PlayerDatabaseMySQL::get_player_metadata(const std::string& player_name, const std::string& attr, std::string& result)
@@ -763,30 +771,26 @@ bool PlayerDatabaseMySQL::get_player_metadata(const std::string& player_name, co
 
 bool PlayerDatabaseMySQL::rename_player(const std::string& old_name, const std::string& new_name)
 {
+	if (old_name == new_name)
+		return false;
+
 	// Check if old_name exists
-	MYSQL_RES* results = execWithParamAndResult("SELECT COUNT(*) FROM player WHERE name = $1 OR name = $2 LIMIT 1", { old_name, new_name });
+	MYSQL_RES* results = execWithParamAndResult("SELECT name FROM player WHERE name = $1 OR name = $2 LIMIT 2", { old_name, new_name });
 	if (!results) {
 		return false;
 	}
 
-	MYSQL_ROW row = mysql_fetch_row(results);
-	if (row && mystoi(row[0]) == 0) {
-		mysql_free_result(results);
-		return false; // old_name does not exist
+	std::unordered_set<std::string> names;
+	MYSQL_ROW row;
+	while (row = mysql_fetch_row(results)) {
+		names.insert(row[0]);
 	}
 	mysql_free_result(results);
 
-	// Update player_inventories & player_inventory_items
-	if (!execTransactionWithParam(
-		{
-			{ {"SET FOREIGN_KEY_CHECKS = 0" }, {} },
-			{ {"UPDATE player_inventories SET player = $1 WHERE player = $2 " }, { new_name, old_name  } },
-			{ {"UPDATE player_inventory_items SET player = $1 WHERE player = $2 " }, { new_name, old_name } },
-			{ {"SET FOREIGN_KEY_CHECKS = 1" }, {} }
-		}
-		)) {
+	if (names.find(old_name) == names.end())
 		return false;
-	}
+	if (names.find(new_name) != names.end())
+		return false;
 
 	// Update player_metadata
 	std::string checkMetadataQuery = "SELECT attr FROM player_metadata WHERE player = $1";
@@ -813,23 +817,34 @@ bool PlayerDatabaseMySQL::rename_player(const std::string& old_name, const std::
 	}
 
 	results = execWithParamAndResult("SELECT * FROM player WHERE name = $1 LIMIT 1", { old_name });
+	std::pair<std::string, std::vector<std::string>> insert_player_query;
 	if (results) {
 		while ((row = mysql_fetch_row(results))) {
-			execWithParam(
+			insert_player_query =
+			{
 				"INSERT INTO player (name, pitch, yaw, posX, posY, posZ, hp, breath, creation_date, modification_date) "
 				"VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)",
 				{ new_name, row[1], row[2], row[3], row[4], row[5], row[6], row[7], row[8], row[9] }
-			);
+			};
 		}
 		mysql_free_result(results);
 	}
 
-	if (!execWithParam(updateMetadataQuery, { new_name, old_name  } )) {
-		return false;
-	}
+	Transaction transaction = 
+	{
+			{ { "SET FOREIGN_KEY_CHECKS = 0" }, {} },
+			insert_player_query,
+			//Update player_inventories& player_inventory_items
+			{ { "UPDATE player_inventories SET player = $1 WHERE player = $2 " }, { new_name, old_name  } },
+			{ { "UPDATE player_inventory_items SET player = $1 WHERE player = $2 " }, { new_name, old_name } },
+			{ { updateMetadataQuery }, { new_name, old_name } },
+			// Delete old_name from player_metadata
+			{ { "DELETE FROM player_metadata WHERE player = $1" }, { old_name } },
+			{ { "SET FOREIGN_KEY_CHECKS = 1" }, {} }
+	};
 
-	// Delete old_name from player_metadata
-	if (!execWithParam("DELETE FROM player_metadata WHERE player = $1", { old_name })) {
+	// Do transaction
+	if (!execTransactionWithParam(transaction)) {
 		return false;
 	}
 
