@@ -363,7 +363,8 @@ void Server::handleCommand_Init2(NetworkPacket* pkt)
 	// Send time of day
 	u16 time = m_env->getTimeOfDay();
 	float time_speed = g_settings->getFloat("time_speed");
-	SendTimeOfDay(peer_id, time, time_speed);
+	bool use_realtime = g_settings->getFloat("world_use_realtime");
+	SendTimeOfDay(peer_id, time, time_speed, use_realtime, m_env->getTimeOfDayOffset());
 
 	SendCSMRestrictionFlags(peer_id);
 

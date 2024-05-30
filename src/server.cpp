@@ -660,6 +660,7 @@ void Server::AsyncRunStep(float dtime, bool initial_step)
 		Update time of day and overall game time
 	*/
 	m_env->setTimeOfDaySpeed(g_settings->getFloat("time_speed"));
+	m_env->setUseRealtime(g_settings->getBool("world_use_realtime"));
 
 	/*
 		Send to clients at constant intervals
@@ -669,8 +670,12 @@ void Server::AsyncRunStep(float dtime, bool initial_step)
 	if (m_time_of_day_send_timer < 0.0) {
 		m_time_of_day_send_timer = g_settings->getFloat("time_send_interval");
 		u16 time = m_env->getTimeOfDay();
-		float time_speed = g_settings->getFloat("time_speed");
-		SendTimeOfDay(PEER_ID_INEXISTENT, time, time_speed);
+		bool use_realtime = m_env->getUseRealtime();
+
+		if (!use_realtime) {
+			float time_speed = g_settings->getFloat("time_speed");
+			SendTimeOfDay(PEER_ID_INEXISTENT, time, time_speed, use_realtime, 0);
+		}
 
 		m_timeofday_gauge->set(time);
 	}
@@ -1309,6 +1314,23 @@ void Server::ProcessData(NetworkPacket *pkt)
 
 void Server::setTimeOfDay(u32 time)
 {
+	if (m_env->getUseRealtime()) {
+		auto now = std::chrono::system_clock::now();
+		auto duration = std::chrono::duration_cast<std::chrono::minutes>(now.time_since_epoch());
+		auto total_minutes = duration.count();
+		auto time_to_minutes = std::ceil((time / 24000.0) * 1440);  // 1440 = 24 * 60 (minutes in a day)
+
+		int offset = (static_cast<int>(time_to_minutes) - (total_minutes % 1440)) * 60;
+		m_env->setTimeOfDayOffset(offset);
+		m_env->stepTimeOfDay(0);
+
+		float time_speed = g_settings->getFloat("time_speed");
+		SendTimeOfDay(PEER_ID_INEXISTENT, m_env->getTimeOfDay(), time_speed, true, m_env->getTimeOfDayOffset());
+
+		g_settings->setS32("world_time_of_day_offset", offset);
+		return;
+	}
+
 	m_env->setTimeOfDay(time);
 	m_time_of_day_send_timer = 0;
 }
@@ -1972,10 +1994,10 @@ void Server::SendSetLighting(session_t peer_id, const Lighting &lighting)
 	Send(&pkt);
 }
 
-void Server::SendTimeOfDay(session_t peer_id, u16 time, f32 time_speed)
+void Server::SendTimeOfDay(session_t peer_id, u16 time, f32 time_speed, bool use_realtime, int time_offset)
 {
 	NetworkPacket pkt(TOCLIENT_TIME_OF_DAY, 0, peer_id);
-	pkt << time << time_speed;
+	pkt << time << time_speed << use_realtime << time_offset;
 
 	if (peer_id == PEER_ID_INEXISTENT) {
 		m_clients.sendToAll(&pkt);

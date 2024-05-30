@@ -70,9 +70,14 @@ public:
 	u32 getTimeOfDay();
 	float getTimeOfDayF();
 
+	inline int getTimeOfDayOffset() { return m_time_of_day_offset; }
+	void setTimeOfDayOffset(int offset);
+
 	void stepTimeOfDay(float dtime);
 
 	void setTimeOfDaySpeed(float speed);
+	inline bool getUseRealtime() { return m_use_realtime; }
+	void setUseRealtime(bool flag);
 
 	void setDayNightRatioOverride(bool enable, u32 value);
 
@@ -116,12 +121,15 @@ public:
 
 protected:
 	std::atomic<float> m_time_of_day_speed;
+	std::atomic<bool> m_use_realtime;
 
 	/*
 	 * Below: values managed by m_time_lock
 	 */
 	// Time of day in milli-hours (0-23999), determines day and night
 	u32 m_time_of_day;
+	// If realtime is used this will offset amount of seconds
+	int m_time_of_day_offset = 0;
 	// Time of day in 0...1
 	float m_time_of_day_f;
 	// Stores the skew created by the float -> u32 conversion

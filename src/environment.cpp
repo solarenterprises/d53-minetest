@@ -40,6 +40,7 @@ Environment::Environment(IGameDef *gamedef):
 
 	m_time_of_day = g_settings->getU32("world_start_time");
 	m_time_of_day_f = (float)m_time_of_day / 24000.0f;
+	m_time_of_day_offset = g_settings->getS32("world_time_of_day_offset");
 }
 
 u32 Environment::getDayNightRatio()
@@ -55,11 +56,21 @@ void Environment::setTimeOfDaySpeed(float speed)
 	m_time_of_day_speed = speed;
 }
 
+void Environment::setUseRealtime(bool flag)
+{
+	m_use_realtime = flag;
+}
+
 void Environment::setDayNightRatioOverride(bool enable, u32 value)
 {
 	MutexAutoLock lock(m_time_lock);
 	m_enable_day_night_ratio_override = enable;
 	m_day_night_ratio_override = value;
+}
+
+void Environment::setTimeOfDayOffset(int offset)
+{
+	m_time_of_day_offset = offset;
 }
 
 void Environment::setTimeOfDay(u32 time)
@@ -306,6 +317,20 @@ void Environment::continueRaycast(RaycastState *state, PointedThing *result_p)
 void Environment::stepTimeOfDay(float dtime)
 {
 	MutexAutoLock lock(this->m_time_lock);
+
+	if (m_use_realtime) {
+		auto now = std::chrono::system_clock::now();
+		auto duration = std::chrono::duration_cast<std::chrono::seconds>(now.time_since_epoch());
+		auto total_seconds = duration.count() + m_time_of_day_offset;
+		int days_since_epoch = total_seconds / 86400;
+		int seconds_within_day = total_seconds % 86400;
+		double time_in_24000 = (seconds_within_day / 86400.0) * 24000.0;
+
+		m_time_of_day = time_in_24000;
+		m_time_of_day_f = (float)m_time_of_day / 24000.0;
+		m_day_count = days_since_epoch;
+		return;
+	}
 
 	// Cached in order to prevent the two reads we do to give
 	// different results (can be written by code not under the lock)

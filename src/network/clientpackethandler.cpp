@@ -393,9 +393,13 @@ void Client::handleCommand_TimeOfDay(NetworkPacket* pkt)
 
 	time_of_day      = time_of_day % 24000;
 	float time_speed = 0;
+	bool use_realtime = false;
+	u32 time_offset = 0;
 
-	if (pkt->getSize() >= 2 + 4) {
+	if (pkt->getSize() >= 2 + 4 + 1 + 4) {
 		*pkt >> time_speed;
+		*pkt >> use_realtime;
+		*pkt >> time_offset;
 	}
 	else {
 		// Old message; try to approximate speed of time by ourselves
@@ -422,6 +426,8 @@ void Client::handleCommand_TimeOfDay(NetworkPacket* pkt)
 	// Update environment
 	m_env.setTimeOfDay(time_of_day);
 	m_env.setTimeOfDaySpeed(time_speed);
+	m_env.setUseRealtime(use_realtime);
+	m_env.setTimeOfDayOffset(time_offset);
 	m_time_of_day_set = true;
 
 	//u32 dr = m_env.getDayNightRatio();

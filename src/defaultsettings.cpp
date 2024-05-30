@@ -420,6 +420,8 @@ void set_default_settings()
 	settings->setDefault("max_clearobjects_extra_loaded_blocks", "4096");
 	settings->setDefault("time_speed", "72");
 	settings->setDefault("world_start_time", "6125");
+	settings->setDefault("world_use_realtime", "false");
+	settings->setDefault("world_time_of_day_offset", "0");
 	settings->setDefault("server_unload_unused_data_timeout", "29");
 	settings->setDefault("max_objects_per_block", "256");
 	settings->setDefault("server_map_save_interval", "5.3");
