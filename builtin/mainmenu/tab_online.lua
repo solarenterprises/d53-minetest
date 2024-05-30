@@ -76,6 +76,13 @@ local function get_formspec(tabview, name, tabdata)
         end
     end
 
+    local selected_token_index = 1
+    for i, t in ipairs(tokens) do
+        if t.token == gamedata.token then
+            selected_token_index = i
+            break
+        end
+    end
 
     local retval =
     -- Search
@@ -84,7 +91,7 @@ local function get_formspec(tabview, name, tabdata)
         "label[0.25,0.35;" .. fgettext("Select Token") .. "]" ..
         -- "label[7.25,0.35;" .. fgettext("Password") .. "]" ..
 
-        "dropdown[0.25,0.5;7,0.75;te_token;" .. token_labels .. ";1]"
+        "dropdown[0.25,0.5;7,0.75;te_token;" .. token_labels .. ";"..selected_token_index.."]"
 
         -- "pwdfield[7.25,0.5;2.5,0.75;te_pwd;]"
     --"field[0.25,0.25;7,0.75;te_search;;" .. core.formspec_escape(core.settings:get("sxpaddress")) .. "]" ..
@@ -310,18 +317,25 @@ end
 
 local function main_button_handler(tabview, fields, name, tabdata)
     if fields.te_token then
-        local selected_token = tokenmgr.get_token_by_name(fields.te_token)
-        if selected_token and selected_token.token ~= gamedata.token then
+        local selected_name = fields.te_token
+        local selected_token = tokenmgr.get_token_by_name(selected_name)
+
+        if selected_token then
             tabdata.token_info = minetest.write_json(selected_token)
             gamedata.token = selected_token.token
+            gamedata.playername = selected_name
+            core.settings:set("name", selected_name)
+        end
+
+        if selected_token and selected_token.name ~= selected_name then
             return true
         end
     end
 
-    if fields.te_name then
-        gamedata.playername = fields.te_name
-        core.settings:set("name", fields.te_name)
-    end
+    -- if fields.te_name then
+    --     gamedata.playername = fields.te_name
+    --     core.settings:set("name", fields.te_name)
+    -- end
 
     if fields.servers then
         local event = core.explode_table_event(fields.servers)
@@ -416,9 +430,10 @@ local function main_button_handler(tabview, fields, name, tabdata)
             local token = tokenmgr.get_token_by_name(fields.te_token)
             if token then
                 tokenmgr.delete_token(token)
-            end
-            return true
+            end     
         end
+
+        return true
     end
 
     if fields.btn_mp_search or fields.key_enter_field == "te_search" then

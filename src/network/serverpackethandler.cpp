@@ -1542,6 +1542,8 @@ void Server::handleCommand_Token(NetworkPacket* pkt)
 	std::string token;
 	(*pkt) >> token;
 
+	token = trim(token);
+
 	session_t peer_id = pkt->getPeerId();
 	RemoteClient* client = getClient(peer_id, CS_Invalid);
 	ClientState cstate = client->getState();

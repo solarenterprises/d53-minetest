@@ -446,6 +446,8 @@ end
 
 local function on_change(type)
 	if type == "ENTER" then
+        current_name = core.settings:get("name")
+
 		local game = current_game()
 		if game then
 			apply_game(game)

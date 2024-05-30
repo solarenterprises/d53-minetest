@@ -63,6 +63,15 @@ function tokenmgr.get_token_by_name(name)
 end
 --------------------------------------------------------------------------------
 function tokenmgr.add_token(new_token)
+    --
+    -- trim token
+    local token = new_token.token
+
+    token = token:gsub("%s+", "")
+    token = string.gsub(token, "%s+", "")
+
+    new_token.token = token
+
     tokenmgr.tokens[new_token.name] = new_token
 	save_tokens()
 end
