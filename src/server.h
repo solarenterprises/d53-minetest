@@ -501,7 +501,7 @@ private:
 
 
 	virtual void SendChatMessage(session_t peer_id, const ChatMessage &message);
-	void SendTimeOfDay(session_t peer_id, u16 time, f32 time_speed);
+	void SendTimeOfDay(session_t peer_id, u16 time, f32 time_speed, bool use_realtime, int time_offset);
 
 	void SendLocalPlayerAnimations(session_t peer_id, v2s32 animation_frames[4],
 		f32 animation_speed);
@@ -720,6 +720,8 @@ private:
 	// If a mod error occurs while shutting down, the error message will be
 	// written into this.
 	std::string *const m_shutdown_errmsg;
+
+	std::vector<session_t> needs_to_replicate_time_of_day;
 
 	/*
 		Map edit event queue. Automatically receives all map edits.
