@@ -418,6 +418,8 @@ static void set_allowed_options(OptionList *allowed_options)
 		_("if server uses token login, this is required."))));
 	allowed_options->insert(std::make_pair("launcher_url", ValueSpec(VALUETYPE_STRING,
 		_("it's the url to the launcher. Usually localhost."))));
+	allowed_options->insert(std::make_pair("language", ValueSpec(VALUETYPE_STRING,
+		_("set game language"))));
 #endif
 
 }
@@ -731,6 +733,9 @@ static bool init_common(const Settings &cmd_args, int argc, char *argv[])
 
 	// Initialize HTTP fetcher
 	httpfetch_init(g_settings->getS32("curl_parallel_limit"));
+
+	if (cmd_args.exists("language"))
+		g_settings->set("language", cmd_args.get("language"));
 
 	init_gettext(porting::path_locale.c_str(),
 		g_settings->get("language"), argc, argv);
