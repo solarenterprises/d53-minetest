@@ -374,4 +374,6 @@ private:
 	std::unordered_set<MapBlock*> render_uncached[2];
 	int last_frameno = -1;
 	std::chrono::steady_clock::time_point last_time_build_buffers = std::chrono::steady_clock::now();
+	// this limits on how fast the GPU can load data. This goes down every frame based on FPS
+	u64 gl_ops_processed_gauge = 0;
 };

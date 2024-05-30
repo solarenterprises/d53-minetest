@@ -973,20 +973,27 @@ void ClientMap::updateCacheBuffers(video::IVideoDriver* driver) {
 	auto time_since_last_time = std::chrono::duration<double>(now - last_time_build_buffers).count() - sleep_time_sec;
 	last_time_build_buffers = now;
 
-	const u64 max_gl_ops = std::max(
-		(u64)1,
-		u64((1.0 - std::clamp(
-			time_since_last_time,
-			0.0,
-			1.0
-		)) * 5000));
+	//
+	// throttle the amount on GPU ops to limit lag
+	if (gl_ops_processed_gauge > 0) {
+		u64 reduce = std::max(
+			(u64)1,
+			u64((1.0 - std::clamp(
+				time_since_last_time,
+				0.0,
+				1.0
+			)) * 1000));
+
+		gl_ops_processed_gauge -= std::min(gl_ops_processed_gauge, reduce);
+	}
+
+	const u64 max_gl_ops = 10000;
 
 	const u64 gl_ops_points_div = 100;
 
-	u64 gl_ops_processed = 0;
 	u64 num_load_data_processed = 0;
 	for (auto it : buffers.loadData) {
-		if (gl_ops_processed >= max_gl_ops) {
+		if (gl_ops_processed_gauge >= max_gl_ops) {
 			canDropTextures = false;
 			break;
 		}
@@ -1028,7 +1035,7 @@ void ClientMap::updateCacheBuffers(video::IVideoDriver* driver) {
 
 				buffer->vertexCount = setVertexCount;
 
-				gl_ops_processed += (setVertexCount / gl_ops_points_div) * 2;
+				gl_ops_processed_gauge += (setVertexCount / gl_ops_points_div) * 2;
 			}
 
 			size_t setIndexCount = data->indexCount;
@@ -1042,7 +1049,7 @@ void ClientMap::updateCacheBuffers(video::IVideoDriver* driver) {
 
 				buffer->indexCount = setIndexCount;
 
-				gl_ops_processed += (setIndexCount / gl_ops_points_div) * 2;
+				gl_ops_processed_gauge += (setIndexCount / gl_ops_points_div) * 2;
 			}
 
 			//
@@ -1071,7 +1078,7 @@ void ClientMap::updateCacheBuffers(video::IVideoDriver* driver) {
 					subData->size / sizeof(video::S3DVertex),
 					subData->offset / sizeof(video::S3DVertex));
 
-				gl_ops_processed += subData->size / gl_ops_points_div;
+				gl_ops_processed_gauge += subData->size / gl_ops_points_div;
 
 				delete subData;
 			}
@@ -1096,7 +1103,7 @@ void ClientMap::updateCacheBuffers(video::IVideoDriver* driver) {
 					subData->size / sizeof(u32),
 					subData->offset / sizeof(u32));
 
-				gl_ops_processed += subData->size / gl_ops_points_div;
+				gl_ops_processed_gauge += subData->size / gl_ops_points_div;
 
 				buffer->drawPrimitiveCount = loadData.drawPrimitiveCount;
 

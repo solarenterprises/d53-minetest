@@ -296,6 +296,7 @@ if(RUN_IN_PLACE)
 	install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/mods/mods_here.txt" DESTINATION "${SHAREDIR}/mods")
 	install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/textures/texture_packs_here.txt" DESTINATION "${SHAREDIR}/textures")
 endif()
+install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/mods/intellisense.lua" DESTINATION "${SHAREDIR}/mods")
 
 set(INSTALL_DEVTEST FALSE CACHE BOOL "Install Development Test")
 
