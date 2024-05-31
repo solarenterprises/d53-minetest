@@ -320,6 +320,9 @@ local function main_button_handler(tabview, fields, name, tabdata)
         local selected_name = fields.te_token
         local selected_token = tokenmgr.get_token_by_name(selected_name)
 
+        local needsRefresh = selected_token and selected_token.token ~= gamedata.token
+        needsRefresh = needsRefresh or not tabdata.token_info
+
         if selected_token then
             tabdata.token_info = minetest.write_json(selected_token)
             gamedata.token = selected_token.token
@@ -327,7 +330,7 @@ local function main_button_handler(tabview, fields, name, tabdata)
             core.settings:set("name", selected_name)
         end
 
-        if selected_token and selected_token.name ~= selected_name then
+        if needsRefresh then
             return true
         end
     end
