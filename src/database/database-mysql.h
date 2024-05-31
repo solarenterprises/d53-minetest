@@ -73,6 +73,7 @@ private:
 	void initConnection();
 	void closeConnection();
 	void handleMySQLError();
+	bool doQueries(const std::vector<std::string>& query);
 };
 
 class MapDatabaseMySQL : private Database_MySQL, public MapDatabase

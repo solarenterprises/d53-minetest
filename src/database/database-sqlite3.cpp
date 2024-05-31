@@ -506,17 +506,17 @@ void PlayerDatabaseSQLite3::savePlayer(RemotePlayer *player)
 		}
 	}
 
-	str_to_sqlite(m_stmt_player_metadata_remove, 1, player->getName());
+	/*str_to_sqlite(m_stmt_player_metadata_remove, 1, player->getName());
 	sqlite3_vrfy(sqlite3_step(m_stmt_player_metadata_remove), SQLITE_DONE);
-	sqlite3_reset(m_stmt_player_metadata_remove);
+	sqlite3_reset(m_stmt_player_metadata_remove);*/
 
 	const StringMap &attrs = sao->getMeta().getStrings();
 	for (const auto &attr : attrs) {
-		str_to_sqlite(m_stmt_player_metadata_add, 1, player->getName());
-		str_to_sqlite(m_stmt_player_metadata_add, 2, attr.first);
-		str_to_sqlite(m_stmt_player_metadata_add, 3, attr.second);
-		sqlite3_vrfy(sqlite3_step(m_stmt_player_metadata_add), SQLITE_DONE);
-		sqlite3_reset(m_stmt_player_metadata_add);
+		str_to_sqlite(m_stmt_player_metadata_set, 1, player->getName());
+		str_to_sqlite(m_stmt_player_metadata_set, 2, attr.first);
+		str_to_sqlite(m_stmt_player_metadata_set, 3, attr.second);
+		sqlite3_vrfy(sqlite3_step(m_stmt_player_metadata_set), SQLITE_DONE);
+		sqlite3_reset(m_stmt_player_metadata_set);
 	}
 
 	endSave();

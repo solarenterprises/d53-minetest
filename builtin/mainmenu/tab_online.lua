@@ -316,7 +316,7 @@ local function split(str, sep)
 end
 
 local function main_button_handler(tabview, fields, name, tabdata)
-    if fields.te_token then
+    if fields.te_token and tokenmgr.get_num_tokens() > 0 then
         local selected_name = fields.te_token
         local selected_token = tokenmgr.get_token_by_name(selected_name)
 

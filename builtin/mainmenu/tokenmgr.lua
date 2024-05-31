@@ -2,7 +2,7 @@ tokenmgr = {}
 
 --------------------------------------------------------------------------------
 local function get_tokens_path(folder)
-	return core.get_user_path() .. DIR_DELIM .. "client" .. DIR_DELIM .. "tokens.json"
+	return core.get_user_path() .. DIR_DELIM .. "cache" .. DIR_DELIM .. "tokens.json"
 end
 
 --------------------------------------------------------------------------------
@@ -50,6 +50,10 @@ function tokenmgr.get_tokens_as_array()
         res[#res + 1] = v
     end
     return res
+end
+
+function tokenmgr.get_num_tokens()
+    return #tokenmgr.get_tokens_as_array()
 end
 
 --------------------------------------------------------------------------------

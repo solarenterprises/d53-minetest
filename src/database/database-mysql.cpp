@@ -89,22 +89,33 @@ void Database_MySQL::handleMySQLError() {
 	throw std::runtime_error("MySQL Error: " + error_msg);
 }
 
+bool Database_MySQL::doQueries(const std::vector<std::string>& query) {
+	for (auto& q : query) {
+		if (!mysql_query(m_conn, q.c_str()))
+			continue;
+
+		errorstream << "Query:" << q.c_str() << std::endl;
+		handleMySQLError();
+		return false;
+	}
+
+	return true;
+}
+
 bool Database_MySQL::execTransaction(const std::vector<std::string>& query) {
 	if (mysql_autocommit(m_conn, 0)) {
 		handleMySQLError();
 		return false;
 	}
 
-	for (auto& q : query) {
-		if (mysql_query(m_conn, q.c_str())) {
-			mysql_rollback(m_conn);
-			errorstream << "Query:" << q.c_str() << std::endl;
-			handleMySQLError();
-			return false;
-		}
+	if (!doQueries(query)) {
+		mysql_rollback(m_conn);
+		mysql_autocommit(m_conn, 1);
+		return false;
 	}
 
 	if (mysql_commit(m_conn)) {
+		mysql_autocommit(m_conn, 1);
 		handleMySQLError();
 		return false;
 	}
@@ -626,7 +637,7 @@ void PlayerDatabaseMySQL::savePlayer(RemotePlayer *player)
 		}
 	}
 
-	execWithParam("DELETE FROM player_metadata WHERE player = $1", rmvalues);
+	//execWithParam("DELETE FROM player_metadata WHERE player = $1", rmvalues);
 	const StringMap &attrs = sao->getMeta().getStrings();
 	for (const auto &attr : attrs) {
 		std::vector<std::string> meta_values = {
@@ -634,7 +645,7 @@ void PlayerDatabaseMySQL::savePlayer(RemotePlayer *player)
 			attr.first.c_str(),
 			attr.second.c_str()
 		};
-		execWithParam("INSERT INTO player_metadata(player, attr, value) VALUES($1, $2, $3)", meta_values);
+		execWithParam("INSERT INTO player_metadata(player, attr, value) VALUES($1, $2, $3) ON DUPLICATE KEY UPDATE value = VALUES(value)", meta_values);
 	}
 	endSave();
 
