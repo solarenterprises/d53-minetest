@@ -18,6 +18,7 @@ LuaNetworkChannel::LuaNetworkChannel(std::string _channel_name) : channel_name(_
 int LuaNetworkChannel::gc_object(lua_State* L)
 {
 	LuaNetworkChannel* o = checkObject<LuaNetworkChannel>(L, 1);
+	delete o;
 	return 0;
 }
 
@@ -152,6 +153,7 @@ LuaNetworkPacket::LuaNetworkPacket(NetworkPacket* packet) {
 int LuaNetworkPacket::gc_object(lua_State* L)
 {
 	LuaNetworkPacket* o = checkObject<LuaNetworkPacket>(L, 1);
+	delete o;
 	return 0;
 }
 
@@ -399,6 +401,7 @@ LuaNetworkStreamPacket::LuaNetworkStreamPacket(NetworkStreamPacket* packet) {
 int LuaNetworkStreamPacket::gc_object(lua_State* L)
 {
 	LuaNetworkStreamPacket* o = checkObject<LuaNetworkStreamPacket>(L, 1);
+	delete o;
 	return 0;
 }
 

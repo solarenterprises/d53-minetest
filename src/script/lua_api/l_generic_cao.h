@@ -20,8 +20,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #pragma once
 
 #include "l_base.h"
-
-class GenericCAO;
+#include "client/content_cao.h"
 
 //
 // Lua class for Generic ClientActiveObject

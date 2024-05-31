@@ -177,7 +177,7 @@ public:
 
 	inline const ObjectProperties &getProperties() const { return m_prop; }
 
-	inline const int getHP() const { return m_hp; }
+	inline int getHP() const { return m_hp; }
 	inline const std::string &getName() const { return m_name; }
 
 	scene::ISceneNode *getSceneNode() const override;

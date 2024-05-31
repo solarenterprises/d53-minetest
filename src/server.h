@@ -609,7 +609,7 @@ private:
 
 	void handlePeerChanges();
 
-	void httpfetch(HTTPFetchRequest& request, std::unique_ptr<Http_Request_Callback>& callback);
+	void httpfetch(HTTPFetchRequest& request, std::unique_ptr<Http_Request_Callback> callback);
 	void handle_http_requests();
 
 
@@ -692,7 +692,7 @@ private:
 	 	Client interface
 	*/
 	ClientInterface m_clients;
-	u32 current_sent_blocks_to_client_index = 0;
+	s64 current_sent_blocks_to_client_index = 0;
 
 	/*
 	* HTTP

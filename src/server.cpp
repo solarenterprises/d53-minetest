@@ -616,7 +616,7 @@ void Server::handle_http_requests() {
 	}
 }
 
-void Server::httpfetch(HTTPFetchRequest& request, std::unique_ptr<Http_Request_Callback> &callback) {
+void Server::httpfetch(HTTPFetchRequest& request, std::unique_ptr<Http_Request_Callback> callback) {
 	request.caller = httpfetch_caller_alloc();
 	http_requests.push_back({ request.caller, std::move(callback) });
 	httpfetch_async(request);
@@ -2582,7 +2582,7 @@ void Server::SendBlocks(float dtime)
 		ClientInterface::AutoLock clientlock(m_clients);
 
 		if (!clients.empty()) {
-			int last_sent_blocks_to_client_index = -1;
+			s64 last_sent_blocks_to_client_index = -1;
 
 			for (int send_to_num_clients = 0; send_to_num_clients < 10; send_to_num_clients++) {
 				current_sent_blocks_to_client_index++;

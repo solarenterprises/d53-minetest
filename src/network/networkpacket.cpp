@@ -66,7 +66,7 @@ std::string NetworkPacket::substring(int length) {
 	m_data.erase(m_data.begin(), m_data.begin() + length);
 	m_read_offset -= length;
 	m_datasize = m_data.size();
-	return std::move(str);
+	return str;
 }
 
 const char* NetworkPacket::getString(u32 from_offset) const
