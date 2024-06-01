@@ -765,16 +765,21 @@ int ModApiServer::l_send(lua_State* L)
 {
 	NO_MAP_LOCK_REQUIRED;
 
+	if (!lua_isuserdata(L, 2))
+		throw "send arg(2) needs to be Networkacket";
+	LuaNetworkPacket* lua_packet = checkObject<LuaNetworkPacket>(L, 2);
+
+	if (lua_isnil(L, 1)) {
+		// Send the packet to the peer
+		getServer(L)->Send(PEER_ID_INEXISTENT, lua_packet->packet.get());
+		return 0;
+	}
+
 	if (!lua_istable(L, 1))
 		throw "send arg(1) needs to be peer array";
 
 	// Get the length of the table (number of elements)
 	int tableLength = lua_objlen(L, 1);
-
-	if (!lua_isuserdata(L, 2))
-		throw "send arg(2) needs to be Networkacket";
-	LuaNetworkPacket* lua_packet = checkObject<LuaNetworkPacket>(L, 2);
-
 	for (int i = 1; i <= tableLength; i++) {
 		lua_pushinteger(L, i); // Push index onto the stack
 		lua_gettable(L, 1); // Get the value at index i

@@ -1447,6 +1447,11 @@ void Server::Send(NetworkPacket *pkt)
 
 void Server::Send(session_t peer_id, NetworkPacket *pkt)
 {
+	if (peer_id == PEER_ID_INEXISTENT) {
+		m_clients.sendToAll(pkt);
+		return;
+	}
+
 	m_clients.send(peer_id, pkt);
 }
 

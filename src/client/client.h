@@ -592,6 +592,7 @@ private:
 	bool m_nodedef_received = false;
 	bool m_activeobjects_received = false;
 	bool m_mods_loaded = false;
+	bool m_load_mods_after_content_received = false;
 
 	std::vector<std::string> m_remote_media_servers;
 	// Media downloader, only exists during init

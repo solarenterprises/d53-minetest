@@ -1976,6 +1976,9 @@ void Client::afterContentReceived()
 	assert(m_nodedef_received); // pre-condition
 	assert(mediaReceived()); // pre-condition
 
+	if (m_load_mods_after_content_received)
+		loadMods();
+
 	if (!m_rendering_engine) {
 		m_state = LC_Ready;
 		sendReady();

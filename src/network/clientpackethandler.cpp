@@ -1649,6 +1649,11 @@ void Client::handleCommand_CSMRestrictionFlags(NetworkPacket *pkt)
 {
 	*pkt >> m_csm_restriction_flags >> m_csm_restriction_noderange;
 
+	if (!mediaReceived()) {
+		m_load_mods_after_content_received = true;
+		return;
+	}
+
 	// Restrictions were received -> load mods if it's enabled
 	// Note: this should be moved after mods receptions from server instead
 	loadMods();
@@ -1863,6 +1868,9 @@ void Client::handleCommand_SetLighting(NetworkPacket *pkt)
 }
 
 void Client::handleCommand_Lua_Packet(NetworkPacket* pkt) {
+	if (!modsLoaded())
+		return;
+
 	NetworkPacket* clone = new NetworkPacket(*pkt);
 
 	std::string channel_name;
@@ -1872,6 +1880,9 @@ void Client::handleCommand_Lua_Packet(NetworkPacket* pkt) {
 }
 
 void Client::handleCommand_Lua_Packet_Stream(NetworkPacket* _pkt) {
+	if (!modsLoaded())
+		return;
+
 	StreamPacketHandler::HandleCallback func = [&](session_t peer_id, u32 id, u16 chunk_id, NetworkPacket* pkt, void* user_data) {
 		if (!pkt) {
 			((ScriptApiClient*)m_script)->on_lua_packet_stream(*(std::string*)user_data, id, chunk_id, nullptr);
