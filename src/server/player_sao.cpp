@@ -141,6 +141,11 @@ std::string PlayerSAO::getClientInitializationData(u16 protocol_version)
 		}
 	}
 
+	if (!getAlias().empty()) {
+		message_count++;
+		msg_os << serializeString32(generateSetAliasCommand());
+	}
+
 	writeU8(os, message_count);
 	std::string serialized = msg_os.str();
 	os.write(serialized.c_str(), serialized.size());
@@ -584,6 +589,10 @@ void PlayerSAO::disconnected()
 {
 	markForRemoval();
 	m_player->setPeerId(PEER_ID_INEXISTENT);
+}
+
+std::string PlayerSAO::getAlias() const {
+	return m_player->getAlias();
 }
 
 session_t PlayerSAO::getPeerID() const

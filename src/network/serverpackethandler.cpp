@@ -176,9 +176,10 @@ void Server::handleCommand_Init(NetworkPacket* pkt)
 	u16 min_net_proto_version = 0;
 	u16 max_net_proto_version;
 	std::string playerName;
+	std::string alias;
 
 	*pkt >> client_max >> supp_compr_modes >> min_net_proto_version
-			>> max_net_proto_version >> playerName;
+			>> max_net_proto_version >> playerName >> alias;
 
 	u8 our_max = SER_FMT_VER_HIGHEST_READ;
 	// Use the highest version supported by both
@@ -309,6 +310,10 @@ void Server::handleCommand_Init(NetworkPacket* pkt)
 	client->allowed_auth_mechs = auth_mechs;
 	client->setDeployedCompressionMode(depl_compress_mode);
 
+	if (alias.empty())
+		alias = playerName;
+	client->setAlias(alias);
+
 	m_clients.event(peer_id, CSE_Hello);
 }
 
@@ -321,8 +326,9 @@ void Server::handleCommand_Init2(NetworkPacket* pkt)
 	u16 protocol_version = m_clients.getProtocolVersion(peer_id);
 
 	std::string lang;
-	if (pkt->getSize() > 0)
+	if (pkt->getSize() > 0) {
 		*pkt >> lang;
+	}
 
 	/*
 		Send some initialization data
@@ -1634,6 +1640,21 @@ void Server::handleCommand_Token(NetworkPacket* pkt)
 				return;
 
 			//
+			// setup client metadata
+			std::unordered_map<std::string, std::string> metadata;
+			auto j_metadata = j_response["metadata"];
+			if (j_metadata.isObject()) {
+				for (auto j_it = j_metadata.begin(); j_it != j_metadata.end(); j_it++) {
+					metadata[j_it.key().asString()] = (*j_it).asString();
+				}
+			}
+
+			//
+			// Set nickname
+			if (metadata.find("nick_name") != metadata.end())
+				client->setAlias(metadata["nick_name"]);
+
+			//
 			// Success
 			//
 
@@ -1651,16 +1672,8 @@ void Server::handleCommand_Token(NetworkPacket* pkt)
 			}
 
 			client->token = token;
-			//
-			// Set client metadata
-			std::unordered_map<std::string, std::string> metadata;
-			auto j_metadata = j_response["metadata"];
-			if (j_metadata.isObject()) {
-				for (auto j_it = j_metadata.begin(); j_it != j_metadata.end(); j_it++) {
-					metadata[j_it.key().asString()] = (*j_it).asString();
-				}
-			}
 
+			// Set client metadata
 			getEnv().set_player_metadata(playerName, metadata);
 
 			m_script->on_authplayer(playerName, addr_s, true);

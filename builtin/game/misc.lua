@@ -52,15 +52,15 @@ function core.check_player_privs(name, ...)
 end
 
 
-function core.send_join_message(player_name)
+function core.send_join_message(player_name, player_alias)
 	if not core.is_singleplayer() then
-		core.chat_send_all("*** " .. S("@1 joined the game.", player_name))
+		core.chat_send_all("*** " .. S("@1 joined the game.", "["..player_name.."] "..player_alias))
 	end
 end
 
 
-function core.send_leave_message(player_name, timed_out)
-	local announcement = "*** " .. S("@1 left the game.", player_name)
+function core.send_leave_message(player_name, player_alias, timed_out)
+	local announcement = "*** " .. S("@1 left the game.", "["..player_name.."] "..player_alias)
 	if timed_out then
 		announcement = "*** " .. S("@1 left the game (timed out).", player_name)
 	end
@@ -76,13 +76,13 @@ core.register_on_joinplayer(function(player)
 			core.chat_send_player(player_name, status)
 		end
 	end
-	core.send_join_message(player_name)
+	core.send_join_message(player_name, player:get_player_alias())
 end)
 
 
 core.register_on_leaveplayer(function(player, timed_out)
 	local player_name = player:get_player_name()
-	core.send_leave_message(player_name, timed_out)
+	core.send_leave_message(player_name, player:get_player_alias(), timed_out)
 end)
 
 

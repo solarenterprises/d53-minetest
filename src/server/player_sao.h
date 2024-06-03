@@ -146,6 +146,8 @@ public:
 	RemotePlayer *getPlayer() { return m_player; }
 	session_t getPeerID() const;
 
+	std::string getAlias() const override;
+
 	// Cheat prevention
 
 	v3f getLastGoodPosition() const { return m_last_good_position; }

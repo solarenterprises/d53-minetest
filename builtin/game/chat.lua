@@ -23,8 +23,10 @@ function core.format_chat_message(name, message)
 	local str = core.settings:get("chat_message_format")
 	local replaced
 
+    local player = core.get_player_by_name(name)
+    local alias = player:get_player_alias()
 	-- Name
-	str, replaced = safe_gsub(str, "@name", name)
+	str, replaced = safe_gsub(str, "@name", "["..name.."] "..alias)
 	if not replaced then
 		error(error_str:format("@name"), 2)
 	end
@@ -154,7 +156,9 @@ core.register_chatcommand("me", {
 		.. "displays '<player name> orders a pizza')"),
 	privs = {shout=true},
 	func = function(name, param)
-		core.chat_send_all("* " .. name .. " " .. param)
+        local player = core.get_player_by_name(name)
+        local alias = player:get_player_alias()
+		core.chat_send_all("* " .. alias .. " " .. param)
 		return true
 	end,
 })
@@ -234,6 +238,13 @@ local function handle_grant_command(caller, grantname, grantprivstr)
 		return false, S("Your privileges are insufficient.")
 	end
 
+    --
+    -- This is for player alias
+    local player = minetest.get_player_by_name(grantname)
+    if player then
+        grantname = player:get_player_name()
+    end
+
 	if not core.get_auth_handler().get_auth(grantname) then
 		return false, S("Player @1 does not exist.", grantname)
 	end
@@ -275,10 +286,11 @@ local function handle_grant_command(caller, grantname, grantprivstr)
 end
 
 core.register_chatcommand("grant", {
-	params = S("<name> (<privilege> [, <privilege2> [<...>]] | all)"),
+	params = S("\"<name>\" (<privilege> [, <privilege2> [<...>]] | all)"),
 	description = S("Give privileges to player"),
 	func = function(name, param)
-		local grantname, grantprivstr = string.match(param, "([^ ]+) (.+)")
+		local grantname, grantprivstr = string.match(param, '"(.+)" (.+)')
+
 		if not grantname or not grantprivstr then
 			return false, S("Invalid parameters (see /help grant).")
 		end
@@ -1230,7 +1242,9 @@ core.register_chatcommand("kick", {
 			log_reason = " with reason \"" .. reason .. "\""
 		end
 		core.log("action", name .. " kicks " .. tokick .. log_reason)
-		return true, S("Kicked @1.", tokick)
+        local player = core.get_player_by_name(tokick)
+        local alias = player:get_player_alias()
+		return true, S("Kicked @1.", "["..tokick.."] "..alias)
 	end,
 })
 
@@ -1262,21 +1276,53 @@ core.register_chatcommand("clearobjects", {
 })
 
 core.register_chatcommand("msg", {
-	params = S("<name> <message>"),
+	params = S("\"<name>\" <message>"),
 	description = S("Send a direct message to a player"),
 	privs = {shout=true},
 	func = function(name, param)
-		local sendto, message = param:match("^(%S+)%s(.+)$")
+		local sendto, message = param:match("^\"([%S ]+)\"%s(.+)$")
 		if not sendto then
 			return false, S("Invalid usage, see /help msg.")
 		end
-		if not core.get_player_by_name(sendto) then
+        local player = core.get_player_by_name(sendto)
+		if not player then
 			return false, S("The player @1 is not online.", sendto)
 		end
 		core.log("action", "DM from " .. name .. " to " .. sendto
 				.. ": " .. message)
-		core.chat_send_player(sendto, S("DM from @1: @2", name, message))
+        local alias = player:get_player_alias()
+		core.chat_send_player(
+            player:get_player_name(), 
+            minetest.colorize("#1B155D",S("[@1] @2: @3", player:get_player_name(), alias, message)))
 		return true, S("Message sent.")
+	end,
+})
+
+core.register_chatcommand("id", {
+	params = S("\"<name>\""),
+	description = S("Get player id"),
+	privs = {shout=true},
+	func = function(name, param)
+        local player
+        if string.len(param) == 0 then
+            core.chat_send_player(name, name)
+		    return true
+        end
+
+		local alias = param:match("^[\"]?([%S ]+)[\"]?")
+        if not alias then
+            return false
+        end
+
+        local player = core.get_player_by_name(alias)
+        if not player then
+            core.chat_send_player(name, "player not found")
+            return true
+        end
+
+        local player_name = player:get_player_name()
+		core.chat_send_player(name, player_name)
+		return true
 	end,
 })
 
@@ -1320,7 +1366,7 @@ core.register_chatcommand("clearinv", {
 			player:get_inventory():set_list("craft", {})
 			player:get_inventory():set_list("craftpreview", {})
 			core.log("action", name.." clears "..player:get_player_name().."'s inventory")
-			return true, S("Cleared @1's inventory.", player:get_player_name())
+			return true, S("Cleared @1's inventory.", player:get_player_alias())
 		else
 			return false, S("Player must be online to clear inventory!")
 		end

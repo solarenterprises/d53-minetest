@@ -48,6 +48,12 @@ void PlayerSettings::readGlobalSettings()
 	aux1_descends = g_settings->getBool("aux1_descends");
 	noclip = g_settings->getBool("noclip");
 	autojump = g_settings->getBool("autojump");
+
+	if (g_settings->exists("alias")) {
+		alias = g_settings->get("alias");
+		if (alias.length() >= PLAYERNAME_SIZE)
+			alias = alias.substr(0, PLAYERNAME_SIZE);
+	}
 }
 
 
@@ -81,6 +87,8 @@ LocalPlayer::LocalPlayer(Client *client, const char *name):
 	m_client(client)
 {
 	m_player_settings.readGlobalSettings();
+	if (!m_player_settings.alias.empty())
+		setAlias(m_player_settings.alias.c_str());
 	m_player_settings.registerSettingsCallback();
 }
 

@@ -159,6 +159,8 @@ public:
 	{}
 	virtual u16 getHP() const
 	{ return 0; }
+	virtual std::string getAlias() const
+	{ return ""; }
 
 	virtual void setArmorGroups(const ItemGroupList &armor_groups)
 	{}

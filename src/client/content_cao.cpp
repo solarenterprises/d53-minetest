@@ -1753,7 +1753,7 @@ void GenericCAO::processMessage(const std::string &data)
 		}
 
 		if ((m_is_player && !m_is_local_player) && m_prop.nametag.empty())
-			m_prop.nametag = m_name;
+			m_prop.nametag = m_alias.empty() ? m_name : m_alias;
 		if (m_is_local_player)
 			m_prop.show_on_minimap = false;
 
@@ -2007,7 +2007,15 @@ void GenericCAO::processMessage(const std::string &data)
 		addAttachmentChild(child_id);
 	} else if (cmd == AO_CMD_OBSOLETE1) {
 		// Don't do anything and also don't log a warning
-	} else {
+	} else if (cmd == AO_CMD_SET_ALIAS) {
+		m_alias = deSerializeString16(is);
+
+		if ((m_is_player && !m_is_local_player)) {
+			m_prop.nametag = m_alias;
+			updateNametag();
+		}
+	}
+	else {
 		warningstream << FUNCTION_NAME
 			<< ": unknown command or outdated client \""
 			<< +cmd << "\"" << std::endl;

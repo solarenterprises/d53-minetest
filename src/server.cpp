@@ -1185,7 +1185,11 @@ PlayerSAO* Server::StageTwoClientInit(session_t peer_id)
 		RemoteClient* client = m_clients.lockedGetClientNoEx(peer_id, CS_InitDone);
 		if (client) {
 			playername = client->getName();
-			playersao = emergePlayer(playername.c_str(), peer_id, client->net_proto_version);
+			std::string alias = client->getAlias();
+			if (alias.empty())
+				alias = playername;
+
+			playersao = emergePlayer(playername.c_str(), alias.c_str(), peer_id, client->net_proto_version);
 		}
 	}
 
@@ -3103,7 +3107,7 @@ void Server::acceptAuth(session_t peer_id, bool forSudoMode)
 
 		resp_pkt << v3f(0,0,0) << (u64) m_env->getServerMap().getSeed()
 				<< g_settings->getFloat("dedicated_server_step")
-				<< client->allowed_auth_mechs << client->getName();
+				<< client->allowed_auth_mechs << client->getName() << client->getAlias();
 
 		Send(&resp_pkt);
 		m_clients.event(peer_id, CSE_AuthAccept);
@@ -4180,7 +4184,7 @@ void Server::requestShutdown(const std::string &msg, bool reconnect, float delay
 	m_shutdown_state.trigger(delay, msg, reconnect);
 }
 
-PlayerSAO* Server::emergePlayer(const char *name, session_t peer_id, u16 proto_version)
+PlayerSAO* Server::emergePlayer(const char* name, const char* alias, session_t peer_id, u16 proto_version)
 {
 	/*
 		Try to get an existing player
@@ -4222,6 +4226,8 @@ PlayerSAO* Server::emergePlayer(const char *name, session_t peer_id, u16 proto_v
 	if (!player) {
 		player = new RemotePlayer(name, idef());
 	}
+
+	player->setAlias(alias);
 
 	bool newplayer = false;
 

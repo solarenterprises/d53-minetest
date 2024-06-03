@@ -330,8 +330,11 @@ public:
 	ClientState getState() const { return m_state; }
 
 	const std::string &getName() const { return m_name; }
+	const std::string &getAlias() const { return m_alias; }
 
 	void setName(const std::string &name) { m_name = name; }
+
+	void setAlias(const std::string &alias) { m_alias = alias; }
 
 	/* update internal client state */
 	void notifyEvent(ClientStateEvent event);
@@ -459,6 +462,7 @@ private:
 		name of player using this client
 	*/
 	std::string m_name = "";
+	std::string m_alias = "";
 
 	/*
 		client information

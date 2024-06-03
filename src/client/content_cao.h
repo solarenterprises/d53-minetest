@@ -72,6 +72,7 @@ class GenericCAO : public ClientActiveObject
 private:
 	// Only set at initialization
 	std::string m_name = "";
+	std::string m_alias = "";
 	bool m_is_player = false;
 	bool m_is_local_player = false;
 	// Property-ish things

@@ -52,6 +52,7 @@ struct PlayerSettings
 	bool aux1_descends = false;
 	bool noclip = false;
 	bool autojump = false;
+	std::string alias = "";
 
 	void readGlobalSettings();
 	void registerSettingsCallback();

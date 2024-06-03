@@ -94,6 +94,7 @@ public:
 	void sendOutdatedData();
 
 	// Update packets
+	std::string generateSetAliasCommand() const;
 	std::string generateUpdateAttachmentCommand() const;
 	std::string generateUpdateAnimationSpeedCommand() const;
 	std::string generateUpdateAnimationCommand() const;

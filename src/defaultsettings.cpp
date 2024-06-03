@@ -366,6 +366,7 @@ void set_default_settings()
 #endif
 
 	// Server
+	settings->setDefault("allow_get_player_by_alias", "true");
 	settings->setDefault("disable_escape_sequences", "false");
 	settings->setDefault("strip_color_codes", "false");
 #if USE_PROMETHEUS

@@ -34,6 +34,7 @@ Player::Player(const char *name, IItemDefManager *idef):
 	inventory(idef)
 {
 	setName(name);
+	setAlias(name);
 
 	inventory.clear();
 	inventory.addList("main", PLAYER_INVENTORY_SIZE);
@@ -85,6 +86,11 @@ Player::~Player()
 void Player::setName(const char* name)
 {
 	strlcpy(m_name, name, PLAYERNAME_SIZE);
+}
+
+void Player::setAlias(const char* alias)
+{
+	strlcpy(m_alias, alias, PLAYERNAME_SIZE);
 }
 
 void Player::setWieldIndex(u16 index)

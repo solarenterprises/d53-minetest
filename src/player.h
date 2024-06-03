@@ -177,6 +177,8 @@ public:
 
 	const char *getName() const { return m_name; }
 	void setName(const char* name);
+	const char *getAlias() const { return m_alias; }
+	void setAlias(const char* alias);
 
 	u32 getFreeHudID()
 	{
@@ -247,6 +249,7 @@ public:
 
 protected:
 	char m_name[PLAYERNAME_SIZE];
+	char m_alias[PLAYERNAME_SIZE];
 	v3f m_speed; // velocity; in BS-space
 	u16 m_wield_index = 0;
 	PlayerFovSpec m_fov_override_spec = { 0.0f, false, 0.0f };

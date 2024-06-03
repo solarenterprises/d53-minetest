@@ -268,6 +268,17 @@ void UnitSAO::notifyObjectPropertiesModified()
 	m_properties_sent = false;
 }
 
+std::string UnitSAO::generateSetAliasCommand() const
+{
+	std::ostringstream os(std::ios::binary);
+	// command
+	writeU8(os, AO_CMD_SET_ALIAS);
+	// parameters
+	os << serializeString16(getAlias());
+	return os.str();
+}
+
+
 std::string UnitSAO::generateUpdateAttachmentCommand() const
 {
 	std::ostringstream os(std::ios::binary);

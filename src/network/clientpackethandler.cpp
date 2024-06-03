@@ -142,13 +142,15 @@ void Client::handleCommand_AuthAccept(NetworkPacket* pkt)
 	deleteAuthData();
 
 	std::string playerName;
+	std::string alias;
 	v3f playerpos;
 	*pkt
 		>> playerpos
 		>> m_map_seed
 		>> m_recommended_send_interval
 		>> m_sudo_auth_methods
-		>> playerName;
+		>> playerName
+		>> alias;
 
 	playerpos -= v3f(0, BS / 2, 0);
 
@@ -156,6 +158,7 @@ void Client::handleCommand_AuthAccept(NetworkPacket* pkt)
 	LocalPlayer *player = m_env.getLocalPlayer();
 	assert(player != NULL);
 	player->setName(playerName.c_str());
+	player->setAlias(alias.c_str());
 	player->setPosition(playerpos);
 
 	infostream << "Client: received map seed: " << m_map_seed << std::endl;
