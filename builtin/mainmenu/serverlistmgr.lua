@@ -19,6 +19,7 @@ serverlistmgr = {}
 
 --------------------------------------------------------------------------------
 local function order_server_list(list)
+    print("LIST", dump(list))
 	local res = {}
 	--orders the favorite list after support
 	for i = 1, #list do
@@ -47,7 +48,7 @@ function serverlistmgr.sync()
 		}}
 	end
 
-	local serverlist_url = core.settings:get("serverlist_url") or "serverlist.mainnet.sh"
+	local serverlist_url = core.settings:get("serverlist_url") or "https://serverlist.district53.io"
 	if not core.get_http_api or serverlist_url == "" then
 		serverlistmgr.servers = {{
 			name = fgettext("Public server list is disabled"),
@@ -75,7 +76,8 @@ function serverlistmgr.sync()
 			end
 
 			local retval = core.parse_json(response.data)
-			return retval and retval.list or {}
+
+			return retval or {}
 		end,
 		nil,
 		function(result)

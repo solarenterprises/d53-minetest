@@ -34,7 +34,12 @@ void set_default_settings()
 	settings->setDefault("language", "");
 	settings->setDefault("name", "");
 	settings->setDefault("bind_address", "");
-	settings->setDefault("serverlist_url", "serverlist.district53.io");
+
+#ifdef DEVELOPMENT_BUILD
+	settings->setDefault("serverlist_url", "http://dev.district53.io:5000");
+#else
+	settings->setDefault("serverlist_url", "https://serverlist.district53.io");
+#endif
 
 	// Client
 	settings->setDefault("launcher_url", "http://localhost:3331");
