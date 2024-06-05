@@ -72,7 +72,7 @@ private:
 
 	void initConnection();
 	void closeConnection();
-	void handleMySQLError();
+	void handleMySQLError(std::string info = "no info");
 	bool doQueries(const std::vector<std::string>& query);
 };
 

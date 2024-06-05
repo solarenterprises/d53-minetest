@@ -80,11 +80,12 @@ void Database_MySQL::closeConnection() {
 	}
 }
 
-void Database_MySQL::handleMySQLError() {
+void Database_MySQL::handleMySQLError(std::string info) {
 	std::string error_msg = mysql_error(m_conn);
 	errorstream
 		<< "Database_MySQL:"
 		<< error_msg.c_str()
+		<< " '" << info.c_str() << "'"
 		<< std::endl;
 	throw std::runtime_error("MySQL Error: " + error_msg);
 }
@@ -95,7 +96,7 @@ bool Database_MySQL::doQueries(const std::vector<std::string>& query) {
 			continue;
 
 		errorstream << "Query:" << q.c_str() << std::endl;
-		handleMySQLError();
+		handleMySQLError(q);
 		return false;
 	}
 
@@ -104,7 +105,7 @@ bool Database_MySQL::doQueries(const std::vector<std::string>& query) {
 
 bool Database_MySQL::execTransaction(const std::vector<std::string>& query) {
 	if (mysql_autocommit(m_conn, 0)) {
-		handleMySQLError();
+		handleMySQLError("autocommit 0");
 		return false;
 	}
 
@@ -116,12 +117,12 @@ bool Database_MySQL::execTransaction(const std::vector<std::string>& query) {
 
 	if (mysql_commit(m_conn)) {
 		mysql_autocommit(m_conn, 1);
-		handleMySQLError();
+		handleMySQLError("commit");
 		return false;
 	}
 
 	if (mysql_autocommit(m_conn, 1)) {
-		handleMySQLError();
+		handleMySQLError("autocommit 1");
 		return false;
 	}
 
@@ -130,7 +131,7 @@ bool Database_MySQL::execTransaction(const std::vector<std::string>& query) {
 
 bool Database_MySQL::execQuery(const std::string& query) {
 	if (mysql_query(m_conn, query.c_str())) {
-		handleMySQLError();
+		handleMySQLError(query);
 		return false;
 	}
 	return true;
@@ -229,7 +230,7 @@ void Database_MySQL::connectToDatabase()
 		0,
 		NULL,
 		0) == NULL) {
-		handleMySQLError();
+		handleMySQLError("connection");
 	}
 
 	infostream << "mySQL Database: Version " << " Connection made." << std::endl;
@@ -247,7 +248,7 @@ void Database_MySQL::ping()
 	// mysql_ping() checks the connection, and if it is not alive, attempts to reconnect.
 	if (mysql_ping(m_conn)) {
 		// If mysql_ping returns non-zero, the reconnection attempt failed.
-		handleMySQLError(); // Handle the error (throw an exception or log it)
+		handleMySQLError("ping"); // Handle the error (throw an exception or log it)
 	}
 }
 
