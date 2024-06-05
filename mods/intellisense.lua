@@ -42,6 +42,10 @@ function minetest.register_on_lua_packet(callback) end
 -- @param callback function
 function minetest.register_on_lua_packet_stream(callback) end
 
+
+function minetest.hud_add(def) end
+function minetest.hud_remove(id) end
+
 ----------------------------------------------
 -- Voice
 ----------------------------------------------

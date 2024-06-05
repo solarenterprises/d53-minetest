@@ -76,13 +76,13 @@ core.register_on_joinplayer(function(player)
 			core.chat_send_player(player_name, status)
 		end
 	end
-	core.send_join_message(player_name, player:get_player_alias())
+	core.send_join_message(player_name, player:get_player_display_name())
 end)
 
 
 core.register_on_leaveplayer(function(player, timed_out)
 	local player_name = player:get_player_name()
-	core.send_leave_message(player_name, player:get_player_alias(), timed_out)
+	core.send_leave_message(player_name, player:get_player_display_name(), timed_out)
 end)
 
 

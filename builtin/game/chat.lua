@@ -24,9 +24,9 @@ function core.format_chat_message(name, message)
 	local replaced
 
     local player = core.get_player_by_name(name)
-    local alias = player:get_player_alias()
+    local display = player:get_player_display_name()
 	-- Name
-	str, replaced = safe_gsub(str, "@name", "["..name.."] "..alias)
+	str, replaced = safe_gsub(str, "@name", display)
 	if not replaced then
 		error(error_str:format("@name"), 2)
 	end
@@ -157,8 +157,8 @@ core.register_chatcommand("me", {
 	privs = {shout=true},
 	func = function(name, param)
         local player = core.get_player_by_name(name)
-        local alias = player:get_player_alias()
-		core.chat_send_all("* " .. alias .. " " .. param)
+        local display = player:get_player_display_name()
+		core.chat_send_all("* " .. display .. " " .. param)
 		return true
 	end,
 })
@@ -1243,8 +1243,8 @@ core.register_chatcommand("kick", {
 		end
 		core.log("action", name .. " kicks " .. tokick .. log_reason)
         local player = core.get_player_by_name(tokick)
-        local alias = player:get_player_alias()
-		return true, S("Kicked @1.", "["..tokick.."] "..alias)
+        local display = player:get_player_display_name()
+		return true, S("Kicked @1.", "["..tokick.."] "..display)
 	end,
 })
 
@@ -1290,10 +1290,10 @@ core.register_chatcommand("msg", {
 		end
 		core.log("action", "DM from " .. name .. " to " .. sendto
 				.. ": " .. message)
-        local alias = player:get_player_alias()
+        local display = player:get_player_display_name()
 		core.chat_send_player(
             player:get_player_name(), 
-            minetest.colorize("#1B155D",S("[@1] @2: @3", player:get_player_name(), alias, message)))
+            minetest.colorize("#1B155D",S("@1: @2", display, message)))
 		return true, S("Message sent.")
 	end,
 })
@@ -1366,7 +1366,7 @@ core.register_chatcommand("clearinv", {
 			player:get_inventory():set_list("craft", {})
 			player:get_inventory():set_list("craftpreview", {})
 			core.log("action", name.." clears "..player:get_player_name().."'s inventory")
-			return true, S("Cleared @1's inventory.", player:get_player_alias())
+			return true, S("Cleared @1's inventory.", player:get_player_display_name())
 		else
 			return false, S("Player must be online to clear inventory!")
 		end

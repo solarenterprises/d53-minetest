@@ -219,6 +219,9 @@ private:
 	// get_player_alias(self)
 	static int l_get_player_alias(lua_State *L);
 
+	// get_player_display_name(self)
+	static int l_get_player_display_name(lua_State *L);
+
 	// get_fov(self)
 	static int l_get_fov(lua_State *L);
 

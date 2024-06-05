@@ -1196,6 +1196,30 @@ int ObjectRef::l_get_player_alias(lua_State *L)
 	return 1;
 }
 
+// get_player_display_name(self)
+int ObjectRef::l_get_player_display_name(lua_State *L)
+{
+	NO_MAP_LOCK_REQUIRED;
+	ObjectRef *ref = checkObject<ObjectRef>(L, 1);
+	RemotePlayer *player = getplayer(ref);
+	if (player == nullptr) {
+		lua_pushlstring(L, "", 0);
+		return 1;
+	}
+
+	std::string name = player->getName();
+	std::string alias = player->getAlias();
+
+	std::string display_name;
+	if (alias.empty())
+		display_name = name;
+	else
+		display_name = "[" + name + "] " + alias;
+
+	lua_pushlstring(L, display_name.c_str(), display_name.length());
+	return 1;
+}
+
 // get_look_dir(self)
 int ObjectRef::l_get_look_dir(lua_State *L)
 {
@@ -2730,6 +2754,7 @@ luaL_Reg ObjectRef::methods[] = {
 	luamethod(ObjectRef, is_player),
 	luamethod(ObjectRef, get_player_name),
 	luamethod(ObjectRef, get_player_alias),
+	luamethod(ObjectRef, get_player_display_name),
 	luamethod(ObjectRef, get_look_dir),
 	luamethod(ObjectRef, get_look_pitch),
 	luamethod(ObjectRef, get_look_yaw),

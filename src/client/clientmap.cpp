@@ -982,7 +982,7 @@ void ClientMap::updateCacheBuffers(video::IVideoDriver* driver) {
 				time_since_last_time,
 				0.0,
 				1.0
-			)) * 1000));
+			)) * 4000));
 
 		gl_ops_processed_gauge -= std::min(gl_ops_processed_gauge, reduce);
 	}
