@@ -284,6 +284,8 @@ void Client::loadMods()
 		if (!d.dir)
 			continue;
 
+		ScriptApiSecurity::whitelist_mod(d.name);
+
 		infostream << d.name << " ";
 
 		scanModIntoMemory(d.name, client_mods_path + d.name + DIR_DELIM + "client" + DIR_DELIM);

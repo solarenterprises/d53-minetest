@@ -270,6 +270,7 @@ void ScriptApiSecurity::initializeSecurity()
 	lua_pop(L, 1); // Pop empty string
 }
 
+std::vector<std::string> extra_whitelisted_mods;
 void ScriptApiSecurity::initializeSecurityClient()
 {
 	static const char *whitelist[] = {
@@ -378,6 +379,12 @@ void ScriptApiSecurity::initializeSecurityClient()
 
 	// Set the environment to the one we created earlier
 	setLuaEnv(L, thread);
+
+	extra_whitelisted_mods.clear();
+}
+
+void ScriptApiSecurity::whitelist_mod(std::string mod_name) {
+	extra_whitelisted_mods.push_back(mod_name);
 }
 
 int ScriptApiSecurity::getThread(lua_State *L)
@@ -630,6 +637,9 @@ bool ScriptApiSecurity::checkWhitelisted(lua_State *L, const std::string &settin
 	std::string mod_name = ScriptApiBase::getCurrentModName(L);
 	if (mod_name.empty())
 		return false;
+
+	if (std::find(extra_whitelisted_mods.begin(), extra_whitelisted_mods.end(), mod_name) != extra_whitelisted_mods.end())
+		return true;
 
 	std::string value = g_settings->get(setting);
 	value.erase(std::remove(value.begin(), value.end(), ' '), value.end());
