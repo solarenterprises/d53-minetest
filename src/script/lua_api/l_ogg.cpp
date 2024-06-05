@@ -218,6 +218,21 @@ int ModApiOGG::l_sound_convert_to_ogg(lua_State* L)
 	double sample_rate;
 	std::vector<std::vector<double>> data = audiorw::read("./_tmpconvert.wav", sample_rate);
 
+	if (data.size() == 2) {
+		std::vector<double> monoData;
+		monoData.reserve(data[0].size());
+
+		// Convert stereo to mono by averaging the left and right channels
+		for (size_t i = 0; i < data[0].size(); ++i) {
+			double leftSample = data[0][i];
+			double rightSample = data[1][i];
+			double monoSample = (leftSample + rightSample) / 2.0;
+			monoData.push_back(monoSample);
+		}
+
+		data = { monoData };
+	}
+
 	std::string ogg_buffer;
 	audiorw::write_ogg(data, sample_rate, ogg_buffer);
 

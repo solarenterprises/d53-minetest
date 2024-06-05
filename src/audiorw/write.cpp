@@ -230,7 +230,7 @@ int audiorw::write_ogg(
 	std::string& out_data) {
 
 	if (audio.size() >= 2)
-		throw "not implemented";
+		throw "ogg only 1 channel is supported";
 
 	std::vector<double> data = audio[0];
 
