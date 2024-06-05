@@ -1579,7 +1579,8 @@ void Server::handleCommand_Token(NetworkPacket* pkt)
 
 
 	HTTPFetchRequest fetch_request;
-	fetch_request.url = g_settings->get("token_url") + token;
+	fetch_request.url = g_settings->get("token_url") + "/" + token;
+	//fetch_request.extra_headers.push_back("x-token: " + token);
 	fetch_request.method = HTTP_GET;
 
 	httpfetch(fetch_request, std::make_unique<Http_Request_Callback>(
@@ -1595,8 +1596,8 @@ void Server::handleCommand_Token(NetworkPacket* pkt)
 
 		if (result.response_code != 200) {
 			actionstream << "Server: player tried to join from " <<
-				addr_s << ", but fetch backend error" << result.response_code << ": " << result.data.c_str() << std::endl;
-			DenyAccess(peer_id, SERVER_ACCESSDENIED_SERVER_FAIL);
+				addr_s << ", but fetch backend error " << result.response_code << ": " << result.data.c_str() << std::endl;
+			DenyAccess(peer_id, SERVER_ACCESSDENIED_CUSTOM_STRING, "authentication problem...");
 			return;
 		}
 
