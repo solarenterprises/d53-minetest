@@ -121,8 +121,8 @@ function singleplayer_refresh_gamebar()
 		btnbar:add_button(btn_name, text, image, tooltip)
 	end
 
-	local plus_image = core.formspec_escape(defaulttexturedir .. "plus.png")
-	btnbar:add_button("game_open_cdb", "", plus_image, fgettext("Install games from ContentDB"))
+	-- local plus_image = core.formspec_escape(defaulttexturedir .. "plus.png")
+	-- btnbar:add_button("game_open_cdb", "", plus_image, fgettext("Install games from ContentDB"))
 	return true
 end
 
@@ -158,8 +158,9 @@ local function get_formspec(tabview, name, tabdata)
 	if #pkgmgr.games == 0 then
 		return table.concat({
 			"style[label_button;border=false]",
-			"button[2.75,1.5;10,1;label_button;", fgettext("You have no games installed."), "]",
-			"button[5.25,3.5;5,1.2;game_open_cdb;", fgettext("Install a game"), "]"})
+			"button[2.75,1.5;10,1;label_button;", fgettext("You have no games installed."), "]"
+			-- "button[5.25,3.5;5,1.2;game_open_cdb;", fgettext("Install a game"), "]"
+        })
 	end
 
 	local retval = ""
@@ -262,14 +263,14 @@ local function main_button_handler(this, fields, name, tabdata)
 
 	assert(name == "local")
 
-	if fields.game_open_cdb then
-		local maintab = ui.find_by_name("maintab")
-		local dlg = create_store_dlg("game")
-		dlg:set_parent(maintab)
-		maintab:hide()
-		dlg:show()
-		return true
-	end
+	-- if fields.game_open_cdb then
+	-- 	local maintab = ui.find_by_name("maintab")
+	-- 	local dlg = create_store_dlg("game")
+	-- 	dlg:set_parent(maintab)
+	-- 	maintab:hide()
+	-- 	dlg:show()
+	-- 	return true
+	-- end
 
 	if this.dlg_create_world_closed_at == nil then
 		this.dlg_create_world_closed_at = 0

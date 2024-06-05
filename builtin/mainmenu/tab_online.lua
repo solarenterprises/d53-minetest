@@ -458,6 +458,10 @@ local function main_button_handler(tabview, fields, name, tabdata)
     if (fields.btn_mp_connect or fields.key_enter)
         and fields.te_address ~= "" and fields.te_port then
         local token             = tokenmgr.get_token_by_name(fields.te_token)
+        if not token then
+            gamedata.errormessage = "No token selected"
+            return true
+        end
 
         gamedata.playername     = fields.te_token
         gamedata.aliasname      = fields.te_name
