@@ -2269,6 +2269,44 @@ void ServerEnvironment::deactivateFarObjects(bool _force_delete)
 	m_ao_manager.clearIf(cb_deactivate);
 }
 
+bool ServerEnvironment::saveObject(ServerActiveObject* obj) {
+	if (!obj->isStaticAllowed())
+		return false;
+
+	const u16 id = obj->getId();
+
+	const v3f& objectpos = obj->getBasePosition();
+
+	// The block in which the object resides in
+	v3s16 blockpos_o = getNodeBlockPos(floatToInt(objectpos, BS));
+
+	StaticObject s_obj(obj, objectpos);
+
+	// If object's static data is stored in a deactivated block and object
+	// is actually located in an active block, re-save to the block in
+	// which the object is actually located in.
+	if (obj->m_static_exists &&
+		!m_active_blocks.contains(obj->m_static_block) &&
+		m_active_blocks.contains(blockpos_o)) {
+
+		// Delete from block where object was located
+		deleteStaticFromBlock(obj, id, MOD_REASON_STATIC_DATA_REMOVED, false);
+
+		// Save to block where object is located
+		saveStaticToBlock(blockpos_o, id, obj, s_obj, MOD_REASON_STATIC_DATA_ADDED);
+
+		return false;
+	}
+
+	u32 reason = MOD_REASON_STATIC_DATA_CHANGED;
+
+	// Delete old static object
+	deleteStaticFromBlock(obj, id, reason, false);
+
+	// Add to the block where the object is located in
+	return saveStaticToBlock(blockpos_o, id, obj, s_obj, reason);
+}
+
 void ServerEnvironment::deleteStaticFromBlock(
 		ServerActiveObject *obj, u16 id, u32 mod_reason, bool no_emerge)
 {

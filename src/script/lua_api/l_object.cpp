@@ -2666,6 +2666,22 @@ int ObjectRef::l_respawn(lua_State *L)
 	return 1;
 }
 
+// saveStaticData(self)
+int ObjectRef::l_saveStaticData(lua_State *L)
+{
+	NO_MAP_LOCK_REQUIRED;
+	ObjectRef *ref = checkObject<ObjectRef>(L, 1);
+	ServerActiveObject* sao = getobject(ref);
+	if (!sao) {
+		lua_pushboolean(L, false);
+		return 1;
+	}
+
+	bool success = getServer(L)->getEnv().saveObject(sao);
+	lua_pushboolean(L, success);
+	return 1;
+}
+
 
 ObjectRef::ObjectRef(ServerActiveObject *object):
 	m_object(object)
@@ -2749,6 +2765,7 @@ luaL_Reg ObjectRef::methods[] = {
 	luamethod_aliased(ObjectRef, set_sprite, setsprite),
 	luamethod(ObjectRef, get_entity_name),
 	luamethod(ObjectRef, get_luaentity),
+	luamethod(ObjectRef, saveStaticData),
 
 	// Player-only
 	luamethod(ObjectRef, is_player),

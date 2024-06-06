@@ -411,4 +411,9 @@ private:
 
 	// respawn(self)
 	static int l_respawn(lua_State *L);
+
+	// saveStaticData(self)
+	static int l_saveStaticData(lua_State *L);
+
+
 };

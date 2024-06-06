@@ -274,6 +274,8 @@ public:
 		return m_ao_manager.getActiveObject(id);
 	}
 
+	bool saveObject(ServerActiveObject* object);
+
 	/*
 		Add an active object to the environment.
 		Environment handles deletion of object.
