@@ -1403,3 +1403,21 @@ core.register_chatcommand("kill", {
 		return handle_kill_command(name, param == "" and name or param)
 	end,
 })
+
+core.register_chatcommand("print_item", {
+	params = S("[<name>]"),
+	description = S("Print debug info on item"),
+	privs = {privs=true},
+	func = function(name, param)
+		local item = core.registered_items[param]
+        if not item then
+            minetest.chat_send_player(name, "Attempt to print non-existent item "..param)
+            return true
+        end
+
+        local stacktrace = registered_item_callstack[param] or ""
+        minetest.chat_send_player(name, dump(item).."\nCall Stack:\n"..stacktrace)
+
+        return true
+	end,
+})

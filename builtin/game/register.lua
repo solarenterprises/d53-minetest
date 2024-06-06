@@ -20,6 +20,8 @@ core.register_alias_raw = nil
 -- Item / entity / ABM / LBM registration functions
 --
 
+registered_item_callstack = {}
+
 core.registered_abms = {}
 core.registered_lbms = {}
 core.registered_entities = {}
@@ -198,6 +200,8 @@ function core.register_item(name, itemdef)
 	core.registered_items[itemdef.name] = itemdef
 	core.registered_aliases[itemdef.name] = nil
 	register_item_raw(itemdef)
+
+    registered_item_callstack[name] = debug.traceback()
 end
 
 function core.unregister_item(name)
@@ -415,9 +419,13 @@ function core.override_item(name, redefinition)
 	if not item then
 		error("Attempt to override non-existent item "..name, 2)
 	end
+
 	for k, v in pairs(redefinition) do
 		rawset(item, k, v)
 	end
+
+    registered_item_callstack[name] = debug.traceback()
+
 	register_item_raw(item)
 end
 

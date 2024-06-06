@@ -25,7 +25,7 @@ Tool materials:
 
 -- The hand
 if minetest.settings:get_bool("creative_mode") then
-	local digtime = 42
+	local digtime = 1
 	local caps = {times = {digtime, digtime, digtime}, uses = 0, maxlevel = 256}
 
 	minetest.register_item(":", {
