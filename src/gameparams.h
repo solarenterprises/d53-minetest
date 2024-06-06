@@ -52,6 +52,7 @@ struct GameStartData : GameParams
 	std::string playerai;
 	std::string token;
 	bool local_server;
+	bool did_skip_menu = false;
 
 	ELoginRegister allow_login_or_register = ELoginRegister::Any;
 

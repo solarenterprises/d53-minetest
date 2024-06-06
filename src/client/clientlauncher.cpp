@@ -409,6 +409,8 @@ void ClientLauncher::init_args(GameStartData &start_data, const Settings &cmd_ar
 	if (cmd_args.exists("token"))
 		start_data.token = cmd_args.get("token");
 
+	start_data.did_skip_menu = skip_main_menu;
+
 	random_input = g_settings->getBool("random_input")
 			|| cmd_args.getFlag("random-input");
 }

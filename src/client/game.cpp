@@ -918,6 +918,7 @@ private:
 	PausedNodesList paused_animated_nodes;
 
 	bool simple_singleplayer_mode;
+	bool did_skip_menu;
 	/* End 'cache' */
 
 	/* Pre-calculated values
@@ -1098,6 +1099,7 @@ bool Game::startup(bool *kill,
 	this->input               = input;
 	this->chat_backend        = chat_backend;
 	simple_singleplayer_mode  = start_data.isSinglePlayer();
+	did_skip_menu			  = start_data.did_skip_menu;
 
 	input->keycache.populate();
 
@@ -4517,10 +4519,11 @@ void Game::showPauseMenu()
 		<< "button_exit[4," << (ypos++) << ";3,0.5;btn_continue;"
 		<< strgettext("Continue") << "]";
 
-	if (!simple_singleplayer_mode) {
+	bool use_token_auth = g_settings->getBool("use_token_auth");
+	if (!simple_singleplayer_mode && !use_token_auth) {
 		os << "button_exit[4," << (ypos++) << ";3,0.5;btn_change_password;"
 			<< strgettext("Change Password") << "]";
-	} else {
+	} else if (simple_singleplayer_mode) {
 		os << "field[4.95,0;5,1.5;;" << strgettext("Game paused") << ";]";
 	}
 
@@ -4534,8 +4537,10 @@ void Game::showPauseMenu()
 	os		<< "button_exit[4," << (ypos++) << ";3,0.5;btn_key_config;"
 		<< strgettext("Controls")  << "]";
 #endif
-	os		<< "button_exit[4," << (ypos++) << ";3,0.5;btn_exit_menu;"
-		<< strgettext("Exit to Menu") << "]";
+	if (!did_skip_menu) {
+		os << "button_exit[4," << (ypos++) << ";3,0.5;btn_exit_menu;"
+			<< strgettext("Exit to Menu") << "]";
+	}
 	os		<< "button_exit[4," << (ypos++) << ";3,0.5;btn_exit_os;"
 		<< strgettext("Exit to OS")   << "]";
 	if (!control_text.empty()) {
