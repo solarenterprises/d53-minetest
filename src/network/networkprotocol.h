@@ -226,15 +226,15 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 		[scheduled bump for 5.9.0]
 */
 
-#define LATEST_PROTOCOL_VERSION 47
+#define LATEST_PROTOCOL_VERSION 48
 #define LATEST_PROTOCOL_VERSION_STRING TOSTRING(LATEST_PROTOCOL_VERSION)
 
 // Server's supported network protocol range
-#define SERVER_PROTOCOL_VERSION_MIN 47
+#define SERVER_PROTOCOL_VERSION_MIN 48
 #define SERVER_PROTOCOL_VERSION_MAX LATEST_PROTOCOL_VERSION
 
 // Client's supported network protocol range
-#define CLIENT_PROTOCOL_VERSION_MIN 47
+#define CLIENT_PROTOCOL_VERSION_MIN 48
 #define CLIENT_PROTOCOL_VERSION_MAX LATEST_PROTOCOL_VERSION
 
 // Constant that differentiates the protocol from random data and other protocols
