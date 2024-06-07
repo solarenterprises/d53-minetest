@@ -54,12 +54,16 @@ public:
 
 
 protected:
+	virtual void on_close_connection() {};
 	void createTableIfNotExists(const std::string &table_name, const std::string &table_schema, const std::string& options = "");
 	void verifyDatabase();
 
 	// Database initialization
 	void connectToDatabase();
 	virtual void createDatabase() = 0;
+
+	bool beginTransaction();
+	bool endTransaction();
 
 	MYSQL* m_conn = nullptr;
 
@@ -91,6 +95,7 @@ public:
 	void endSave() { Database_MySQL::endSave(); }
 
 protected:
+	virtual void on_close_connection() override;
 	virtual void createDatabase();
 
 private:

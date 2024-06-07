@@ -7,7 +7,7 @@ AppDir:
     id: district53
     name: District53
     icon: minetest
-    version: 5.9.0.001
+    version: 5.9.0.2
     exec: usr/bin/District53
     exec_args: $@
   runtime:
@@ -69,4 +69,4 @@ AppImage:
 script: |
     cmake --install .
     mkdir -p AppDir/usr/lib/x86_64-linux-gnu
-    cp ../../irrlicht/lib/Linux/libIrrlichtMt.so.1.9.0.15 AppDir/usr/lib/x86_64-linux-gnu
+    cp ../irrlicht/lib/Linux/libIrrlichtMt.so.1.9.0.15 AppDir/usr/lib/x86_64-linux-gnu

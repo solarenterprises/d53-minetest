@@ -74,6 +74,8 @@ Database_MySQL::~Database_MySQL() {
 
 
 void Database_MySQL::closeConnection() {
+	on_close_connection();
+
 	if (m_conn) {
 		mysql_close(m_conn);
 		m_conn = nullptr;
@@ -104,6 +106,8 @@ bool Database_MySQL::doQueries(const std::vector<std::string>& query) {
 }
 
 bool Database_MySQL::execTransaction(const std::vector<std::string>& query) {
+	verifyDatabase();
+
 	if (mysql_autocommit(m_conn, 0)) {
 		handleMySQLError("autocommit 0");
 		return false;
@@ -246,10 +250,65 @@ void Database_MySQL::verifyDatabase()
 void Database_MySQL::ping()
 {
 	// mysql_ping() checks the connection, and if it is not alive, attempts to reconnect.
-	if (mysql_ping(m_conn)) {
-		// If mysql_ping returns non-zero, the reconnection attempt failed.
-		handleMySQLError("ping"); // Handle the error (throw an exception or log it)
+	if (mysql_ping(m_conn) == 0)
+		return;
+
+	// If mysql_ping returns non-zero, the reconnection attempt failed.
+	// Handle the error (throw an exception or log it)
+	std::string error_msg = mysql_error(m_conn);
+	errorstream
+		<< "Database_MySQL (PING FAILED):"
+		<< error_msg.c_str()
+		<< std::endl;
+
+	//
+	// Do 10 attempts in 10 seconds to reconnect to database
+	for (int i = 0; i < 10; i++) {
+		if (i != 0) {
+			infostream << "mySQL Database: retrying connection in 1sec..." << std::endl;
+			using namespace std::chrono_literals;
+			std::this_thread::sleep_for(1000ms);
+		}
+
+		closeConnection();
+
+		m_conn = mysql_init(NULL);
+		if (!m_conn) {
+			errorstream
+				<< "Failed to initialize MySQL connection"
+				<< std::endl;
+
+			continue;
+		}
+
+
+		auto params = parse_connection_string(m_connect_string);
+		auto database = params["database_prefix"] + m_type;
+
+		if (mysql_real_connect(
+			m_conn,
+			params["host"].c_str(),
+			params["user"].c_str(),
+			params.find("password") != params.end() ? params["password"].c_str() : nullptr,
+			database.c_str(),
+			0,
+			NULL,
+			0) == NULL) {
+
+			errorstream
+				<< "Failed to connect MySQL connection"
+				<< std::endl;
+
+			continue;
+		}
+
+		//
+		// Successful connection
+		infostream << "mySQL Database: Connection made." << std::endl;
+		return;
 	}
+
+	throw std::runtime_error("MySQL Error: Failed to reconnect to database");
 }
 
 void Database_MySQL::createTableIfNotExists(
@@ -276,31 +335,57 @@ void Database_MySQL::createTableIfNotExists(
 
 void Database_MySQL::beginSave()
 {
-	verifyDatabase();
-	try {
-		execQuery("START TRANSACTION");
-	}
-	catch (const std::runtime_error& e) {
-		errorstream << "Failed to start transaction: " << e.what() << std::endl;
-		throw std::runtime_error("Failed to start transaction"); // Rethrow the exception or handle it as needed.
-	}
+	//verifyDatabase();
+	//try {
+	//	execQuery("START TRANSACTION");
+	//}
+	//catch (const std::runtime_error& e) {
+	//	errorstream << "Failed to start transaction: " << e.what() << std::endl;
+	//	throw std::runtime_error("Failed to start transaction"); // Rethrow the exception or handle it as needed.
+	//}
 }
 
 void Database_MySQL::endSave()
 {
-	try {
-		execQuery("COMMIT");
+	//try {
+	//	execQuery("COMMIT");
+	//}
+	//catch (const std::runtime_error& e) {
+	//	errorstream << "Failed to commit transaction: " << e.what() << std::endl;
+	//	throw std::runtime_error("Failed to commit transaction: "); // Rethrow the exception or handle it as needed.
+	//}
+}
+
+bool Database_MySQL::beginTransaction() {
+	verifyDatabase();
+
+	if (mysql_autocommit(m_conn, 0)) {
+		handleMySQLError("autocommit 0");
+		return false;
 	}
-	catch (const std::runtime_error& e) {
-		errorstream << "Failed to commit transaction: " << e.what() << std::endl;
-		throw std::runtime_error("Failed to commit transaction: "); // Rethrow the exception or handle it as needed.
+
+	return true;
+}
+
+bool Database_MySQL::endTransaction() {
+	if (mysql_commit(m_conn)) {
+		mysql_autocommit(m_conn, 1);
+		handleMySQLError("commit");
+		return false;
 	}
+
+	if (mysql_autocommit(m_conn, 1)) {
+		handleMySQLError("autocommit 1");
+		return false;
+	}
+
+	return true;
 }
 
 void Database_MySQL::rollback()
 {
 	try {
-		execQuery("ROLLBACK");
+		mysql_rollback(m_conn);
 	}
 	catch (const std::runtime_error& e) {
 		errorstream << "Failed to rollback transaction: " << e.what() << std::endl;
@@ -320,10 +405,16 @@ MapDatabaseMySQL::MapDatabaseMySQL(const std::string &connect_string):
 }
 
 MapDatabaseMySQL::~MapDatabaseMySQL() {
+}
+
+void MapDatabaseMySQL::on_close_connection() {
 	if (stmt_load_block)
 		mysql_stmt_close(stmt_load_block);
 	if (stmt_save_block)
 		mysql_stmt_close(stmt_save_block);
+
+	stmt_load_block = nullptr;
+	stmt_save_block = nullptr;
 }
 
 void MapDatabaseMySQL::createDatabase() {
@@ -338,6 +429,8 @@ void MapDatabaseMySQL::createDatabase() {
 }
 
 bool MapDatabaseMySQL::saveBlock(const v3s16& pos, std::string_view data) {
+	verifyDatabase();
+
 	if (!stmt_save_block) {
 		stmt_save_block = mysql_stmt_init(m_conn);
 
@@ -382,6 +475,8 @@ bool MapDatabaseMySQL::saveBlock(const v3s16& pos, std::string_view data) {
 char blob_data[65'535];
 
 void MapDatabaseMySQL::loadBlock(const v3s16& pos, std::string* block) {
+	verifyDatabase();
+
 	if (!stmt_load_block) {
 		stmt_load_block = mysql_stmt_init(m_conn);
 		const char* query = "SELECT data FROM blocks WHERE posX=? AND posY=? AND posZ=? LIMIT 1";
@@ -472,6 +567,8 @@ void MapDatabaseMySQL::loadBlock(const v3s16& pos, std::string* block) {
 }
 
 bool MapDatabaseMySQL::deleteBlock(const v3s16& pos) {
+	verifyDatabase();
+
 	std::string query = "DELETE FROM blocks WHERE posX = " + std::to_string(pos.X) +
 		" AND posY = " + std::to_string(pos.Y) +
 		" AND posZ = " + std::to_string(pos.Z) + " LIMIT 1;";
@@ -480,6 +577,8 @@ bool MapDatabaseMySQL::deleteBlock(const v3s16& pos) {
 }
 
 void MapDatabaseMySQL::listAllLoadableBlocks(std::vector<v3s16>& dst) {
+	verifyDatabase();
+
 	std::string query = "SELECT posX, posY, posZ FROM blocks;";
 	MYSQL_RES* result = execQueryWithResult(query);
 	if (!result) return;
@@ -571,8 +670,6 @@ void PlayerDatabaseMySQL::savePlayer(RemotePlayer *player)
 	if (!sao)
 		return;
 
-	verifyDatabase();
-
 	v3f pos = sao->getBasePosition();
 	std::string pitch = ftos(sao->getLookPitch());
 	std::string yaw = ftos(sao->getRotation().Y);
@@ -591,17 +688,18 @@ void PlayerDatabaseMySQL::savePlayer(RemotePlayer *player)
 	};
 
 	std::vector<std::string> rmvalues = { player->getName() };
-	beginSave();
 
-	execWithParam("INSERT INTO player(name, pitch, yaw, posX, posY, posZ, hp, breath) VALUES "
+	Transaction transaction;
+
+	transaction.push_back({ "INSERT INTO player(name, pitch, yaw, posX, posY, posZ, hp, breath) VALUES "
 		"($1, $2, $3, $4, $5, $6, $7, $8) "
 		"ON DUPLICATE KEY UPDATE pitch = VALUES(pitch), yaw = VALUES(yaw), "
 		"posX = VALUES(posX), posY = VALUES(posY), posZ = VALUES(posZ), hp = VALUES(hp), breath = VALUES(breath), "
-		"modification_date = NOW()", values);
+		"modification_date = NOW()", values });
 
 	// Write player inventories
-	execWithParam("DELETE FROM player_inventories WHERE player = $1", rmvalues);
-	execWithParam("DELETE FROM player_inventory_items WHERE player = $1", rmvalues);
+	transaction.push_back({ "DELETE FROM player_inventories WHERE player = $1", rmvalues });
+	transaction.push_back({ "DELETE FROM player_inventory_items WHERE player = $1", rmvalues });
 
 	const auto &inventory_lists = sao->getInventory()->getLists();
 	std::ostringstream oss;
@@ -618,8 +716,10 @@ void PlayerDatabaseMySQL::savePlayer(RemotePlayer *player)
 			name.c_str(),
 			lsize.c_str()
 		};
-		execWithParam("INSERT INTO player_inventories (player, inv_id, inv_width, inv_name, inv_size) VALUES "
-			"($1, $2, $3, $4, $5)", inv_values);
+		transaction.push_back({
+			"INSERT INTO player_inventories (player, inv_id, inv_width, inv_name, inv_size) VALUES "
+			"($1, $2, $3, $4, $5)",
+			inv_values });
 
 		for (u32 j = 0; j < list->getSize(); j++) {
 			oss.str("");
@@ -633,8 +733,8 @@ void PlayerDatabaseMySQL::savePlayer(RemotePlayer *player)
 				slotId.c_str(),
 				itemStr.c_str()
 			};
-			execWithParam("INSERT INTO player_inventory_items (player, inv_id, slot_id, item) VALUES "
-				"($1, $2, $3, $4)", invitem_values);
+			transaction.push_back({ "INSERT INTO player_inventory_items (player, inv_id, slot_id, item) VALUES "
+				"($1, $2, $3, $4)", invitem_values });
 		}
 	}
 
@@ -646,9 +746,13 @@ void PlayerDatabaseMySQL::savePlayer(RemotePlayer *player)
 			attr.first.c_str(),
 			attr.second.c_str()
 		};
-		execWithParam("INSERT INTO player_metadata(player, attr, value) VALUES($1, $2, $3) ON DUPLICATE KEY UPDATE value = VALUES(value)", meta_values);
+		transaction.push_back({ "INSERT INTO player_metadata(player, attr, value) VALUES($1, $2, $3) ON DUPLICATE KEY UPDATE value = VALUES(value)", meta_values });
 	}
-	endSave();
+
+	if (!execTransactionWithParam(transaction)) {
+		errorstream << "Failed to save player:" << player->getName() << std::endl;
+		return;
+	}
 
 	player->onSuccessfulSave();
 }
@@ -747,6 +851,8 @@ void PlayerDatabaseMySQL::listPlayers(std::vector<std::string> &res)
 
 bool PlayerDatabaseMySQL::set_player_metadata(const std::string& player_name, const std::unordered_map<std::string, std::string>& metadata)
 {
+	verifyDatabase();
+
 	Transaction transaction;
 	transaction.push_back({ { "SET FOREIGN_KEY_CHECKS = 0" }, {} });
 
@@ -765,6 +871,8 @@ bool PlayerDatabaseMySQL::set_player_metadata(const std::string& player_name, co
 
 bool PlayerDatabaseMySQL::get_player_metadata(const std::string& player_name, const std::string& attr, std::string& result)
 {
+	verifyDatabase();
+
 	result = "";
 
 	// Load player metadata
@@ -785,6 +893,8 @@ bool PlayerDatabaseMySQL::rename_player(const std::string& old_name, const std::
 {
 	if (old_name == new_name)
 		return false;
+
+	verifyDatabase();
 
 	// Check if old_name exists
 	MYSQL_RES* results = execWithParamAndResult("SELECT name FROM player WHERE name = $1 OR name = $2 LIMIT 2", { old_name, new_name });
@@ -928,9 +1038,7 @@ bool AuthDatabaseMySQL::getAuth(const std::string &name, AuthEntry &res)
 
 bool AuthDatabaseMySQL::saveAuth(const AuthEntry &authEntry)
 {
-	verifyDatabase();
-
-	beginSave();
+	beginTransaction();
 
 	std::string lastLoginStr = std::to_string(authEntry.last_login);
 	std::string idStr = std::to_string(authEntry.id);
@@ -944,13 +1052,12 @@ bool AuthDatabaseMySQL::saveAuth(const AuthEntry &authEntry)
 
 	writePrivileges(authEntry);
 
-	endSave();
-	return true;
+	return endTransaction();
 }
 
 bool AuthDatabaseMySQL::createAuth(AuthEntry &authEntry)
 {
-	verifyDatabase();
+	beginTransaction();
 
 	std::string lastLoginStr = std::to_string(authEntry.last_login);
 	std::vector<std::string> values = {
@@ -958,8 +1065,6 @@ bool AuthDatabaseMySQL::createAuth(AuthEntry &authEntry)
 		authEntry.password,
 		lastLoginStr
 	};
-
-	beginSave();
 
 	execWithParam("INSERT INTO auth (name, password, last_login) VALUES ($1, $2, $3)", values);
 	unsigned long authId = mysql_insert_id(m_conn);
@@ -973,8 +1078,7 @@ bool AuthDatabaseMySQL::createAuth(AuthEntry &authEntry)
 
 	writePrivileges(authEntry);
 
-	endSave();
-	return true;
+	return endTransaction();
 }
 
 bool AuthDatabaseMySQL::deleteAuth(const std::string &name)
