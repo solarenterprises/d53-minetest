@@ -54,7 +54,7 @@ std::vector<std::vector<double>> audiorw::read(
 	// Find an audio stream and its decoder
 	AVCodec* codec = NULL;
 
-#ifdef WIN32
+#if defined(WIN32) || defined(__APPLE__)
 	const AVCodec** ppcodec = (const AVCodec**)&codec;
 #else
 	AVCodec** ppcodec = &codec;

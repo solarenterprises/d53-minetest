@@ -512,16 +512,22 @@ bool setSystemPaths()
 
 bool setSystemPaths()
 {
-	CFBundleRef main_bundle = CFBundleGetMainBundle();
-	CFURLRef resources_url = CFBundleCopyResourcesDirectoryURL(main_bundle);
-	char path[PATH_MAX];
-	if (CFURLGetFileSystemRepresentation(resources_url,
-			TRUE, (UInt8 *)path, PATH_MAX)) {
-		path_share = std::string(path);
+	char cwd[PATH_MAX];
+	memset(cwd, 0, sizeof(cwd));
+	if (getcwd(cwd, sizeof(cwd)) != nullptr) {
+		path_share = cwd;
 	} else {
-		warningstream << "Could not determine bundle resource path" << std::endl;
+		CFBundleRef main_bundle = CFBundleGetMainBundle();
+		CFURLRef resources_url = CFBundleCopyResourcesDirectoryURL(main_bundle);
+		char path[PATH_MAX];
+		if (CFURLGetFileSystemRepresentation(resources_url,
+				TRUE, (UInt8 *)path, PATH_MAX)) {
+			path_share = std::string(path);
+		} else {
+			warningstream << "Could not determine bundle resource path" << std::endl;
+		}
+		CFRelease(resources_url);
 	}
-	CFRelease(resources_url);
 
 	const char *const minetest_user_path = getenv("MINETEST_USER_PATH");
 	if (minetest_user_path && minetest_user_path[0] != '\0') {

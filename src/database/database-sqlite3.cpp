@@ -416,8 +416,8 @@ void PlayerDatabaseSQLite3::initStatements()
 		"`player_metadata` WHERE `player` = ?")
 	PREPARE_STATEMENT(player_metadata_set, "INSERT OR REPLACE INTO `player_metadata` "
 		"(`player`, `metadata`, `value`) VALUES (?, ?, ?) ")
-		PREPARE_STATEMENT(player_metadata_get, "SELECT `value` FROM "
-		"`player_metadata` WHERE `player` = ? AND `attr` = ? LIMIT 1")
+	PREPARE_STATEMENT(player_metadata_get, "SELECT `value` FROM "
+		"`player_metadata` WHERE `player` = ? AND `metadata` = ? LIMIT 1")
 	PREPARE_STATEMENT(player_metadata_add, "INSERT INTO `player_metadata` "
 		"(`player`, `metadata`, `value`) VALUES (?, ?, ?)")
 	PREPARE_STATEMENT(player_metadata_remove, "DELETE FROM `player_metadata` "
