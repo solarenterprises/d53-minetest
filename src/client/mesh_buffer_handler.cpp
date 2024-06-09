@@ -1,7 +1,9 @@
 #include "mesh_buffer_handler.h"
 #include "IMaterialRenderer.h"
 
-MeshBufferWorkerThread::MeshBufferWorkerThread(MeshUpdateManager* meshUpdateManager, video::CNullDriver* driver) : Thread("mesh buffer worker thread") {
+MeshBufferWorkerThread::MeshBufferWorkerThread(
+	MeshUpdateManager* meshUpdateManager, 
+	video::CNullDriver* driver) : Thread("mesh buffer worker thread") {
 	this->driver = driver;
 	this->meshUpdateManager = meshUpdateManager;
 }

@@ -32,7 +32,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "util/basic_macros.h"
 #include "client/renderingengine.h"
 #include "COpenGLDriver.h"
-
+#include <vendor/gl.h>
 #include <queue>
 
 namespace {
@@ -123,6 +123,13 @@ ClientMap::ClientMap(
 	g_settings->registerChangedCallback("enable_raytraced_culling", on_settings_changed, this);
 
 	empty_data.set_used(1000000);
+
+	GLint maxVertexBufferSize;
+	glGetIntegerv(GL_MAX_ELEMENTS_VERTICES, &maxVertexBufferSize);
+	GLint maxIndexBufferSize;
+	glGetIntegerv(GL_MAX_ELEMENTS_INDICES, &maxIndexBufferSize);
+	this->maxVertexBufferSize = maxVertexBufferSize;
+	this->maxIndexBufferSize = maxIndexBufferSize;
 }
 
 void ClientMap::onSettingChanged(const std::string& name)
@@ -805,7 +812,6 @@ void ClientMap::renderMap(video::IVideoDriver* driver, s32 pass)
 			for (auto& list : map) {
 				video::ITexture* texture = list.first;
 				
-
 				auto data = cache_buffers.get(texture, layer);
 				auto buffer = data->buffer;
 				auto& material = buffer->getMaterial();
@@ -837,9 +843,14 @@ void ClientMap::renderMap(video::IVideoDriver* driver, s32 pass)
 				m.setTranslation(-offset);
 
 				driver->setTransform(video::ETS_WORLD, m);
+
+				u32 mesh_vertex_count = buffer->getPrimitiveCount() * 3;
+				if (mesh_vertex_count >= maxVertexBufferSize)
+					errorstream << "Mesh vertex count is more than GL_MAX_ELEMENTS_VERTICES." << std::endl;
+				
 				driver->drawMeshBuffer(buffer);
 
-				vertex_count += buffer->getPrimitiveCount() * 3;
+				vertex_count += mesh_vertex_count;
 				material_swaps++;
 				drawcall_count++;
 			}

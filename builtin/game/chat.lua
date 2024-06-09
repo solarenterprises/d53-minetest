@@ -234,7 +234,7 @@ core.register_chatcommand("haspriv", {
 
 local function handle_grant_command(caller, grantname, grantprivstr)
 	local caller_privs = core.get_player_privs(caller)
-	if not (caller_privs.privs or caller_privs.basic_privs) then
+	if not minetest.is_singleplayer() and not (caller_privs.privs or caller_privs.basic_privs) then
 		return false, S("Your privileges are insufficient.")
 	end
 
