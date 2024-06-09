@@ -123,13 +123,6 @@ ClientMap::ClientMap(
 	g_settings->registerChangedCallback("enable_raytraced_culling", on_settings_changed, this);
 
 	empty_data.set_used(1000000);
-
-	GLint maxVertexBufferSize;
-	glGetIntegerv(GL_MAX_ELEMENTS_VERTICES, &maxVertexBufferSize);
-	GLint maxIndexBufferSize;
-	glGetIntegerv(GL_MAX_ELEMENTS_INDICES, &maxIndexBufferSize);
-	this->maxVertexBufferSize = maxVertexBufferSize;
-	this->maxIndexBufferSize = maxIndexBufferSize;
 }
 
 void ClientMap::onSettingChanged(const std::string& name)
@@ -844,13 +837,18 @@ void ClientMap::renderMap(video::IVideoDriver* driver, s32 pass)
 
 				driver->setTransform(video::ETS_WORLD, m);
 
-				u32 mesh_vertex_count = buffer->getPrimitiveCount() * 3;
-				if (mesh_vertex_count >= maxVertexBufferSize)
-					errorstream << "Mesh vertex count is more than GL_MAX_ELEMENTS_VERTICES." << std::endl;
-				
-				driver->drawMeshBuffer(buffer);
+				// u32 mesh_vertex_count = ;
+				// u32 mesh_index_count = buffer->getIndexCount();
+				// if (mesh_vertex_count < maxVertexBufferSize && mesh_index_count < maxIndexBufferSize) {
+				// 	driver->drawMeshBuffer(buffer);
+				// } else {
+				// 	errorstream << "Mesh vertex count is more than GL_MAX_ELEMENTS_VERTICES." << std::endl;
 
-				vertex_count += mesh_vertex_count;
+				// }
+
+				driver->drawMeshBuffer(buffer);
+					
+				vertex_count += buffer->getPrimitiveCount() * 3;
 				material_swaps++;
 				drawcall_count++;
 			}
@@ -998,6 +996,40 @@ void ClientMap::updateCacheBuffers(video::IVideoDriver* driver) {
 		gl_ops_processed_gauge -= std::min(gl_ops_processed_gauge, reduce);
 	}
 
+	//
+	// Get available gpu memory
+	//
+	size_t availableGPUMemory = glDriver->getGPUFreeVBOMemory();
+	if (availableGPUMemory == 0) {
+		//
+		// Feature is not available. Estimate GPU memory instead.
+		//
+		const size_t max_gpu_memory = 2 * 1e+9;
+		size_t estimated_used_mem = 0;
+		for (u8 layer = 0; layer < MAX_TILE_LAYERS; layer++) {
+			auto& map = cache_buffers.maps[layer];
+
+			for (auto& list : map) {
+				estimated_used_mem += list.second->buffer->getIndexCount() * sizeof(u32);
+				estimated_used_mem += list.second->buffer->getVertexCount() * sizeof(video::S3DVertex);
+			}
+		}
+		if (estimated_used_mem < max_gpu_memory)
+			availableGPUMemory = max_gpu_memory - estimated_used_mem;
+	} else {
+		//
+		// Remove 1 GB from available GPU memory to prevent crash.
+		const size_t reduce_gpu_memory = 1 * 1e+9;
+		if (availableGPUMemory < reduce_gpu_memory)
+			availableGPUMemory = 0;
+		else
+			availableGPUMemory -= reduce_gpu_memory;
+	}
+		
+	bool canLoad = availableGPUMemory != 0;
+	if (!canLoad)
+		errorstream << "Out of GPU Memmory... Lower view range" << std::endl;
+
 	const u64 max_gl_ops = 10000;
 
 	const u64 gl_ops_points_div = 100;
@@ -1037,31 +1069,38 @@ void ClientMap::updateCacheBuffers(video::IVideoDriver* driver) {
 			//
 			size_t setVertexCount = data->vertexCount;
 			if (buffer->vertexCount != setVertexCount) {
-				//
-				// Resize gpu memory
-				glDriver->resizeVertexHardwareBufferSubData(
-					HWBuffer,
-					setVertexCount,
-					buffer->vertexCount);
+				if (canLoad || setVertexCount < buffer->vertexCount) {
+					//
+					// Resize gpu memory
+					glDriver->resizeVertexHardwareBufferSubData(
+						HWBuffer,
+						setVertexCount,
+						buffer->vertexCount);
 
-				buffer->vertexCount = setVertexCount;
+					buffer->vertexCount = setVertexCount;
 
-				gl_ops_processed_gauge += (setVertexCount / gl_ops_points_div) * 2;
+					gl_ops_processed_gauge += (setVertexCount / gl_ops_points_div) * 2;
+				}
 			}
 
 			size_t setIndexCount = data->indexCount;
 			if (buffer->indexCount != setIndexCount) {
-				//
-				// Resize gpu memory
-				glDriver->resizeIndexHardwareBufferSubData(
-					HWBuffer,
-					setIndexCount,
-					buffer->indexCount);
+				if (canLoad || setIndexCount < buffer->indexCount) {
+					//
+					// Resize gpu memory
+					glDriver->resizeIndexHardwareBufferSubData(
+						HWBuffer,
+						setIndexCount,
+						buffer->indexCount);
 
-				buffer->indexCount = setIndexCount;
+					buffer->indexCount = setIndexCount;
 
-				gl_ops_processed_gauge += (setIndexCount / gl_ops_points_div) * 2;
+					gl_ops_processed_gauge += (setIndexCount / gl_ops_points_div) * 2;
+				}
 			}
+
+			if (!canLoad)
+				continue;
 
 			//
 			// Vertices

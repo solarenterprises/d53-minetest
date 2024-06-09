@@ -2,7 +2,7 @@ tokenmgr = {}
 
 --------------------------------------------------------------------------------
 local function get_tokens_path(folder)
-	return core.get_user_path() .. DIR_DELIM .. "cache" .. DIR_DELIM .. "tokens.json"
+	return core.get_cache_path() .. DIR_DELIM .. "tokens.json"
 end
 
 --------------------------------------------------------------------------------

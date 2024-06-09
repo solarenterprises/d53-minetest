@@ -74,6 +74,9 @@ private:
 	// get_user_path()
 	static int l_get_user_path(lua_State *L);
 
+	// get_cache_path()
+	static int l_get_cache_path(lua_State *L);
+
 	// compress(data, method, ...)
 	static int l_compress(lua_State *L);
 

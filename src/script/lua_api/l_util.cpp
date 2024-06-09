@@ -286,6 +286,17 @@ int ModApiUtil::l_get_user_path(lua_State *L)
 	return 1;
 }
 
+// get_cache_path()
+int ModApiUtil::l_get_cache_path(lua_State *L)
+{
+	NO_MAP_LOCK_REQUIRED;
+
+	std::string path = porting::path_cache;
+	lua_pushstring(L, path.c_str());
+
+	return 1;
+}
+
 enum LuaCompressMethod
 {
 	LUA_COMPRESS_METHOD_DEFLATE,
@@ -772,6 +783,7 @@ void ModApiUtil::InitializeAsync(lua_State *L, int top)
 
 	API_FCT(get_builtin_path);
 	API_FCT(get_user_path);
+	API_FCT(get_cache_path);
 
 	API_FCT(compress);
 	API_FCT(decompress);
