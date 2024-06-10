@@ -600,21 +600,38 @@ void PlayerDatabaseSQLite3::listPlayers(std::vector<std::string> &res)
 
 bool PlayerDatabaseSQLite3::set_player_metadata(const std::string& player_name, const std::unordered_map<std::string, std::string>& metadata)
 {
-	bool success = true;
-	for (auto it : metadata) {
-		str_to_sqlite(m_stmt_player_metadata_set, 1, player_name);
-		str_to_sqlite(m_stmt_player_metadata_set, 2, it.first);
-		str_to_sqlite(m_stmt_player_metadata_set, 3, it.second);
-		sqlite3_vrfy(sqlite3_step(m_stmt_player_metadata_set), SQLITE_DONE);
-		sqlite3_reset(m_stmt_player_metadata_set);
+	verifyDatabase();
+
+	try {
+		SQLOK(sqlite3_exec(m_database, "PRAGMA foreign_keys = OFF;", NULL, NULL, NULL),
+			"Failed to set foreign keys");
+
+		for (auto it : metadata) {
+			str_to_sqlite(m_stmt_player_metadata_set, 1, player_name);
+			str_to_sqlite(m_stmt_player_metadata_set, 2, it.first);
+			str_to_sqlite(m_stmt_player_metadata_set, 3, it.second);
+			sqlite3_vrfy(sqlite3_step(m_stmt_player_metadata_set), SQLITE_DONE);
+			sqlite3_reset(m_stmt_player_metadata_set);
+		}
+
+	}
+	catch (std::exception e) {
+		SQLOK(sqlite3_exec(m_database, "PRAGMA foreign_keys = ON;", NULL, NULL, NULL),
+			"Failed to set foreign keys");
+		return false;
 	}
 
-	return success;
+	SQLOK(sqlite3_exec(m_database, "PRAGMA foreign_keys = ON;", NULL, NULL, NULL),
+		"Failed to set foreign keys");
+
+	return true;
 }
 
 
 bool PlayerDatabaseSQLite3::get_player_metadata(const std::string& player_name, const std::string& attr, std::string& result)
 {
+	verifyDatabase();
+
 	result = "";
 
 	str_to_sqlite(m_stmt_player_metadata_get, 1, player_name);
