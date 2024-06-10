@@ -8,6 +8,7 @@ if (NOT DEFINED LIBMYSQL_LIBRARY)
 		~/Library/Frameworks
 		/Library/Frameworks
 		/usr/include
+		/usr/local/include
 		/usr)
 
 	find_library(LIBMYSQL_LIBRARY 
@@ -16,6 +17,7 @@ if (NOT DEFINED LIBMYSQL_LIBRARY)
 		~/Library/Frameworks
 		/Library/Frameworks
 		/usr/lib/x86_64-linux-gnu
+		/usr/lobal/lib
 		/usr/lib)
 endif()
 		

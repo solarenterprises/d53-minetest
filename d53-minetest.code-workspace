@@ -87,7 +87,10 @@
 			"random": "cpp",
 			"type_traits": "cpp",
 			"utility": "cpp",
-			"chrono": "cpp"
+			"chrono": "cpp",
+			"stdint.h": "c",
+			"config.h": "c",
+			"cmake_config.h": "c"
 		}
 	}
 }

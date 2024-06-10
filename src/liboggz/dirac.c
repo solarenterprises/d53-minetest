@@ -4,19 +4,15 @@
 
 #include "config.h"
 
-#ifdef HAVE_STDINT_H
-#include <stdint.h>
-#endif
-
 #include "dirac.h"
 
 
 typedef struct
 dirac_bs_s
 {
-  uint8_t *p_start;
-  uint8_t *p;
-  uint8_t *p_end;
+  ogg_uint8_t *p_start;
+  ogg_uint8_t *p;
+  ogg_uint8_t *p_end;
 
   int     i_left;    /* i_count number of available bits */
 } dirac_bs_t;
