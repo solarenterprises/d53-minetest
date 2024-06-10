@@ -6,6 +6,26 @@
 
 #include "dirac.h"
 
+#if defined(_WIN32)
+
+#  if defined(__CYGWIN__)
+typedef uint8_t ogg_uint8_t;
+#  elif defined(__MINGW32__)
+typedef unsigned char ogg_uint8_t;
+typedef unsigned byte ogg_uint8_t;
+#  else
+#    if defined(_MSC_VER) && (_MSC_VER >= 1800) /* MSVC 2013 and newer */
+typedef uint8_t ogg_uint8_t;
+#    else
+/* MSVC/Borland */
+typedef unsigned __int8 ogg_uint8_t;
+#    endif
+#  endif
+
+#elif (defined(__APPLE__) && defined(__MACH__)) /* MacOS X Framework build */
+typedef u_int8_t ogg_uint8_t;
+#endif
+
 
 typedef struct
 dirac_bs_s
