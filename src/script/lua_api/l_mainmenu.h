@@ -62,14 +62,6 @@ private:
 
 	//api calls
 
-	static int l_validate_sxp_password(lua_State* L);
-
-	static int l_get_sxp_mnemonic(lua_State* L);
-
-	static int l_get_new_sxpaddress(lua_State* L);
-
-	static int l_get_restore_sxpaddress(lua_State* L);
-
 	static int l_start(lua_State *L);
 
 	static int l_close(lua_State *L);

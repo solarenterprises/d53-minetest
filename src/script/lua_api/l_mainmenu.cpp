@@ -43,12 +43,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include <string_view>
 #include "network/networkprotocol.h"
-#include "crypto/message.hpp"
-#include "common/configuration.hpp"
-#include "identities/address.hpp"
-#include "identities/keys.hpp"
-#include "networks/mainnet.hpp"
-#include "bip39/bip39.h"
 #include <cstdint>
 #include <iostream>
 #include "util/base64.h"
@@ -735,7 +729,6 @@ int ModApiMainMenu::l_start(lua_State *L)
 
 
 	if (!data->do_reconnect) {
-		//data->alias = getTextData(L, "aliasname");
 		data->name = getTextData(L, "playername");
 		data->token = getTextData(L, "token");
 		data->password = getTextData(L, "password");
@@ -756,182 +749,6 @@ int ModApiMainMenu::l_start(lua_State *L)
 	//close menu next time
 	engine->m_startgame = true;
 	return 0;
-}
-
-/******************************************************************************/
-int ModApiMainMenu::l_validate_sxp_password(lua_State* L)
-{
-
-	std::string encrypted_key = luaL_checkstring(L, 1);
-	std::string sxpaddress = luaL_checkstring(L, 2);
-	std::string iv = luaL_checkstring(L, 3);
-	std::string userpass = luaL_checkstring(L, 4);
-
-	//const std::string err_all = encrypted_key + ":" + sxpaddress + ":" + iv + ":" + userpass;
-	//throw openssl_error(1, err_all);
-
-	try {
-
-		// Decrypt
-		const aes256_cbc encryptor(str_to_bytes(iv));
-		const std::string key = md5(userpass);
-		std::vector<std::uint8_t> dec_result;
-		encryptor.decrypt(str_to_bytes(key), str_to_bytes(base64_decode(encrypted_key)), dec_result);
-		std::string dtext = bytes_to_str(dec_result);
-
-		const std::uint8_t version = 0x3F;
-		const Ark::Crypto::identities::Address address = Ark::Crypto::identities::Address::fromPassphrase(dtext.c_str(), version);
-
-		if (address.toString() == sxpaddress)
-		{
-			lua_pushinteger(L, 1);
-		}
-		else
-		{
-			lua_pushinteger(L, 2);
-		}
-
-	}
-	catch (const std::exception& ex) {
-		lua_pushinteger(L, 0);
-	}
-	catch (const std::string& ex) {
-		lua_pushinteger(L, 0);
-	}
-	catch (...) {
-		lua_pushinteger(L, 0);
-	}
-
-	return 1;
-
-}
-
-/******************************************************************************/
-int ModApiMainMenu::l_get_sxp_mnemonic(lua_State* L)
-{
-
-	std::string encrypted_key = luaL_checkstring(L, 1);
-	std::string sxpaddress = luaL_checkstring(L, 2);
-	std::string iv = luaL_checkstring(L, 3);
-	std::string userpass = luaL_checkstring(L, 4);
-
-	try {
-
-		// Decrypt
-		const aes256_cbc encryptor(str_to_bytes(iv));
-		const std::string key = md5(userpass);
-		std::vector<std::uint8_t> dec_result;
-		encryptor.decrypt(str_to_bytes(key), str_to_bytes(base64_decode(encrypted_key)), dec_result);
-		std::string dtext = bytes_to_str(dec_result);
-
-		const std::uint8_t version = 0x3F;
-		const Ark::Crypto::identities::Address address = Ark::Crypto::identities::Address::fromPassphrase(dtext.c_str(), version);
-
-		if (address.toString() == sxpaddress)
-		{
-			lua_pushstring(L, dtext.c_str());
-		}
-		else
-		{
-			lua_pushstring(L, "Error");
-		}
-
-	}
-	catch (const BaseException& e) {
-		lua_pushstring(L, "Error");
-	}
-
-	return 1;
-
-}
-
-/******************************************************************************/
-int ModApiMainMenu::l_get_new_sxpaddress(lua_State* L)
-{
-
-	const BIP39::word_list wordlist = BIP39::generate_mnemonic(BIP39::entropy_bits_t::_256, BIP39::language::en);
-
-	const std::string passphrase1 = wordlist.to_string();
-
-	const char* passphrase = &passphrase1[0];
-
-	const std::uint8_t version = 0x3F;
-
-	const Ark::Crypto::identities::Address address = Ark::Crypto::identities::Address::fromPassphrase(passphrase, version);
-
-	//const std::string text = "Your Address Is: " + address.toString() + "\n\nYour Mnemonic Phrase Is: " +  passphrase1 + "\n\nCOPY THIS DOWN NOW!";
-
-	const std::string iv = random_string();
-	const std::string message = passphrase1;
-	// 32 bytes key from password
-
-	const std::string userpass = luaL_checkstring(L, 1);
-
-	const std::string key = md5(userpass);
-
-	const aes256_cbc encryptor(str_to_bytes(iv));
-	std::vector<std::uint8_t> enc_result;
-	encryptor.encrypt(str_to_bytes(key), str_to_bytes(message), enc_result);
-
-	std::string etext = base64_encode(std::string_view((const char*)bytes_to_str(enc_result).c_str(), bytes_to_str(enc_result).size()));
-
-	// Decrypt
-	//std::vector<std::uint8_t> dec_result;
-	//encryptor.decrypt(str_to_bytes(key), str_to_bytes(base64_decode(etext)), dec_result);
-	//std::string dtext = bytes_to_str(dec_result);
-
-	const std::string text = address.toString() + "|" + passphrase1 + "|" + iv + "|" + etext;
-
-	lua_pushstring(L, text.c_str());
-
-	// Message - sign
-	//Ark::Crypto::Message message;
-	//message.sign(text, passphrase);
-	//lua_pushstring(L,message.toJson().c_str());
-
-	return 1;
-}
-
-/******************************************************************************/
-int ModApiMainMenu::l_get_restore_sxpaddress(lua_State* L)
-{
-
-	const std::string passphrase1 = luaL_checkstring(L, 1);
-	const std::string userpass = luaL_checkstring(L, 2);
-
-	const char* passphrase = &passphrase1[0];
-
-	const std::uint8_t version = 0x3F;
-
-	const Ark::Crypto::identities::Address address = Ark::Crypto::identities::Address::fromPassphrase(passphrase, version);
-
-	const std::string iv = random_string();
-	const std::string message = passphrase1;
-	// 32 bytes key from password
-
-	const std::string key = md5(userpass);
-
-	const aes256_cbc encryptor(str_to_bytes(iv));
-	std::vector<std::uint8_t> enc_result;
-	encryptor.encrypt(str_to_bytes(key), str_to_bytes(message), enc_result);
-
-	std::string etext = base64_encode(std::string_view((const char*)bytes_to_str(enc_result).c_str(), bytes_to_str(enc_result).size()));
-
-	// Decrypt
-	//std::vector<std::uint8_t> dec_result;
-	//encryptor.decrypt(str_to_bytes(key), str_to_bytes(base64_decode(etext)), dec_result);
-	//std::string dtext = bytes_to_str(dec_result);
-
-	const std::string text = address.toString() + "|" + passphrase1 + "|" + iv + "|" + etext;
-
-	lua_pushstring(L, text.c_str());
-
-	// Message - sign
-	//Ark::Crypto::Message message;
-	//message.sign(text, passphrase);
-	//lua_pushstring(L,message.toJson().c_str());
-
-	return 1;
 }
 
 /******************************************************************************/
@@ -1958,11 +1775,6 @@ void ModApiMainMenu::Initialize(lua_State *L, int top)
 	API_FCT(do_async_callback);
 	API_FCT(set_once);
 	API_FCT(get_once);
-
-	API_FCT(get_new_sxpaddress);
-	API_FCT(get_restore_sxpaddress);
-	API_FCT(validate_sxp_password);
-	API_FCT(get_sxp_mnemonic);
 }
 
 /******************************************************************************/

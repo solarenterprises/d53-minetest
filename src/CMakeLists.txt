@@ -599,14 +599,14 @@ endif()
 # 	find_package(OpenSSL REQUIRED)
 # endif()
 
-if (OPENSSL_LIBRARIES)
-	message("USE OPENSSL LIB VARIABLE")
-	set(PLATFORM_LIBS ${PLATFORM_LIBS} ${OPENSSL_LIBRARIES})
-	include_directories(${OPENSSL_INCLUDE_DIR})
-else()
-	find_package(OpenSSL REQUIRED)
-	set(PLATFORM_LIBS ${PLATFORM_LIBS} OpenSSL::SSL OpenSSL::Crypto)
-endif()
+# if (OPENSSL_LIBRARIES)
+	# message("USE OPENSSL LIB VARIABLE")
+	# set(PLATFORM_LIBS ${PLATFORM_LIBS} ${OPENSSL_LIBRARIES})
+	# include_directories(${OPENSSL_INCLUDE_DIR})
+# else()
+	# find_package(OpenSSL REQUIRED)
+	# set(PLATFORM_LIBS ${PLATFORM_LIBS} OpenSSL::SSL OpenSSL::Crypto)
+# endif()
 
 if(BUILD_CLIENT)
 	if(ANDROID)
@@ -631,8 +631,8 @@ if(BUILD_CLIENT)
 			${LUA_BIT_LIBRARY}
 			${FREETYPE_LIBRARY}
 			${PLATFORM_LIBS}
-			ark_cpp_crypto
-			bip39
+			# ark_cpp_crypto
+			# bip39
 			${FFMPEG_LIBRARIES}
 		)
 	else()
@@ -650,10 +650,10 @@ if(BUILD_CLIENT)
 			${LUA_BIT_LIBRARY}
 			${FREETYPE_LIBRARY}
 			${PLATFORM_LIBS}
-			ark_cpp_crypto
-			bip39
-			OpenSSL::SSL
-			OpenSSL::Crypto
+			# ark_cpp_crypto
+			# bip39
+			# OpenSSL::SSL
+			# OpenSSL::Crypto
 			${FFMPEG_LIBRARIES}
 		)
 	endif()

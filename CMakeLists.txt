@@ -92,10 +92,10 @@ if(ANDROID)
 endif()
 
 # ark crypto
-add_subdirectory(lib/cpp-crypto)
+# add_subdirectory(lib/cpp-crypto)
 
 # bip39
-add_subdirectory(lib/bip39/src)
+# add_subdirectory(lib/bip39/src)
 
 # find_package(unofficial-libmysql REQUIRED)
 # set(MYSQL_LIBDIR "" CACHE PATH "MYSQL Library Directory")

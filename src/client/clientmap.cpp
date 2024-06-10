@@ -999,12 +999,15 @@ void ClientMap::updateCacheBuffers(video::IVideoDriver* driver) {
 	//
 	// Get available gpu memory
 	//
-	size_t availableGPUMemory = glDriver->getGPUFreeVBOMemory();
+#define GB_TO_BYTES 1e+9
+#define KB_TO_BYTES 1000
+
+	size_t availableGPUMemory = glDriver->getGPUFreeVBOMemory() * KB_TO_BYTES;
 	if (availableGPUMemory == 0) {
 		//
 		// Feature is not available. Estimate GPU memory instead.
 		//
-		const size_t max_gpu_memory = 2 * 1e+9;
+		const size_t max_gpu_memory = 2 * GB_TO_BYTES;
 		size_t estimated_used_mem = 0;
 		for (u8 layer = 0; layer < MAX_TILE_LAYERS; layer++) {
 			auto& map = cache_buffers.maps[layer];
@@ -1019,7 +1022,7 @@ void ClientMap::updateCacheBuffers(video::IVideoDriver* driver) {
 	} else {
 		//
 		// Remove 1 GB from available GPU memory to prevent crash.
-		const size_t reduce_gpu_memory = 1 * 1e+9;
+		const size_t reduce_gpu_memory = 1 * GB_TO_BYTES;
 		if (availableGPUMemory < reduce_gpu_memory)
 			availableGPUMemory = 0;
 		else
@@ -1099,8 +1102,6 @@ void ClientMap::updateCacheBuffers(video::IVideoDriver* driver) {
 				}
 			}
 
-			if (!canLoad)
-				continue;
 
 			//
 			// Vertices
@@ -1111,24 +1112,26 @@ void ClientMap::updateCacheBuffers(video::IVideoDriver* driver) {
 			if (vertexSubData) {
 				auto subData = vertexSubData;
 
-				//
-				// Move vertex memory to GPU
-				//
-				video::S3DVertex* vertices;
-				if (subData->isEmpty()) {
-					vertices = (video::S3DVertex*)empty_data.pointer();
-					assert(subData->size <= empty_data.size());
+				if (canLoad) {
+					//
+					// Move vertex memory to GPU
+					//
+					video::S3DVertex* vertices;
+					if (subData->isEmpty()) {
+						vertices = (video::S3DVertex*)empty_data.pointer();
+						assert(subData->size <= empty_data.size());
+					}
+					else
+						vertices = (video::S3DVertex*)subData->data.pointer();
+
+					glDriver->subUpdateVertexHardwareBuffer(
+						HWBuffer,
+						(c8*)vertices,
+						subData->size / sizeof(video::S3DVertex),
+						subData->offset / sizeof(video::S3DVertex));
+
+					gl_ops_processed_gauge += subData->size / gl_ops_points_div;
 				}
-				else
-					vertices = (video::S3DVertex*)subData->data.pointer();
-
-				glDriver->subUpdateVertexHardwareBuffer(
-					HWBuffer,
-					(c8*)vertices,
-					subData->size / sizeof(video::S3DVertex),
-					subData->offset / sizeof(video::S3DVertex));
-
-				gl_ops_processed_gauge += subData->size / gl_ops_points_div;
 
 				delete subData;
 			}
@@ -1136,26 +1139,28 @@ void ClientMap::updateCacheBuffers(video::IVideoDriver* driver) {
 			if (indexSubData) {
 				auto subData = indexSubData;
 
-				//
-				// Move index memory to GPU
-				//
-				u32* indices;
-				if (subData->isEmpty()) {
-					indices = empty_data.pointer();
-					assert(subData->size <= empty_data.size());
+				if (canLoad) {
+					//
+					// Move index memory to GPU
+					//
+					u32* indices;
+					if (subData->isEmpty()) {
+						indices = empty_data.pointer();
+						assert(subData->size <= empty_data.size());
+					}
+					else
+						indices = (u32*)subData->data.pointer();
+
+					glDriver->subUpdateIndexHardwareBuffer(
+						HWBuffer,
+						(c8*)indices,
+						subData->size / sizeof(u32),
+						subData->offset / sizeof(u32));
+
+					gl_ops_processed_gauge += subData->size / gl_ops_points_div;
+
+					buffer->drawPrimitiveCount = loadData.drawPrimitiveCount;
 				}
-				else
-					indices = (u32*)subData->data.pointer();
-
-				glDriver->subUpdateIndexHardwareBuffer(
-					HWBuffer,
-					(c8*)indices,
-					subData->size / sizeof(u32),
-					subData->offset / sizeof(u32));
-
-				gl_ops_processed_gauge += subData->size / gl_ops_points_div;
-
-				buffer->drawPrimitiveCount = loadData.drawPrimitiveCount;
 
 				delete subData;
 			}
