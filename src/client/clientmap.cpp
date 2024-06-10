@@ -963,8 +963,10 @@ void ClientMap::renderMap(video::IVideoDriver* driver, s32 pass)
 
 void ClientMap::updateCacheBuffers(video::IVideoDriver* driver) {
 	TextureBufListMaps buffers;
-	if (!m_client->m_mesh_buffer_handler->getCacheBuffers(buffers))
+	if (!m_client->m_mesh_buffer_handler->getCacheBuffers(buffers)) {
+		gl_ops_processed_gauge = 0;
 		return;
+	}
 
 	const v3s16 cam_pos_nodes = floatToInt(m_camera_position, BS);
 	v3s16 p_blocks_min;
