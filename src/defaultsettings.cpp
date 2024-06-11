@@ -35,7 +35,7 @@ void set_default_settings()
 	settings->setDefault("name", "");
 	settings->setDefault("bind_address", "");
 
-#ifdef DEVELOPMENT_BUILD
+#if DEVELOPMENT_BUILD
 	settings->setDefault("serverlist_url", "http://dev.district53.io:5000");
 #else
 	settings->setDefault("serverlist_url", "https://serverlist.district53.io");
@@ -400,7 +400,7 @@ void set_default_settings()
 	settings->setDefault("enable_mod_channels", "false");
 	settings->setDefault("disallow_empty_password", "false");
 	settings->setDefault("use_token_auth", "true");
-#ifdef DEVELOPMENT_BUILD
+#if DEVELOPMENT_BUILD
 	settings->setDefault("token_url", "https://dev.tymt.com/api/users/find-by-token");
 	settings->setDefault("tymt_backend_url", "https://dev.tymt.com/");
 #else
