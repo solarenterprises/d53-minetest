@@ -211,12 +211,29 @@ int ModApiOGG::l_sound_convert_to_ogg(lua_State* L)
 	getstringfield(L, 1, "buffer", buffer);
 	getstringfield(L, 1, "type", type);
 
+	if (buffer.empty()) {
+		lua_pushnil(L);
+		return 1;
+	}
+
 	std::ofstream file("./_tmpconvert.wav", std::ios::binary);
+	if (!file.is_open()) {
+		errorstream << "Failed to open './_tmpconvert.wav'" << std::endl;
+		lua_pushnil(L);
+		return 1;
+	}
+
 	file << buffer;
 	file.close();
 
 	double sample_rate;
 	std::vector<std::vector<double>> data = audiorw::read("./_tmpconvert.wav", sample_rate);
+
+	if (data.empty()) {
+		errorstream << "Failed to read './_tmpconvert.wav'" << std::endl;
+		lua_pushnil(L);
+		return 1;
+	}
 
 	if (data.size() == 2) {
 		std::vector<double> monoData;
