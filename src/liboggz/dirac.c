@@ -24,6 +24,11 @@ typedef unsigned __int8 ogg_uint8_t;
 
 #elif (defined(__APPLE__) && defined(__MACH__)) /* MacOS X Framework build */
 typedef u_int8_t ogg_uint8_t;
+#else
+
+#include <ogg/config_types.h>
+typedef uint8_t ogg_uint8_t;
+
 #endif
 
 
