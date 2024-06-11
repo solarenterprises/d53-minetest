@@ -61,10 +61,13 @@ void ToolGroupCap::fromJson(const Json::Value& json)
 
 void ToolCapabilities::serialize(std::ostream& os, u16 protocol_version) const
 {
-	if (protocol_version >= 38)
+	if (protocol_version >= 49)
+		writeU8(os, 6);
+	else if (protocol_version >= 38)
 		writeU8(os, 5);
 	else
 		writeU8(os, 4); // proto == 37
+
 	writeF32(os, full_punch_interval);
 	writeS16(os, max_drop_level);
 	writeU32(os, groupcaps.size());
@@ -90,6 +93,16 @@ void ToolCapabilities::serialize(std::ostream& os, u16 protocol_version) const
 
 	if (protocol_version >= 38)
 		writeU16(os, rangelim(punch_attack_uses, 0, U16_MAX));
+
+	if (protocol_version >= 49) {
+		writeU32(os, max_drop_level_table.size());
+		for (const auto& max_drop_level : max_drop_level_table) {
+			const std::string* name = &max_drop_level.first;
+			const int value = max_drop_level.second;
+			os << serializeString16(*name);
+			writeS16(os, value);
+		}
+	}
 }
 
 void ToolCapabilities::deSerialize(std::istream& is)
@@ -125,6 +138,15 @@ void ToolCapabilities::deSerialize(std::istream& is)
 
 	if (version >= 5)
 		punch_attack_uses = readU16(is);
+
+	if (version >= 6) {
+		u32 max_drop_level_size = readU32(is);
+		for (u32 i = 0; i < max_drop_level_size; i++) {
+			std::string name = deSerializeString16(is);
+			int value = readS16(is);
+			max_drop_level_table[name] = value;
+		}
+	}
 }
 
 void ToolCapabilities::serializeJson(std::ostream& os) const

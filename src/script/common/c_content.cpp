@@ -1497,42 +1497,58 @@ void push_tool_capabilities(lua_State *L,
 {
 	lua_newtable(L);
 	setfloatfield(L, -1, "full_punch_interval", toolcap.full_punch_interval);
-	setintfield(L, -1, "max_drop_level", toolcap.max_drop_level);
-	setintfield(L, -1, "punch_attack_uses", toolcap.punch_attack_uses);
-		// Create groupcaps table
+	if (toolcap.max_drop_level_table.empty())
+		setintfield(L, -1, "max_drop_level", toolcap.max_drop_level);
+	else {
+		// Create max_drop_level table
 		lua_newtable(L);
-		// For each groupcap
-		for (const auto &gc_it : toolcap.groupcaps) {
-			// Create groupcap table
-			lua_newtable(L);
-			const std::string &name = gc_it.first;
-			const ToolGroupCap &groupcap = gc_it.second;
-			// Create subtable "times"
-			lua_newtable(L);
-			for (auto time : groupcap.times) {
-				lua_pushinteger(L, time.first);
-				lua_pushnumber(L, time.second);
-				lua_settable(L, -3);
-			}
-			// Set subtable "times"
-			lua_setfield(L, -2, "times");
-			// Set simple parameters
-			setintfield(L, -1, "maxlevel", groupcap.maxlevel);
-			setintfield(L, -1, "uses", groupcap.uses);
-			// Insert groupcap table into groupcaps table
+		for (const auto& it : toolcap.max_drop_level_table) {
+			const std::string& name = it.first;
+			const int value = it.second;
+
+			lua_pushinteger(L, value);
 			lua_setfield(L, -2, name.c_str());
 		}
 		// Set groupcaps table
-		lua_setfield(L, -2, "groupcaps");
-		//Create damage_groups table
+		lua_setfield(L, -2, "max_drop_level");
+	}
+
+	setintfield(L, -1, "punch_attack_uses", toolcap.punch_attack_uses);
+
+	// Create groupcaps table
+	lua_newtable(L);
+	// For each groupcap
+	for (const auto &gc_it : toolcap.groupcaps) {
+		// Create groupcap table
 		lua_newtable(L);
-		// For each damage group
-		for (const auto &damageGroup : toolcap.damageGroups) {
-			// Create damage group table
-			lua_pushinteger(L, damageGroup.second);
-			lua_setfield(L, -2, damageGroup.first.c_str());
+		const std::string &name = gc_it.first;
+		const ToolGroupCap &groupcap = gc_it.second;
+		// Create subtable "times"
+		lua_newtable(L);
+		for (auto time : groupcap.times) {
+			lua_pushinteger(L, time.first);
+			lua_pushnumber(L, time.second);
+			lua_settable(L, -3);
 		}
-		lua_setfield(L, -2, "damage_groups");
+		// Set subtable "times"
+		lua_setfield(L, -2, "times");
+		// Set simple parameters
+		setintfield(L, -1, "maxlevel", groupcap.maxlevel);
+		setintfield(L, -1, "uses", groupcap.uses);
+		// Insert groupcap table into groupcaps table
+		lua_setfield(L, -2, name.c_str());
+	}
+	// Set groupcaps table
+	lua_setfield(L, -2, "groupcaps");
+	//Create damage_groups table
+	lua_newtable(L);
+	// For each damage group
+	for (const auto &damageGroup : toolcap.damageGroups) {
+		// Create damage group table
+		lua_pushinteger(L, damageGroup.second);
+		lua_setfield(L, -2, damageGroup.first.c_str());
+	}
+	lua_setfield(L, -2, "damage_groups");
 }
 
 /******************************************************************************/
@@ -1642,7 +1658,30 @@ ToolCapabilities read_tool_capabilities(
 {
 	ToolCapabilities toolcap;
 	getfloatfield(L, table, "full_punch_interval", toolcap.full_punch_interval);
-	getintfield(L, table, "max_drop_level", toolcap.max_drop_level);
+
+	lua_getfield(L, table, "max_drop_level");
+	if (lua_istable(L, -1)) {
+		toolcap.max_drop_level = 0;
+
+		int table_max_drop_level = lua_gettop(L);
+		lua_pushnil(L);
+		while (lua_next(L, table_max_drop_level) != 0) {
+			// key at index -2 and value at index -1
+			std::string groupname = luaL_checkstring(L, -2);
+			int value = luaL_checknumber(L, -1);
+
+			toolcap.max_drop_level_table[groupname] = value;
+			
+			// removes value, keeps key for next iteration
+			lua_pop(L, 1);
+		}
+		lua_pop(L, 1);
+	}
+	else {
+		lua_pop(L, 1);
+		getintfield(L, table, "max_drop_level", toolcap.max_drop_level);
+	}
+
 	getintfield(L, table, "punch_attack_uses", toolcap.punch_attack_uses);
 	lua_getfield(L, table, "groupcaps");
 	if(lua_istable(L, -1)){

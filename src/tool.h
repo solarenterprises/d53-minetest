@@ -63,6 +63,7 @@ struct ToolCapabilities
 {
 	float full_punch_interval;
 	int max_drop_level;
+	std::unordered_map<std::string, int> max_drop_level_table;
 	ToolGCMap groupcaps;
 	DamageGroup damageGroups;
 	int punch_attack_uses;
