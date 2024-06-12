@@ -2537,27 +2537,44 @@ void Server::SendResetBlock(session_t peer_id, v3s16 pos)
 {
 	Map& map = m_env->getMap();
 	MapBlock* block = map.getBlockNoCreateNoEx(pos);
-	if (!block)
+	if (!block) {
+		errorstream << "Block not found in SendResetBlock" << std::endl;
 		return;
+	}
 
 	RemoteClient* client = m_clients.lockedGetClientNoEx(peer_id,
 		CS_Active);
-	if (!client)
+	if (!client) {
+		errorstream << "Client not found in SendResetBlock" << std::endl;
 		return;
+	}
 
-	auto it = cache.find({ pos, client->serialization_version });
-	if (it == cache.end())
-		return;
+	std::string block_str;
 
-	auto& data = it->second;
-	if (data.last_serialized_version != block->getModifiedVersion())
-		return;
+	auto ver = client->serialization_version;
+	auto it = cache.find({ pos, ver });
+	if (it == cache.end() || it->second.last_serialized_version != block->getModifiedVersion()) {
+		thread_local const int net_compression_level = rangelim(g_settings->getS16("map_compression_level_net"), -1, 9);
+		std::ostringstream os(std::ios_base::binary);
+		block->serialize(os, ver, false, net_compression_level);
+		block->serializeNetworkSpecific(os);
+		block_str = os.str();
 
-	NetworkPacket reset_pkt(TOCLIENT_RESETBLOCK, sizeof(v3s16) + sizeof(u16) + data.str.size(), peer_id);
+		SerializedBlockCacheData data;
+		data.str = block_str;
+		data.last_serialized_version = block->getModifiedVersion();
+		cache[{ pos, ver }] = std::move(data);
+	}
+	else {
+		block_str = cache[{ pos, ver }].str;
+	}
+
+	NetworkPacket reset_pkt(TOCLIENT_RESETBLOCK, sizeof(v3s16) + sizeof(u16) + block_str.size(), peer_id);
 	reset_pkt << pos;
 	reset_pkt << block->getModifiedVersion();
-	reset_pkt.putRawString(data.str);
+	reset_pkt.putRawString(block_str);
 	Send(&reset_pkt);
+	infostream << "SendResetBlock " << pos.X << "," << pos.Y << "," << pos.Z << " to " << peer_id << std::endl;
 }
 
 void Server::SendBlockNoLock(session_t peer_id, MapBlock *block, u8 ver,

@@ -197,7 +197,7 @@ void set_default_settings()
 	settings->setDefault("tooltip_append_itemname", "false");
 	settings->setDefault("fps_max", "120");
 	settings->setDefault("fps_max_unfocused", "20");
-	settings->setDefault("viewing_range", "190");
+	settings->setDefault("viewing_range", "120");
 	settings->setDefault("client_mesh_chunk", "1");
 	settings->setDefault("screen_w", "1024");
 	settings->setDefault("screen_h", "600");
