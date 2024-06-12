@@ -310,8 +310,7 @@ void Client::handleCommand_NodemetaChanged(NetworkPacket *pkt)
 	}
 }
 
-void Client::handleCommand_BlockData(NetworkPacket* pkt)
-{
+void Client::handleBlockDataPacket(NetworkPacket* pkt, bool is_urgent) {
 	// Ignore too small packet
 	if (pkt->getSize() < 6)
 		return;
@@ -325,8 +324,8 @@ void Client::handleCommand_BlockData(NetworkPacket* pkt)
 	std::string datastring(pkt->getString(offset), pkt->getSize() - offset);
 	std::istringstream istr(datastring, std::ios_base::binary);
 
-	MapSector *sector;
-	MapBlock *block;
+	MapSector* sector;
+	MapBlock* block;
 
 	v2s16 p2d(p.X, p.Z);
 	sector = m_env.getMap().emergeSector(p2d);
@@ -363,6 +362,39 @@ void Client::handleCommand_BlockData(NetworkPacket* pkt)
 		Add it to mesh update queue and set it to be acknowledged after update.
 	*/
 	addUpdateMeshTaskWithEdge(p, true);
+}
+
+void Client::handleCommand_BlockData(NetworkPacket* pkt)
+{
+	handleBlockDataPacket(pkt, false);
+}
+
+void Client::handleCommand_ResetBlock(NetworkPacket* pkt)
+{
+	if (pkt->getSize() < sizeof(v3s16))
+		return;
+
+	u32 offset = pkt->get_read_offset();
+
+	v3s16 p;
+	*pkt >> p;
+
+	MapSector* sector;
+	MapBlock* block;
+
+	v2s16 p2d(p.X, p.Z);
+	sector = m_env.getMap().emergeSector(p2d);
+
+	assert(sector->getPos() == p2d);
+
+	block = sector->getBlockNoCreateNoEx(p.Y);
+	if (!block)
+		return;
+
+	block->setModifiedVersion(0);
+
+	pkt->set_read_offset(offset);
+	handleBlockDataPacket(pkt, true);
 }
 
 void Client::handleCommand_Inventory(NetworkPacket* pkt)

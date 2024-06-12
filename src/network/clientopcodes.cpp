@@ -61,7 +61,7 @@ const ToClientCommandHandler toClientCommandTable[TOCLIENT_NUM_MSG_TYPES] =
 	{ "TOCLIENT_BLOCKDATA",                TOCLIENT_STATE_CONNECTED, &Client::handleCommand_BlockData }, // 0x20
 	{ "TOCLIENT_ADDNODE",                  TOCLIENT_STATE_CONNECTED, &Client::handleCommand_AddNode }, // 0x21
 	{ "TOCLIENT_REMOVENODE",               TOCLIENT_STATE_CONNECTED, &Client::handleCommand_RemoveNode }, // 0x22
-	null_command_handler,
+	{ "TOCLIENT_RESETBLOCK",               TOCLIENT_STATE_CONNECTED, &Client::handleCommand_ResetBlock }, // 0x23
 	null_command_handler,
 	null_command_handler,
 	null_command_handler,

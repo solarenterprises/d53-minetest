@@ -187,6 +187,7 @@ public:
 	void handleCommand_DenySudoMode(NetworkPacket* pkt);
 	void handleCommand_AccessDenied(NetworkPacket* pkt);
 	void handleCommand_RemoveNode(NetworkPacket* pkt);
+	void handleCommand_ResetBlock(NetworkPacket* pkt);
 	void handleCommand_AddNode(NetworkPacket* pkt);
 	void handleCommand_NodemetaChanged(NetworkPacket* pkt);
 	void handleCommand_BlockData(NetworkPacket* pkt);
@@ -491,6 +492,8 @@ public:
 
 private:
 	void loadMods();
+
+	void handleBlockDataPacket(NetworkPacket* pkt, bool is_urgent);
 
 	// Virtual methods from con::PeerHandler
 	void peerAdded(con::Peer* peer) override;

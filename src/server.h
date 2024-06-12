@@ -548,6 +548,8 @@ private:
 	void SendBlockNoLock(session_t peer_id, MapBlock *block, u8 ver,
 		u16 net_proto_version, SerializedBlockCache *cache = nullptr);
 
+	void SendResetBlock(session_t peer_id, v3s16 pos);
+
 	// Sends blocks to clients (locks env and con on its own)
 	void SendBlocks(float dtime);
 

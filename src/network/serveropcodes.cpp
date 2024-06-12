@@ -168,7 +168,7 @@ const ClientCommandFactory clientCommandFactoryTable[TOCLIENT_NUM_MSG_TYPES] =
 	{ "TOCLIENT_BLOCKDATA",                2, true }, // 0x20
 	{ "TOCLIENT_ADDNODE",                  0, true }, // 0x21
 	{ "TOCLIENT_REMOVENODE",               0, true }, // 0x22
-	null_command_factory, // 0x23
+	{ "TOCLIENT_RESETBLOCK",               2, true }, // 0x23
 	null_command_factory, // 0x24
 	null_command_factory, // 0x25
 	null_command_factory, // 0x26

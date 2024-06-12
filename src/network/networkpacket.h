@@ -126,6 +126,14 @@ public:
 	// ^ this comment has been here for 7 years
 	Buffer<u8> oldForgePacket();
 
+	inline u32 get_read_offset() {
+		return m_read_offset;
+	}
+
+	inline void set_read_offset(u32 offset) {
+		m_read_offset = offset;
+	}
+
 private:
 	void checkReadOffset(u32 from_offset, u32 field_size) const;
 

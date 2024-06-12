@@ -2533,6 +2533,33 @@ void Server::sendMetadataChanged(const std::unordered_set<v3s16> &positions, flo
 	}
 }
 
+void Server::SendResetBlock(session_t peer_id, v3s16 pos)
+{
+	Map& map = m_env->getMap();
+	MapBlock* block = map.getBlockNoCreateNoEx(pos);
+	if (!block)
+		return;
+
+	RemoteClient* client = m_clients.lockedGetClientNoEx(peer_id,
+		CS_Active);
+	if (!client)
+		return;
+
+	auto it = cache.find({ pos, client->serialization_version });
+	if (it == cache.end())
+		return;
+
+	auto& data = it->second;
+	if (data.last_serialized_version != block->getModifiedVersion())
+		return;
+
+	NetworkPacket reset_pkt(TOCLIENT_RESETBLOCK, sizeof(v3s16) + sizeof(u16) + data.str.size(), peer_id);
+	reset_pkt << pos;
+	reset_pkt << block->getModifiedVersion();
+	reset_pkt.putRawString(data.str);
+	Send(&reset_pkt);
+}
+
 void Server::SendBlockNoLock(session_t peer_id, MapBlock *block, u8 ver,
 		u16 net_proto_version, SerializedBlockCache *cache)
 {

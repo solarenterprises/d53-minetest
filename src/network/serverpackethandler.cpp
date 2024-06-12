@@ -1264,20 +1264,22 @@ void Server::handleCommand_Interact(NetworkPacket *pkt)
 
 		/* Actually dig node */
 
-		if (is_valid_dig && n.getContent() != CONTENT_IGNORE)
-			m_script->node_on_dig(p_under, n, playersao);
+		if (!is_valid_dig)
+			return;
 
+		if (n.getContent() == CONTENT_IGNORE)
+			return;
+
+		bool result = m_script->node_on_dig(p_under, n, playersao);
+
+		if (result)
+			// Success
+			return;
+
+		//
+		// Reset block for client
 		v3s16 blockpos = getNodeBlockPos(p_under);
-		RemoteClient *client = getClient(peer_id);
-		// Send unusual result (that is, node not being removed)
-		//if (m_env->getMap().getNode(p_under).getContent() != CONTENT_AIR)
-		//	// Re-send block to revert change on client-side
-		//	client->ResetNothingToSendTimer();
-		//	//client->SetBlockNotSent(blockpos);
-		//else
-		//	client->ResendBlockIfOnWire(blockpos);
-
-		client->SetBlockNotSent(blockpos);
+		SendResetBlock(peer_id, blockpos);
 
 		return;
 	} // action == INTERACT_DIGGING_COMPLETED
@@ -1326,25 +1328,11 @@ void Server::handleCommand_Interact(NetworkPacket *pkt)
 
 		// If item has node placement prediction, always send the
 		// blocks to make sure the client knows what exactly happened
-		RemoteClient *client = getClient(peer_id);
 		v3s16 blockpos = getNodeBlockPos(pointed.node_abovesurface);
 		v3s16 blockpos2 = getNodeBlockPos(pointed.node_undersurface);
-		client->SetBlockNotSent(blockpos);
+		SendResetBlock(peer_id, blockpos);
 		if (blockpos2 != blockpos)
-			client->SetBlockNotSent(blockpos2);
-
-		/*if (had_prediction) {
-			client->ResetNothingToSendTimer();
-			client->SetBlockNotSent(blockpos);
-			if (blockpos2 != blockpos)
-				client->SetBlockNotSent(blockpos2);
-		} else {
-			client->ResendBlockIfOnWire(blockpos);
-			if (blockpos2 != blockpos)
-				client->ResendBlockIfOnWire(blockpos2);
-		}
-
-		client->ResetNothingToSendTimer();*/
+			SendResetBlock(peer_id, blockpos2);
 
 		return;
 	} // action == INTERACT_PLACE

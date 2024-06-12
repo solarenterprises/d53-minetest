@@ -226,15 +226,15 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 		[scheduled bump for 5.9.0]
 */
 
-#define LATEST_PROTOCOL_VERSION 49
+#define LATEST_PROTOCOL_VERSION 50
 #define LATEST_PROTOCOL_VERSION_STRING TOSTRING(LATEST_PROTOCOL_VERSION)
 
 // Server's supported network protocol range
-#define SERVER_PROTOCOL_VERSION_MIN 49
+#define SERVER_PROTOCOL_VERSION_MIN 50
 #define SERVER_PROTOCOL_VERSION_MAX LATEST_PROTOCOL_VERSION
 
 // Client's supported network protocol range
-#define CLIENT_PROTOCOL_VERSION_MIN 49
+#define CLIENT_PROTOCOL_VERSION_MIN 50
 #define CLIENT_PROTOCOL_VERSION_MAX LATEST_PROTOCOL_VERSION
 
 // Constant that differentiates the protocol from random data and other protocols
@@ -295,6 +295,7 @@ enum ToClientCommand : u16
 		u8 keep_metadata // Added in protocol version 22
 	*/
 	TOCLIENT_REMOVENODE = 0x22,
+	TOCLIENT_RESETBLOCK = 0x23,
 
 	TOCLIENT_INVENTORY = 0x27,
 	/*
