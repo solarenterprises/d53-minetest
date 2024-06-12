@@ -4520,7 +4520,7 @@ void Game::showPauseMenu()
 		<< strgettext("Continue") << "]";
 
 	bool use_token_auth = g_settings->getBool("use_token_auth");
-	if (!simple_singleplayer_mode && !use_token_auth) {
+	if (!simple_singleplayer_mode && client->getAuthMechanism() != AUTH_MECHANISM_TOKEN) {
 		os << "button_exit[4," << (ypos++) << ";3,0.5;btn_change_password;"
 			<< strgettext("Change Password") << "]";
 	} else if (simple_singleplayer_mode) {

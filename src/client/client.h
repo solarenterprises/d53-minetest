@@ -467,6 +467,10 @@ public:
 		return m_csm_restriction_flags & flag;
 	}
 
+	inline AuthMechanism getAuthMechanism() {
+		return m_chosen_auth_mech;
+	}
+
 	bool joinModChannel(const std::string& channel) override;
 	bool leaveModChannel(const std::string& channel) override;
 	bool sendModChannelMessage(const std::string& channel,

@@ -1032,8 +1032,10 @@ void ClientMap::updateCacheBuffers(video::IVideoDriver* driver) {
 	}
 		
 	bool canLoad = availableGPUMemory != 0;
-	if (!canLoad)
+	if (!canLoad && !did_send_gpu_memory_error_msg) {
+		did_send_gpu_memory_error_msg = true;
 		errorstream << "Out of GPU Memmory... Lower view range" << std::endl;
+	}
 
 	const u64 max_gl_ops = 10000;
 

@@ -19,7 +19,6 @@ serverlistmgr = {}
 
 --------------------------------------------------------------------------------
 local function order_server_list(list)
-    print("LIST", dump(list))
 	local res = {}
 	--orders the favorite list after support
 	for i = 1, #list do
@@ -48,8 +47,8 @@ function serverlistmgr.sync()
 		}}
 	end
 
-	local serverlist_url = core.settings:get("serverlist_url") or "https://serverlist.district53.io"
-	if not core.get_http_api or serverlist_url == "" then
+	local serverlist_url = core.settings:get("serverlist_url") or ""
+	if not core.get_http_api or not serverlist_url or serverlist_url == "" then
 		serverlistmgr.servers = {{
 			name = fgettext("Public server list is disabled"),
 			description = ""
@@ -65,12 +64,12 @@ function serverlistmgr.sync()
 	core.handle_async(
 		function(param)
 			local http = core.get_http_api()
-			local url = ("%s/list?proto_version_min=%d&proto_version_max=%d"):format(
-				core.settings:get("serverlist_url"),
-				core.get_min_supp_proto(),
-				core.get_max_supp_proto())
-
-			local response = http.fetch_sync({ url = url })
+			-- local url = ("%s/list?proto_version_min=%d&proto_version_max=%d"):format(
+			-- 	serverlist_url,
+			-- 	core.get_min_supp_proto(),
+			-- 	core.get_max_supp_proto())
+                
+			local response = http.fetch_sync({ url = core.settings:get("serverlist_url") })
 			if not response.succeeded then
 				return {}
 			end
