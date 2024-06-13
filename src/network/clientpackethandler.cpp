@@ -361,7 +361,7 @@ void Client::handleBlockDataPacket(NetworkPacket* pkt, bool is_urgent) {
 	/*
 		Add it to mesh update queue and set it to be acknowledged after update.
 	*/
-	addUpdateMeshTaskWithEdge(p, true);
+	addUpdateMeshTaskWithEdge(p, true, is_urgent);
 }
 
 void Client::handleCommand_BlockData(NetworkPacket* pkt)

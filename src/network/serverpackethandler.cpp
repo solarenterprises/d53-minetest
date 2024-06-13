@@ -1264,11 +1264,15 @@ void Server::handleCommand_Interact(NetworkPacket *pkt)
 
 		/* Actually dig node */
 
-		if (!is_valid_dig)
+		if (!is_valid_dig) {
+			SendResetBlock(peer_id, getNodeBlockPos(p_under));
 			return;
+		}
 
-		if (n.getContent() == CONTENT_IGNORE)
+		if (n.getContent() == CONTENT_IGNORE) {
+			SendResetBlock(peer_id, getNodeBlockPos(p_under));
 			return;
+		}
 
 		bool result = m_script->node_on_dig(p_under, n, playersao);
 
@@ -1278,8 +1282,7 @@ void Server::handleCommand_Interact(NetworkPacket *pkt)
 
 		//
 		// Reset block for client
-		v3s16 blockpos = getNodeBlockPos(p_under);
-		SendResetBlock(peer_id, blockpos);
+		SendResetBlock(peer_id, getNodeBlockPos(p_under));
 
 		return;
 	} // action == INTERACT_DIGGING_COMPLETED
