@@ -652,8 +652,8 @@ if(BUILD_CLIENT)
 			${PLATFORM_LIBS}
 			# ark_cpp_crypto
 			# bip39
-			# OpenSSL::SSL
-			# OpenSSL::Crypto
+			OpenSSL::SSL
+			OpenSSL::Crypto
 			${FFMPEG_LIBRARIES}
 		)
 	endif()
@@ -990,17 +990,28 @@ endif()
 if(BUILD_CLIENT AND NOT ANDROID)
 	install(TARGETS ${PROJECT_NAME}
 		RUNTIME DESTINATION ${BINDIR}
+		FRAMEWORK DESTINATION ${BINDIR}/Frameworks
 		LIBRARY DESTINATION ${BINDIR}
 		ARCHIVE DESTINATION ${BINDIR}
 		BUNDLE DESTINATION .
 	)
 
 	if(APPLE)
+		set(BUNDLE_LIBS CACHE PATH "/opt/homebrew/lib")
+
+		# Check if BUNDLE_LIBS is set, otherwise exit with an error message
+		if(NOT DEFINED BUNDLE_LIBS)
+			message(FATAL_ERROR "BUNDLE_LIBS is not defined. Please set BUNDLE_LIBS to the path of the bundled libraries.")
+		endif()
+
+		# DIRS could be /opt/homebrew/lib or /usr/local/lib
+		set(DIRS "${CMAKE_INSTALL_PREFIX}/${BINDIR};${BUNDLE_LIBS}")
+
 		install(CODE "
 			set(BU_CHMOD_BUNDLE_ITEMS ON)
 			include(BundleUtilities)
-			fixup_bundle(\"\${CMAKE_INSTALL_PREFIX}/${BUNDLE_PATH}\" \"\" \"\${CMAKE_INSTALL_PREFIX}/${BINDIR}\")
-		" COMPONENT Runtime)
+			fixup_bundle(\"\${CMAKE_INSTALL_PREFIX}/${BUNDLE_PATH}\" \"\" \"${DIRS}\" IGNORE_ITEM \"libwebp.7.dylib;libsharpyuv.0.dylib\")
+			" COMPONENT Runtime)
 	endif()
 
 	if(USE_GETTEXT)
