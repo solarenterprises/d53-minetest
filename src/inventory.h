@@ -208,6 +208,9 @@ struct ItemStack
 class InventoryList
 {
 public:
+	typedef std::function<bool(const InventoryList& inv, u32 slot, const ItemStack& newitem)> Callback_ItemFits;
+
+public:
 	InventoryList(const std::string &name, u32 size, IItemDefManager *itemdef);
 	~InventoryList() = default;
 	void clearItems();
@@ -216,6 +219,10 @@ public:
 	void setName(const std::string &name);
 	void serialize(std::ostream &os, bool incremental) const;
 	void deSerialize(std::istream &is);
+
+	inline void set_callback_item_fits(Callback_ItemFits callback) {
+		on_item_fits = std::move(callback);
+	}
 
 	InventoryList(const InventoryList &other) { *this = other; }
 	InventoryList & operator = (const InventoryList &other);
@@ -323,6 +330,8 @@ private:
 	IItemDefManager *m_itemdef;
 	bool m_dirty = true;
 	int m_resize_locks = 0; // Lua callback sanity
+
+	Callback_ItemFits on_item_fits;
 };
 
 class Inventory

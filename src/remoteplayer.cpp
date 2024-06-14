@@ -27,6 +27,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "settings.h"
 #include "convert_json.h"
 #include "server/player_sao.h"
+#include "script/cpp_api/s_item.h"
+#include "scripting_server.h"
 
 /*
 	RemotePlayer
@@ -67,6 +69,22 @@ RemotePlayer::RemotePlayer(const char *name, IItemDefManager *idef):
 	m_sun_params    = SkyboxDefaults::getSunDefaults();
 	m_moon_params   = SkyboxDefaults::getMoonDefaults();
 	m_star_params   = SkyboxDefaults::getStarDefaults();
+
+	InventoryList* inv_list_main = inventory.getList("main");
+	if (inv_list_main)
+		inv_list_main->set_callback_item_fits([this](const InventoryList& list, u32 slot, const ItemStack& itemStack) {
+			if (slot >= getHotbarItemcount())
+				return true;
+
+			PlayerSAO* sao = getPlayerSAO();
+			if (!sao)
+				return false;
+
+			if (!sao->getEnv()->getScriptIface()->item_OnEquip(itemStack, sao))
+				return false;
+
+			return true;
+		});
 }
 
 RemotePlayer::~RemotePlayer()

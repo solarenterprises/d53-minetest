@@ -659,6 +659,10 @@ ItemStack InventoryList::addItem(u32 i, const ItemStack &newitem)
 	if(i >= m_items.size())
 		return newitem;
 
+	if (on_item_fits)
+		if (!on_item_fits(*this, i, newitem))
+			return newitem;
+
 	ItemStack leftover = m_items[i].addItem(newitem, m_itemdef);
 	if (leftover != newitem)
 		setModified();
@@ -674,6 +678,13 @@ bool InventoryList::itemFits(const u32 i, const ItemStack &newitem,
 			*restitem = newitem;
 		return false;
 	}
+
+	if (on_item_fits)
+		if (!on_item_fits(*this, i, newitem)) {
+			if (restitem)
+				*restitem = newitem;
+			return false;
+		}
 
 	return m_items[i].itemFits(newitem, restitem, m_itemdef);
 }
