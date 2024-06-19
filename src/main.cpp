@@ -41,6 +41,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "porting.h"
 #include "network/socket.h"
 #include "mapblock.h"
+#include "util/analytics.h"
 #if USE_CURSES
 	#include "terminal_chat_console.h"
 #endif
@@ -141,6 +142,9 @@ int main(int argc, char *argv[])
 
 	g_logger.registerThread("Main");
 	g_logger.addOutputMaxLevel(&stderr_output, LL_ACTION);
+
+	g_analytics.registerThread("Main");
+	g_analytics.set_project_name(std::string(BUILD_TYPE) + "-" + VERSION_STRING + (DEVELOPMENT_BUILD ? "-dev" : ""));
 
 	porting::osSpecificInit();
 

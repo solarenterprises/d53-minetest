@@ -2,6 +2,14 @@
 -- Minetest
 ----------------------------------------------
 
+-- will record an event
+-- @param event_name string
+-- @param values table
+function minetest.analytics_event(event_name, values) end
+-- will set the user field. Server only
+-- @param user string
+function minetest.analytics_set_user(user) end
+
 -- will move all player data to the new player name
 -- @return string
 function minetest.rename_player(from_player, to_player) end

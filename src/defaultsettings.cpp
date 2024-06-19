@@ -30,6 +30,10 @@ void set_default_settings()
 {
 	Settings *settings = Settings::createLayer(SL_DEFAULTS);
 
+	settings->setDefault("analytics_enabled", "true");
+	settings->setDefault("analytics_url", "http://localhost:4002");
+	settings->setDefault("analytics_api_key", "");
+
 	// Client and server
 	settings->setDefault("language", "");
 	settings->setDefault("name", "");
@@ -453,7 +457,11 @@ void set_default_settings()
 	settings->setDefault("remote_media", "");
 	settings->setDefault("debug_log_level", "action");
 	settings->setDefault("debug_log_size_max", "50");
+#if DEVELOPMENT_BUILD
 	settings->setDefault("chat_log_level", "error");
+#else
+	settings->setDefault("chat_log_level", "noprint");
+#endif
 	settings->setDefault("emergequeue_limit_total", "1024");
 	settings->setDefault("emergequeue_limit_diskonly", "128");
 	settings->setDefault("emergequeue_limit_generate", "128");

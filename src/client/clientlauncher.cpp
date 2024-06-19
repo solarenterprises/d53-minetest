@@ -35,6 +35,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "network/networkexceptions.h"
 #include <IGUISpriteBank.h>
 #include <ICameraSceneNode.h>
+#include "util/analytics.h"
 
 #if USE_SOUND
 	#include "sound/sound_openal.h"
@@ -650,6 +651,8 @@ void ClientLauncher::main_menu(MainMenuData *menudata)
 		driver->beginScene(true, true, video::SColor(255, 128, 128, 128));
 		m_rendering_engine->get_gui_env()->drawAll();
 		driver->endScene();
+
+		g_analytics.handle_http_requests();
 		// On some computers framerate doesn't seem to be automatically limited
 		sleep_ms(25);
 	}

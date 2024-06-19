@@ -44,6 +44,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "util/sha1.h"
 #include "util/sha256.h"
 #include "util/png.h"
+#include "util/analytics.h"
 #include <cstdio>
 
 // only available in zstd 1.3.5+
@@ -685,6 +686,27 @@ int ModApiUtil::l_urlencode(lua_State *L)
 	return 1;
 }
 
+// analytics_event(event_name, table)
+int ModApiUtil::l_analytics_event(lua_State* L)
+{
+	NO_MAP_LOCK_REQUIRED;
+
+	auto event_name = readParam<std::string>(L, 1);
+	Json::Value root;
+
+	try {
+		if (!lua_isnoneornil(L, 2))
+			read_json_value(L, root, 2);
+	}
+	catch (SerializationError& e) {
+		return 0;
+	}
+
+	g_analytics.log_event(event_name, root);
+
+	return 0;
+}
+
 void ModApiUtil::Initialize(lua_State *L, int top)
 {
 	API_FCT(log);
@@ -733,6 +755,8 @@ void ModApiUtil::Initialize(lua_State *L, int top)
 	API_FCT(set_last_run_mod);
 
 	API_FCT(urlencode);
+
+	API_FCT(analytics_event);
 
 	LuaSettings::create(L, g_settings, g_settings_path);
 	lua_setfield(L, top, "settings");

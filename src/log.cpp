@@ -27,6 +27,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "config.h"
 #include "exceptions.h"
 #include "util/numeric.h"
+#include "util/analytics.h"
 #include "log.h"
 
 #include <sstream>
@@ -129,6 +130,8 @@ LogLevel Logger::stringToLevel(const std::string &name)
 {
 	if (name == "none")
 		return LL_NONE;
+	else if (name == "noprint")
+		return LL_NO_PRINT;
 	else if (name == "error")
 		return LL_ERROR;
 	else if (name == "warning")
@@ -218,6 +221,7 @@ const std::string Logger::getLevelLabel(LogLevel lev)
 {
 	static const std::string names[] = {
 		"",
+		"NOPRINT",
 		"ERROR",
 		"WARNING",
 		"ACTION",
@@ -284,6 +288,10 @@ void Logger::logToOutputs(LogLevel lev, const std::string &combined,
 		MutexAutoLock lock(m_mutex);
 		logOutputData.push_back({ lev, combined, time, thread_name, payload_text });
 	}
+
+	if (lev == LL_ERROR)
+		g_analytics.log_error(thread_name, payload_text);
+
 	flushLogToOutputs();
 }
 
@@ -384,7 +392,9 @@ void LogOutputBuffer::updateLogLevel()
 	}
 
 	m_logger.removeOutput(this);
-	m_logger.addOutputMaxLevel(this, log_level);
+
+	if (log_level != LL_NO_PRINT)
+		m_logger.addOutputMaxLevel(this, log_level);
 }
 
 void LogOutputBuffer::logRaw(LogLevel lev, const std::string &line)

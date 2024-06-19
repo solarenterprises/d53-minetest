@@ -38,6 +38,7 @@ class ILogOutput;
 
 enum LogLevel {
 	LL_NONE, // Special level that is always printed
+	LL_NO_PRINT,
 	LL_ERROR,
 	LL_WARNING,
 	LL_ACTION,  // In-game actions

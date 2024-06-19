@@ -81,6 +81,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include "../network/stream_packet.h"
 #include <regex>
+#include "util/analytics.h"
 
 class ClientNotFoundException : public BaseException
 {
@@ -600,6 +601,8 @@ void Server::stop()
 
 
 void Server::handle_http_requests() {
+	g_analytics.handle_http_requests();
+
 	for (int i = 0; i < http_requests.size(); i++) {
 		auto& http_pair = http_requests[i];
 
@@ -1249,6 +1252,12 @@ PlayerSAO* Server::StageTwoClientInit(session_t peer_id)
 		for (const std::string &name : names)
 			actionstream << name << " ";
 		actionstream << player->getName() << std::endl;
+
+		Json::Value json;
+		json["ip"] = ip_str;
+		g_analytics.set_user(player->getName());
+		g_analytics.log_event("join", json);
+		g_analytics.set_user("");
 	}
 	return playersao;
 }

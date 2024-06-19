@@ -140,6 +140,9 @@ private:
 
 	static int l_rename_player(lua_State* L);
 
+	static int l_analytics_set_user(lua_State* L);
+	static int l_analytics_event(lua_State* L);
+
 public:
 	static void Initialize(lua_State *L, int top);
 	static void InitializeAsync(lua_State *L, int top);

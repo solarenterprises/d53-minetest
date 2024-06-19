@@ -27,6 +27,7 @@ DEALINGS IN THE SOFTWARE.
 #include "threading/mutex_auto_lock.h"
 #include "log.h"
 #include "porting.h"
+#include "util/analytics.h"
 
 // for setName
 #if defined(__linux__)
@@ -185,6 +186,7 @@ void Thread::threadProc(Thread *thr)
 	thr->setName(thr->m_name);
 
 	g_logger.registerThread(thr->m_name);
+	g_analytics.registerThread(thr->m_name);
 	thr->m_running = true;
 
 	// Wait for the thread that started this one to finish initializing the
@@ -199,6 +201,7 @@ void Thread::threadProc(Thread *thr)
 	// released. We try to unlock it from caller thread and it's refused by system.
 	sf_lock.unlock();
 	g_logger.deregisterThread();
+	g_analytics.deregisterThread();
 }
 
 

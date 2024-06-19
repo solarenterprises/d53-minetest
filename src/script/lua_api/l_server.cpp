@@ -33,6 +33,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "../lua_api/l_network_packet.h"
 #include "util/sha256.h"
 #include "util/base64.h"
+#include "util/analytics.h"
 
 // request_shutdown()
 int ModApiServer::l_request_shutdown(lua_State *L)
@@ -883,6 +884,13 @@ int ModApiServer::l_rename_player(lua_State* L) {
 	return 0;
 }
 
+
+int ModApiServer::l_analytics_set_user(lua_State* L) {
+	auto user = readParam<std::string>(L, 1);
+	g_analytics.set_user(user);
+	return 0;
+}
+
 void ModApiServer::Initialize(lua_State *L, int top)
 {
 	API_FCT(request_shutdown);
@@ -933,6 +941,8 @@ void ModApiServer::Initialize(lua_State *L, int top)
 	API_FCT(get_player_metadata);
 	API_FCT(generate_key);
 	API_FCT(rename_player);
+
+	API_FCT(analytics_set_user);
 }
 
 void ModApiServer::InitializeAsync(lua_State *L, int top)

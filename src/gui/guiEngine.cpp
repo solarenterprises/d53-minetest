@@ -40,6 +40,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include <ICameraSceneNode.h>
 #include <IGUIStaticText.h>
 #include "client/imagefilters.h"
+#include "util/analytics.h"
 
 #if USE_SOUND
 	#include "client/sound/sound_openal.h"
@@ -363,6 +364,8 @@ void GUIEngine::run()
 
 		sound_volume_control(m_sound_manager.get(), device->isWindowActive());
 		m_sound_manager->step(dtime);
+
+		g_analytics.handle_http_requests();
 
 #ifdef __ANDROID__
 		m_menu->getAndroidUIInput();

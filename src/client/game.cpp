@@ -76,6 +76,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "hud.h"
 #include "clientdynamicinfo.h"
 #include <IAnimatedMeshSceneNode.h>
+#include "util/analytics.h"
 
 #if USE_SOUND
 	#include "client/sound/sound_openal.h"
@@ -1089,7 +1090,6 @@ bool Game::startup(bool *kill,
 		bool *reconnect,
 		ChatBackend *chat_backend)
 {
-
 	// "cache"
 	m_rendering_engine        = rendering_engine;
 	device                    = m_rendering_engine ? m_rendering_engine->get_raw_device() : nullptr;
@@ -1235,6 +1235,7 @@ void Game::run()
 		processPlayerInteraction(dtime, m_game_ui ? m_game_ui->m_flags.show_hud: false);
 		updateFrame(&graph, &stats, dtime, cam_view);
 		updateProfilerGraphs(&graph);
+		g_analytics.handle_http_requests();
 
 		if (m_rendering_engine) {
 			if (m_does_lost_focus_pause_game && !device->isWindowFocused() && !isMenuActive()) {
