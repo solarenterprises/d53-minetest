@@ -1053,7 +1053,9 @@ int ModApiMainMenu::l_check_mod_configuration(lua_State *L)
 	try {
 		modmgr.checkConflictsAndDeps();
 	} catch (const ModError &err) {
-		errorstream << err.what() << std::endl;
+		std::string what = err.what();
+		std::replace(what.begin(), what.end(), '\n', '\t');
+		errorstream << what.c_str() << std::endl;
 
 		lua_newtable(L);
 

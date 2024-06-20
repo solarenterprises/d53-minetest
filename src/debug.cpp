@@ -53,8 +53,8 @@ void sanity_check_fn(const char *assertion, const char *file,
 	g_term_console.stopAndWaitforThread();
 #endif
 
-	errorstream << std::endl << "In thread " << std::hex
-		<< std::this_thread::get_id() << ":" << std::endl;
+	errorstream << "In thread " << std::hex
+		<< std::this_thread::get_id() << ": ";
 	errorstream << file << ":" << line << ": " << function
 		<< ": An engine assumption '" << assertion << "' failed." << std::endl;
 
@@ -68,8 +68,8 @@ void fatal_error_fn(const char *msg, const char *file,
 	g_term_console.stopAndWaitforThread();
 #endif
 
-	errorstream << std::endl << "In thread " << std::hex
-		<< std::this_thread::get_id() << ":" << std::endl;
+	errorstream << "In thread " << std::hex
+		<< std::this_thread::get_id() << ": ";
 	errorstream << file << ":" << line << ": " << function
 		<< ": A fatal error occurred: " << msg << std::endl;
 
@@ -78,9 +78,12 @@ void fatal_error_fn(const char *msg, const char *file,
 
 std::string debug_describe_exc(const std::exception &e)
 {
+	std::string what = e.what();
+	std::replace(what.begin(), what.end(), '\n', '\t');
+
 	if (dynamic_cast<const std::bad_alloc*>(&e))
 		return "C++ out of memory";
-	return std::string("\"").append(e.what()).append("\"");
+	return std::string("\"").append(what.c_str()).append("\"");
 }
 
 #ifdef _MSC_VER

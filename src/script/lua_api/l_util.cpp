@@ -115,15 +115,17 @@ int ModApiUtil::l_parse_json(lua_State *L)
 		std::string errs;
 
 		if (!Json::parseFromStream(builder, stream, &root, &errs)) {
-			errorstream << "Failed to parse json data " << errs << std::endl;
+			errorstream << "Failed to parse json data " << errs << ".";
 			size_t jlen = strlen(jsonstr);
 			if (jlen > 100) {
 				errorstream << "Data (" << jlen
-					<< " bytes) printed to warningstream." << std::endl;
-				warningstream << "data: \"" << jsonstr << "\"" << std::endl;
+					<< " bytes) printed to warningstream.";
+				warningstream << "data: \"" << jsonstr << "\"";
 			} else {
-				errorstream << "data: \"" << jsonstr << "\"" << std::endl;
+				errorstream << "data: \"" << jsonstr << "\"";
 			}
+			errorstream << std::endl;
+
 			lua_pushnil(L);
 			return 1;
 		}
@@ -131,7 +133,7 @@ int ModApiUtil::l_parse_json(lua_State *L)
 
 	if (!push_json_value(L, root, nullindex)) {
 		errorstream << "Failed to parse json data, "
-			<< "depth exceeds lua stack limit" << std::endl;
+			<< "depth exceeds lua stack limit.";
 		errorstream << "data: \"" << jsonstr << "\"" << std::endl;
 		lua_pushnil(L);
 	}

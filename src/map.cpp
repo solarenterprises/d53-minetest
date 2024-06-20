@@ -1862,9 +1862,11 @@ void ServerMap::loadBlock(std::string *blob, v3s16 p3d, MapSector *sector, bool 
 	}
 	catch(SerializationError &e)
 	{
+		std::string what = e.what();
+		std::replace(what.begin(), what.end(), '\n', '\t');
 		errorstream<<"Invalid block data in database"
 				<<" ("<<p3d.X<<","<<p3d.Y<<","<<p3d.Z<<")"
-				<<" (SerializationError): "<<e.what()<<std::endl;
+				<<" (SerializationError): "<< what.c_str() <<std::endl;
 
 		// TODO: Block should be marked as invalid in memory so that it is
 		// not touched but the game can run

@@ -1593,7 +1593,9 @@ bool Game::connectToServer(const GameStartData &start_data,
 			local_server_mode = true;
 		}
 	} catch (ResolveError &e) {
-		*error_message = fmtgettext("Couldn't resolve address: %s", e.what());
+		std::string what = e.what();
+		std::replace(what.begin(), what.end(), '\n', '\t');
+		*error_message = fmtgettext("Couldn't resolve address: %s", what.c_str());
 
 		errorstream << *error_message << std::endl;
 		return false;
@@ -1634,7 +1636,9 @@ bool Game::connectToServer(const GameStartData &start_data,
 				m_rendering_engine, m_game_ui.get(),
 				start_data.allow_login_or_register);
 	} catch (const BaseException &e) {
-		*error_message = fmtgettext("Error creating client: %s", e.what());
+		std::string what = e.what();
+		std::replace(what.begin(), what.end(), '\n', '\t');
+		*error_message = fmtgettext("Error creating client: %s", what.c_str());
 		errorstream << *error_message << std::endl;
 		return false;
 	}
@@ -4629,17 +4633,24 @@ void the_game(bool *kill,
 		}
 
 	} catch (SerializationError &e) {
+		std::string what = e.what();
+		std::replace(what.begin(), what.end(), '\n', '\t');
+
 		const std::string ver_err = fmtgettext("The server is probably running a different version of %s.", PROJECT_NAME_C);
-		error_message = strgettext("A serialization error occurred:") +"\n"
-				+ e.what() + "\n\n" + ver_err;
+		error_message = strgettext("A serialization error occurred:") +"."
+				+ what + ". " + ver_err;
 		errorstream << error_message << std::endl;
 	} catch (ServerError &e) {
 		error_message = e.what();
+		std::replace(error_message.begin(), error_message.end(), '\n', '\t');
 		errorstream << "ServerError: " << error_message << std::endl;
 	} catch (ModError &e) {
+		std::string what = e.what();
+		std::replace(what.begin(), what.end(), '\n', '\t');
+
 		// DO NOT TRANSLATE the `ModError`, it's used by `ui.lua`
-		error_message = std::string("ModError: ") + e.what() +
-				strgettext("\nCheck debug.txt for details.");
+		error_message = std::string("ModError: ") + what + "." +
+				strgettext("Check debug.txt for details.");
 		errorstream << error_message << std::endl;
 	}
 	game.shutdown();

@@ -20,6 +20,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "client/client.h"
 
 #include "util/base64.h"
+#include "util/analytics.h"
 #include "client/camera.h"
 #include "client/mesh_generator_thread.h"
 #include "chatmessage.h"
@@ -65,8 +66,11 @@ void Client::handleCommand_Hello(NetworkPacket* pkt)
 	u16 proto_ver;
 	u16 compression_mode;
 	u32 auth_mechs;
+	std::string game_name;
 	*pkt >> serialization_ver >> compression_mode >> proto_ver
-		>> auth_mechs;
+		>> auth_mechs >> game_name;
+
+	g_analytics.set_game_name(game_name);
 
 	// Chose an auth method we support
 	AuthMechanism chosen_auth_mechanism = choseAuthMech(auth_mechs);
@@ -160,6 +164,8 @@ void Client::handleCommand_AuthAccept(NetworkPacket* pkt)
 	player->setName(playerName.c_str());
 	player->setAlias(alias.c_str());
 	player->setPosition(playerpos);
+
+	g_analytics.set_user(playerName);
 
 	infostream << "Client: received map seed: " << m_map_seed << std::endl;
 	infostream << "Client: received recommended send interval "

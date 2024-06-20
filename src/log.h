@@ -338,7 +338,8 @@ public:
 
 private:
 	// 10 streams per thread x (256 + overhead) ~ 3K per thread
-	static const int BUFFER_LENGTH = 256;
+	//static const int BUFFER_LENGTH = 256;
+	static const int BUFFER_LENGTH = 1024;
 	LogTarget &m_target;
 	StringStreamBuffer<BUFFER_LENGTH> m_buffer;
 	DummyStreamBuffer m_dummy_buffer;

@@ -84,6 +84,7 @@ void Database_MySQL::closeConnection() {
 
 void Database_MySQL::handleMySQLError(std::string info) {
 	std::string error_msg = mysql_error(m_conn);
+	std::replace(error_msg.begin(), error_msg.end(), '\n', '\t');
 	errorstream
 		<< "Database_MySQL:"
 		<< error_msg.c_str()
@@ -97,7 +98,7 @@ bool Database_MySQL::doQueries(const std::vector<std::string>& query) {
 		if (!mysql_query(m_conn, q.c_str()))
 			continue;
 
-		errorstream << "Query:" << q.c_str() << std::endl;
+		errorstream << "MySQL error query:" << q.c_str() << std::endl;
 		handleMySQLError(q);
 		return false;
 	}
@@ -325,9 +326,12 @@ void Database_MySQL::createTableIfNotExists(
 		execQuery(sql);
 	}
 	catch (const std::runtime_error& e) {
+		std::string what = e.what();
+		std::replace(what.begin(), what.end(), '\n', '\t');
+
 		// Handle any errors that occur during table creation.
 		// This catch block can log the error, rethrow the exception, or perform custom error handling.
-		errorstream << "Error creating table '" << table_name << "': " << e.what() << std::endl;
+		errorstream << "Error creating table '" << table_name << "': " << what.c_str() << std::endl;
 		// Rethrow the exception or handle it as needed.
 		throw std::runtime_error("Failed to create table MySQL:" + table_name);
 	}
@@ -388,7 +392,9 @@ void Database_MySQL::rollback()
 		mysql_rollback(m_conn);
 	}
 	catch (const std::runtime_error& e) {
-		errorstream << "Failed to rollback transaction: " << e.what() << std::endl;
+		std::string what = e.what();
+		std::replace(what.begin(), what.end(), '\n', '\t');
+		errorstream << "Failed to rollback transaction: " << what.c_str() << std::endl;
 		// It might be a good idea not to throw an exception here since rollback might be called
 		// as part of an exception handling path already. But this depends on your error handling strategy.
 	}

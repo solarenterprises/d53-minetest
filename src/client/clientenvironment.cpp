@@ -396,10 +396,13 @@ void ClientEnvironment::addActiveObject(u16 id, u8 type,
 	try {
 		obj->initialize(init_data);
 	} catch(SerializationError &e) {
+		std::string what = e.what();
+		std::replace(what.begin(), what.end(), '\n', '\t');
+
 		errorstream<<"ClientEnvironment::addActiveObject():"
 			<<" id="<<id<<" type="<<type
 			<<": SerializationError in initialize(): "
-			<<e.what()
+			<< what.c_str()
 			<<": init_data="<<serializeJsonString(init_data)
 			<<std::endl;
 	}
@@ -447,9 +450,12 @@ void ClientEnvironment::processActiveObjectMessage(u16 id, const std::string &da
 	try {
 		obj->processMessage(data);
 	} catch (SerializationError &e) {
+		std::string what = e.what();
+		std::replace(what.begin(), what.end(), '\n', '\t');
+
 		errorstream<<"ClientEnvironment::processActiveObjectMessage():"
 			<< " id=" << id << " type=" << obj->getType()
-			<< " SerializationError in processMessage(): " << e.what()
+			<< " SerializationError in processMessage(): " << what.c_str()
 			<< std::endl;
 	}
 }

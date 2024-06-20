@@ -179,20 +179,21 @@ void ModConfiguration::addModsFromConfig(
 		errorstream << "The following mods could not be found:";
 		for (const auto &pair : load_mod_names)
 			errorstream << " \"" << pair.first << "\"";
-		errorstream << std::endl;
+		errorstream << ". ";
 
 		for (const auto &pair : load_mod_names) {
 			const auto &candidate = candidates.find(pair.first);
 			if (candidate != candidates.end()) {
 				errorstream << "Unable to load " << pair.first << " as the specified path "
 							<< pair.second << " could not be found. "
-							<< "However, it is available in the following locations:"
-							<< std::endl;
+							<< "However, it is available in the following locations:";
 				for (const auto &path : candidate->second) {
-					errorstream << " - " << path << std::endl;
+					errorstream << path << ", ";
 				}
+				
 			}
 		}
+		errorstream << std::endl;
 	}
 }
 

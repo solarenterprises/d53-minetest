@@ -320,8 +320,11 @@ void* AsyncWorkerThread::run()
 	auto report_error = [this] (const ModError &e) {
 		if (jobDispatcher->server)
 			jobDispatcher->server->setAsyncFatalError(e.what());
-		else
-			errorstream << e.what() << std::endl;
+		else {
+			std::string what = e.what();
+			std::replace(what.begin(), what.end(), '\n', '\t');
+			errorstream << what.c_str() << std::endl;
+		}
 	};
 
 	lua_getglobal(L, "core");

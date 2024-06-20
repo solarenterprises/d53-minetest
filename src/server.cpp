@@ -428,6 +428,14 @@ void Server::init()
 	infostream << "- world:  " << m_path_world << std::endl;
 	infostream << "- game:   " << m_gamespec.path << std::endl;
 
+	//
+	// Set game name
+	const size_t indexOfWorldSlash = m_path_world.find_last_of(DIR_DELIM_CHAR);
+	game_name = m_gamespec.id;
+	if (indexOfWorldSlash != std::string::npos)
+		game_name += "." + m_path_world.substr(indexOfWorldSlash+1);
+	g_analytics.set_game_name(game_name);
+
 	m_game_settings = Settings::createLayer(SL_GAME);
 
 	// Create world if it doesn't exist

@@ -61,6 +61,7 @@ static void httpfetch_deliver_result(const HTTPFetchResult &fetch_result)
 }
 
 static void httpfetch_request_clear(u64 caller);
+static void httpfetch_request_clear_async(u64 caller);
 
 u64 httpfetch_caller_alloc()
 {
@@ -116,6 +117,17 @@ void httpfetch_caller_free(u64 caller)
 			<<caller<<std::endl;
 
 	httpfetch_request_clear(caller);
+	if (caller != HTTPFETCH_DISCARD) {
+		MutexAutoLock lock(g_httpfetch_mutex);
+		g_httpfetch_results.erase(caller);
+	}
+}
+
+void httpfetch_caller_free_async(u64 caller)
+{
+	verbosestream<<"httpfetch_caller_free: freeing "
+			<<caller<<std::endl;
+	httpfetch_request_clear_async(caller);
 	if (caller != HTTPFETCH_DISCARD) {
 		MutexAutoLock lock(g_httpfetch_mutex);
 		g_httpfetch_results.erase(caller);
@@ -393,20 +405,23 @@ const HTTPFetchResult * HTTPFetchOngoing::complete(CURLcode res)
 		result.response_code = 0;
 	}
 
-	if (res != CURLE_OK) {
-		errorstream << "HTTPFetch for " << request.url << " failed: "
-			<< curl_easy_strerror(res);
-		if (result.timeout)
-			errorstream << " (timeout = " << request.timeout << "ms)" << std::endl;
-		errorstream << std::endl;
-	} else if (result.response_code >= 400) {
-		errorstream << "HTTPFetch for " << request.url
-			<< " returned response code " << result.response_code
-			<< std::endl;
-		if (result.caller == HTTPFETCH_PRINT_ERR && !result.data.empty()) {
-			errorstream << "Response body:" << std::endl;
-			safe_print_string(errorstream, result.data);
-			errorstream << std::endl;
+	if (request.auto_print_error) {
+		if (res != CURLE_OK) {
+				errorstream << "HTTPFetch for " << request.url << " failed: "
+					<< curl_easy_strerror(res);
+				if (result.timeout)
+					errorstream << " (timeout = " << request.timeout << "ms) ";
+				errorstream << std::endl;
+		
+		} else if (result.response_code >= 400) {
+			errorstream << "HTTPFetch for " << request.url
+				<< " returned response code " << result.response_code
+				<< std::endl;
+			if (result.caller == HTTPFETCH_PRINT_ERR && !result.data.empty()) {
+				errorstream << "Response body:";
+				safe_print_string(errorstream, result.data);
+				errorstream << std::endl;
+			}
 		}
 	}
 
@@ -762,6 +777,11 @@ static void httpfetch_request_clear(u64 caller)
 	} else {
 		g_httpfetch_thread->requestClear(caller, nullptr);
 	}
+}
+
+static void httpfetch_request_clear_async(u64 caller)
+{
+	g_httpfetch_thread->requestClear(caller, nullptr);
 }
 
 static void httpfetch_sync(const HTTPFetchRequest &fetch_request,

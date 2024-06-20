@@ -631,6 +631,8 @@ private:
 	bool m_dedicated;
 	Settings *m_game_settings = nullptr;
 
+	std::string game_name;
+
 	// Thread can set; step() will throw as ServerError
 	MutexedVariable<std::string> m_async_fatal_error;
 

@@ -101,6 +101,8 @@ struct HTTPFetchRequest
 	// useragent to use
 	std::string useragent;
 
+	bool auto_print_error = true;
+
 	HTTPFetchRequest();
 };
 
@@ -146,6 +148,8 @@ u64 httpfetch_caller_alloc_secure();
 // Note: This can be expensive, because the httpfetch thread is told
 // to stop any ongoing fetches for the given caller.
 void httpfetch_caller_free(u64 caller);
+
+void httpfetch_caller_free_async(u64 caller);
 
 // Performs a synchronous HTTP request that is interruptible if the current
 // thread is a Thread object. interval is the completion check interval in ms.

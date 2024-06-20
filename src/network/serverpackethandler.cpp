@@ -303,7 +303,7 @@ void Server::handleCommand_Init(NetworkPacket* pkt)
 
 	u16 depl_compress_mode = NETPROTO_COMPRESSION_NONE;
 	resp_pkt << depl_serial_v << depl_compress_mode << net_proto_version
-		<< auth_mechs;
+		<< auth_mechs << game_name;
 
 	Send(&resp_pkt);
 

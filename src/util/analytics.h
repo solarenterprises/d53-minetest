@@ -22,7 +22,9 @@ public:
 		this->project_name = project_name;
 	}
 
-	//void log_error_stream(std::string error_str);
+	void set_game_name(std::string game_name) {
+		this->game_name = game_name;
+	}
 
 	void log_error(std::string thread_name, std::string error_str) {
 		post(thread_name, project_name, "error", error_str, json_null);
@@ -39,18 +41,22 @@ private:
 	const std::string getThreadName();
 
 	std::string project_name = "unknown";
+	std::string game_name = "";
 
 	/*
 	* HTTP
 	*/
 	std::vector<u64> http_requests;
+	std::mutex m_mutex_requests;
 
 	//std::map<std::thread::id, std::mutex> m_log_error_stream_mutex;
 	//std::map<std::thread::id, std::string> m_log_error_stream;
 
-	std::map<std::thread::id, std::string> m_thread_names;
-	std::map<std::thread::id, std::string> m_thread_user;
-	mutable std::mutex m_mutex;
+	std::unordered_map<std::thread::id, std::string> m_thread_names;
+	std::unordered_map<std::thread::id, std::string> m_thread_user;
+	std::mutex m_mutex;
+
+	std::time_t time_too_many_requests;
 };
 
 extern Analytics g_analytics;

@@ -235,6 +235,7 @@ bool ClientLauncher::run(GameStartData &start_data, const Settings &cmd_args)
 		}
 		catch (ShaderException &e) {
 			error_message = e.what();
+			std::replace(error_message.begin(), error_message.end(), '\n', '\t');
 			errorstream << error_message << std::endl;
 		}
 
@@ -354,6 +355,7 @@ bool ClientLauncher::runNoRender(GameStartData& start_data, const Settings& cmd_
 		}
 		catch (ShaderException& e) {
 			error_message = e.what();
+			std::replace(error_message.begin(), error_message.end(), '\n', '\t');
 			errorstream << error_message << std::endl;
 		}
 
