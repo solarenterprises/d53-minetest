@@ -30,8 +30,14 @@ void set_default_settings()
 {
 	Settings *settings = Settings::createLayer(SL_DEFAULTS);
 
+#if DEVELOPMENT_BUILD
+	settings->setDefault("analytics_enabled", "false");
+#else
 	settings->setDefault("analytics_enabled", "true");
-	settings->setDefault("analytics_url", "http://localhost:4002");
+#endif
+
+	settings->setDefault("analytics_enabled", "true");
+	settings->setDefault("analytics_url", "https://dev.district53.io:4002");
 	settings->setDefault("analytics_api_key", "");
 
 	// Client and server

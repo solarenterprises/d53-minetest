@@ -431,7 +431,7 @@ void Server::init()
 	//
 	// Set game name
 	const size_t indexOfWorldSlash = m_path_world.find_last_of(DIR_DELIM_CHAR);
-	game_name = m_gamespec.id;
+	game_name = "("+g_settings->get("server_address")+")" + m_gamespec.id;
 	if (indexOfWorldSlash != std::string::npos)
 		game_name += "." + m_path_world.substr(indexOfWorldSlash+1);
 	g_analytics.set_game_name(game_name);
