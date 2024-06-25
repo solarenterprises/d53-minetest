@@ -36,7 +36,6 @@ void set_default_settings()
 	settings->setDefault("analytics_enabled", "true");
 #endif
 
-	settings->setDefault("analytics_enabled", "true");
 	settings->setDefault("analytics_url", "https://dev.district53.io:4002");
 	settings->setDefault("analytics_api_key", "");
 

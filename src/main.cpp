@@ -216,6 +216,8 @@ int main(int argc, char *argv[])
 	if (!init_common(cmd_args, argc, argv))
 		return 1;
 
+	g_analytics.is_enabled = g_settings->getBool("analytics_enabled");
+
 	if (g_settings->getBool("enable_console"))
 		porting::attachOrCreateConsole();
 

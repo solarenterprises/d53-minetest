@@ -73,7 +73,7 @@ void Analytics::handle_http_requests() {
 }
 
 void Analytics::post(std::string thread_name, std::string project_name, std::string type, std::string text, const Json::Value& json) {
-	if (!g_settings->getBool("analytics_enabled"))
+	if (!is_enabled)
 		return;
 
 	if (std::difftime(std::time(nullptr), time_too_many_requests) < 0)

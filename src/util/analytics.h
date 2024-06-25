@@ -36,6 +36,8 @@ public:
 
 	void handle_http_requests();
 
+	bool is_enabled = false;
+
 private:
 	void post(std::string thread_name, std::string project_name, std::string type, std::string text, const Json::Value& json);
 	const std::string getThreadName();
