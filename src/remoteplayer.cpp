@@ -80,7 +80,7 @@ RemotePlayer::RemotePlayer(const char *name, IItemDefManager *idef):
 			if (!sao)
 				return false;
 
-			if (!sao->getEnv()->getScriptIface()->item_OnEquip(itemStack, sao))
+			if (!sao->getEnv()->getScriptIface()->item_OnEquip(itemStack, sao, false))
 				return false;
 
 			return true;

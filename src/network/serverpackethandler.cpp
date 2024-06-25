@@ -715,7 +715,7 @@ void Server::handleCommand_InventoryAction(NetworkPacket* pkt)
 				return;
 
 			const ItemStack& item_stack = list_from->getItem(ma->from_i);
-			if (!m_script->item_OnEquip(item_stack, playersao)) {
+			if (!m_script->item_OnEquip(item_stack, playersao, true)) {
 				ma->can_move = false;
 			}
 		}
@@ -1057,7 +1057,7 @@ void Server::handleCommand_Interact(NetworkPacket *pkt)
 	const InventoryList* mlist = playersao->getPlayer()->inventory.getList("main");
 	const ItemStack& item_stack = mlist->getItem(item_i);
 	if (!item_stack.name.empty()) {
-		if (item_stack.count == 0 || !m_script->item_OnEquip(item_stack, playersao))
+		if (item_stack.count == 0 || !m_script->item_OnEquip(item_stack, playersao, true))
 			return;
 	}
 

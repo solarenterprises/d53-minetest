@@ -117,7 +117,7 @@ bool ScriptApiItem::item_OnWield(const ItemStack& item, PlayerSAO* user) {
 	return true;
 }
 
-bool ScriptApiItem::item_OnEquip(const ItemStack& item, PlayerSAO* user) {
+bool ScriptApiItem::item_OnEquip(const ItemStack& item, PlayerSAO* user, bool is_action_by_player) {
 	SCRIPTAPI_PRECHECKHEADER
 
 	int error_handler = PUSH_ERROR_HANDLER(L);
@@ -131,10 +131,11 @@ bool ScriptApiItem::item_OnEquip(const ItemStack& item, PlayerSAO* user) {
 	// Call function
 	LuaItemStack::create(L, item);
 	objectrefGetOrCreate(L, user);
+	lua_pushboolean(L, is_action_by_player);
 
-	bool can_equip = true;
+	bool can_equip = false;
 
-	PCALL_RES(lua_pcall(L, 2, 1, error_handler));
+	PCALL_RES(lua_pcall(L, 3, 1, error_handler));
 	if (!lua_isnil(L, -1)) {
 		try {
 			can_equip = lua_toboolean(L, -1);
@@ -144,7 +145,7 @@ bool ScriptApiItem::item_OnEquip(const ItemStack& item, PlayerSAO* user) {
 		}
 	}
 
-	lua_pop(L, 2);  // Pop item and error handler
+	lua_pop(L, 1);  // Pop error handler
 	return can_equip;
 }
 

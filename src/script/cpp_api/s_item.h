@@ -49,7 +49,7 @@ public:
 	bool item_OnPlace(std::optional<ItemStack> &item,
 			ServerActiveObject *placer, const PointedThing &pointed);
 	bool item_OnWield(const ItemStack &item, PlayerSAO* user);
-	bool item_OnEquip(const ItemStack &item, PlayerSAO* user);
+	bool item_OnEquip(const ItemStack &item, PlayerSAO* user, bool is_action_by_player);
 	bool item_OnUse(std::optional<ItemStack> &item,
 			ServerActiveObject *user, const PointedThing &pointed);
 	bool item_OnSecondaryUse(std::optional<ItemStack> &item,
