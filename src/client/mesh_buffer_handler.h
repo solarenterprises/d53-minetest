@@ -47,6 +47,7 @@ struct TextureBufListMaps
 	struct LoadOrder {
 		v3s16 pos;
 		LoadBlockData block_data;
+		bool urgent;
 	};
 	std::vector<LoadOrder> loadData;
 
@@ -170,9 +171,9 @@ public:
 	std::vector<MeshUpdateResult> getMeshUpdateResults();
 	void removeBlocks(v3s16* positions, size_t num);
 
-	void eraseLoadOrder(size_t num) {
+	void eraseLoadOrder(size_t offset, size_t num) {
 		MutexAutoLock lock(m_mutex_cache_buffers);
-		cache_buffers.loadData.erase(cache_buffers.loadData.begin(), cache_buffers.loadData.begin() + num);
+		cache_buffers.loadData.erase(cache_buffers.loadData.begin()+offset, cache_buffers.loadData.begin()+offset + num);
 	}
 
 	bool unload_block(v3s16 pos, TextureBufListMaps::LoadBlockData& loadBlockData);
@@ -233,11 +234,11 @@ public:
 	void setView(v3s16 min, v3s16 max);
 	std::vector<MeshUpdateResult> getMeshUpdateResults();
 	void removeBlocks(v3s16* positions, size_t num);
-	void eraseLoadOrder(size_t num) {
+	void eraseLoadOrder(size_t offset, size_t num) {
 		if (!num)
 			return;
 
-		m_worker->eraseLoadOrder(num);
+		m_worker->eraseLoadOrder(offset, num);
 	}
 
 	void start();

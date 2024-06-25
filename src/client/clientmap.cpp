@@ -1039,17 +1039,26 @@ void ClientMap::updateCacheBuffers(video::IVideoDriver* driver) {
 	}
 
 	const u64 max_gl_ops = 10000;
-
 	const u64 gl_ops_points_div = 100;
 
 	u64 num_load_data_processed = 0;
-	for (auto it : buffers.loadData) {
+	for (auto it = buffers.loadData.begin(); it != buffers.loadData.end(); it++) {
 		if (gl_ops_processed_gauge >= max_gl_ops) {
 			canDropTextures = false;
-			break;
+
+			bool has_urgent = false;
+			for (auto it_urgent = it; it_urgent != buffers.loadData.end(); it_urgent++) {
+				if (!it_urgent->urgent)
+					continue;
+				has_urgent = it_urgent->urgent;
+				break;
+			}
+
+			if (!has_urgent)
+				break;
 		}
 
-		auto loadBlockData = it.block_data;
+		auto loadBlockData = it->block_data;
 		auto& loadDataVec = loadBlockData.data;
 
 		for (auto loadData : loadDataVec) {
@@ -1174,7 +1183,7 @@ void ClientMap::updateCacheBuffers(video::IVideoDriver* driver) {
 		num_load_data_processed++;
 	}
 
-	m_client->m_mesh_buffer_handler->eraseLoadOrder(num_load_data_processed);
+	m_client->m_mesh_buffer_handler->eraseLoadOrder(0, num_load_data_processed);
 	
 	if (canDropTextures) {
 		//

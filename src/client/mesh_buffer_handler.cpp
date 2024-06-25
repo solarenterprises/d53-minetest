@@ -102,8 +102,6 @@ void MeshBufferWorkerThread::doUpdate() {
 	MeshUpdateResult r;
 	meshUpdateManager->undelayAll();
 	while (meshUpdateManager->getNextResult(r)) {
-		auto& p = r.p;
-
 		mesh_update_result_queue.push_back(r);
 	}
 
@@ -123,24 +121,7 @@ void MeshBufferWorkerThread::doUpdate() {
 	}
 
 	//
-	// Sort by urgent
-	for (int i = 0; i < (int)mesh_update_result_queue.size() - 1; i++) {
-		auto r = mesh_update_result_queue[i];
-		auto r2 = mesh_update_result_queue[i+1];
-
-		if (!r2.urgent)
-			continue;
-		if (r.urgent)
-			continue;
-
-		mesh_update_result_queue[i] = r2;
-		mesh_update_result_queue[i+1] = r;
-
-		i -= 2;
-		if (i < 0)
-			i = 0;
-	}
-
+	// Sort by distance
 	static const v3s16 view_padding(0, 0, 0);
 	v3s16 cache_view_min;
 	v3s16 cache_view_max;
@@ -155,8 +136,6 @@ void MeshBufferWorkerThread::doUpdate() {
 	cache_view_min -= view_padding;
 	cache_view_max += view_padding;
 
-	//
-	// Sort by distance
 	std::vector<s16> distances;
 	distances.reserve(mesh_update_results.size());
 	for (auto& r : mesh_update_result_queue) {
@@ -175,11 +154,30 @@ void MeshBufferWorkerThread::doUpdate() {
 			continue;
 
 		mesh_update_result_queue[i] = mesh_update_result_queue[i + 1];
-		mesh_update_result_queue[i+1] = r;
+		mesh_update_result_queue[i + 1] = r;
 		distances[i] = distR2;
 		distances[i + 1] = distR;
 
 		i--;
+		if (i < 0)
+			i = 0;
+	}
+
+	//
+	// Sort by urgent
+	for (int i = 0; i < (int)mesh_update_result_queue.size() - 1; i++) {
+		auto r = mesh_update_result_queue[i];
+		auto r2 = mesh_update_result_queue[i+1];
+
+		if (!r2.urgent)
+			continue;
+		if (r.urgent)
+			continue;
+
+		mesh_update_result_queue[i] = r2;
+		mesh_update_result_queue[i+1] = r;
+
+		i -= 2;
 		if (i < 0)
 			i = 0;
 	}
@@ -261,6 +259,7 @@ void MeshBufferWorkerThread::doUpdate() {
 	//
 	std::unordered_map<v3s16, std::vector<SMeshBufferData>> build_blocks;
 	std::set<video::ITexture*> keepTextures;
+	std::unordered_map<v3s16, bool> urgent;
 
 	for (auto it : load_mapblocks) {
 		auto& r = it.second;
@@ -278,6 +277,8 @@ void MeshBufferWorkerThread::doUpdate() {
 			if (buffer_data.find(p) != buffer_data.end())
 				continue;
 		}
+
+		urgent[r.p] = r.urgent;
 
 		for (int layer = 0; layer < MAX_TILE_LAYERS; layer++) {
 			scene::IMesh* mesh = block_mesh->getMesh(layer);
@@ -317,6 +318,8 @@ void MeshBufferWorkerThread::doUpdate() {
 		loadOrderVec.push_back(TextureBufListMaps::LoadOrder());
 		loadOrder = &loadOrderVec.back();
 		loadOrder->pos = pos;
+		loadOrder->urgent = urgent[it.first];
+
 		TextureBufListMaps::LoadBlockData& loadBlockData = loadOrder->block_data;
 
 		//
@@ -396,15 +399,12 @@ void MeshBufferWorkerThread::doUpdate() {
 				if (!sMeshBufferData.indexMemory.is_valid())
 					sMeshBufferData.indexMemory = data->index_memory.allocate(indexCount * sizeof(u32));
 
-				//
-				// Move vertex & index memory to GPU
-				//
 				if (!sMeshBufferData.indexMemory.is_valid())
 					continue;
 			}
 
 			//
-			// Move vertex & index memory to GPU
+			// Setup vertex & index memory to be moved to GPU
 			//
 
 			//
