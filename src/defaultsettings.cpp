@@ -463,7 +463,7 @@ void set_default_settings()
 	settings->setDefault("debug_log_level", "action");
 	settings->setDefault("debug_log_size_max", "50");
 #if DEVELOPMENT_BUILD
-	settings->setDefault("chat_log_level", "error");
+	settings->setDefault("chat_log_level", "action");
 #else
 	settings->setDefault("chat_log_level", "noprint");
 #endif

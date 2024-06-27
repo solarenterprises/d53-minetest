@@ -397,8 +397,8 @@ Server::~Server()
 	}
 
 	// Delete things in the reverse order of creation
-	delete m_emerge;
 	delete m_env;
+	delete m_emerge;
 	delete m_rollback;
 	delete m_mod_storage_database;
 	delete m_banmanager;

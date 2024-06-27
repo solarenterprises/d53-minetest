@@ -81,7 +81,7 @@ bool MeshBufferWorkerThread::unload_block(v3s16 pos, TextureBufListMaps::LoadBlo
 
 void MeshBufferWorkerThread::doUpdate() {
 
-	static const size_t max_load_data_queue = 70;
+	static const size_t max_load_data_queue = 30;
 
 	//
 	// Don't stack on a huge queue.

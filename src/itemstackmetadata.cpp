@@ -73,7 +73,7 @@ void ItemStackMetadata::serialize(std::ostream &os) const
 			os2 << stringvar.first << DESERIALIZE_KV_DELIM
 				<< stringvar.second << DESERIALIZE_PAIR_DELIM;
 	}
-	os << serializeJsonStringIfNeeded(os2.str());
+	os << "\"" << os2.str() << "\"";
 }
 
 void ItemStackMetadata::deSerialize(std::istream &is)

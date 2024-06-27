@@ -419,7 +419,9 @@ const HTTPFetchResult * HTTPFetchOngoing::complete(CURLcode res)
 				<< std::endl;
 			if (result.caller == HTTPFETCH_PRINT_ERR && !result.data.empty()) {
 				errorstream << "Response body:";
-				safe_print_string(errorstream, result.data);
+				std::string data = result.data;
+				std::replace(data.begin(), data.end(), '\n', '\t');
+				safe_print_string(errorstream, data);
 				errorstream << std::endl;
 			}
 		}
