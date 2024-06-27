@@ -137,167 +137,182 @@ static OptionList allowed_options;
 
 int main(int argc, char *argv[])
 {
-	int retval;
-	debug_set_exception_handler();
+	try {
+		int retval;
+		debug_set_exception_handler();
 
-	g_logger.registerThread("Main");
-	g_logger.addOutputMaxLevel(&stderr_output, LL_ACTION);
+		g_logger.registerThread("Main");
+		g_logger.addOutputMaxLevel(&stderr_output, LL_ACTION);
 
-	g_analytics.registerThread("Main");
-	g_analytics.set_project_name(std::string(BUILD_TYPE) + "-" + VERSION_STRING + (DEVELOPMENT_BUILD ? "-dev" : ""));
+		g_analytics.registerThread("Main");
+		g_analytics.set_project_name(std::string(BUILD_TYPE) + "-" + VERSION_STRING + (DEVELOPMENT_BUILD ? "-dev" : ""));
 
-	porting::osSpecificInit();
+		porting::osSpecificInit();
 
-	Settings cmd_args;
-	get_env_opts(cmd_args);
-	bool cmd_args_ok = get_cmdline_opts(argc, argv, &cmd_args);
-	if (!cmd_args_ok
+		Settings cmd_args;
+		get_env_opts(cmd_args);
+		bool cmd_args_ok = get_cmdline_opts(argc, argv, &cmd_args);
+		if (!cmd_args_ok
 			|| cmd_args.getFlag("help")
 			|| cmd_args.exists("nonopt1")) {
-		porting::attachOrCreateConsole();
-		print_help(allowed_options);
-		return cmd_args_ok ? 0 : 1;
-	}
-	if (cmd_args.getFlag("console") || cmd_args.getFlag("norender"))
-		porting::attachOrCreateConsole();
+			porting::attachOrCreateConsole();
+			print_help(allowed_options);
+			return cmd_args_ok ? 0 : 1;
+		}
+		if (cmd_args.getFlag("console") || cmd_args.getFlag("norender"))
+			porting::attachOrCreateConsole();
 
-	if (cmd_args.getFlag("version")) {
-		porting::attachOrCreateConsole();
-		print_version(std::cout);
-		return 0;
-	}
+		if (cmd_args.getFlag("version")) {
+			porting::attachOrCreateConsole();
+			print_version(std::cout);
+			return 0;
+		}
 
-	// Debug handler
-	BEGIN_DEBUG_EXCEPTION_HANDLER
+		// Debug handler
+		BEGIN_DEBUG_EXCEPTION_HANDLER
 
-	if (cmd_args.getFlag("norender")) {
-		cmd_args.set("color", "auto");
-		cmd_args.setBool("info", true);
-	}
+			if (cmd_args.getFlag("norender")) {
+				cmd_args.set("color", "auto");
+				cmd_args.setBool("info", true);
+			}
 
-	if (!setup_log_params(cmd_args))
-		return 1;
+		if (!setup_log_params(cmd_args))
+			return 1;
 
-	if (cmd_args.getFlag("debugger")) {
-		if (!use_debugger(argc, argv))
-			warningstream << "Continuing without debugger" << std::endl;
-	}
+		if (cmd_args.getFlag("debugger")) {
+			if (!use_debugger(argc, argv))
+				warningstream << "Continuing without debugger" << std::endl;
+		}
 
-	porting::signal_handler_init();
-	porting::initializePaths();
+		porting::signal_handler_init();
+		porting::initializePaths();
 
-	if (!create_userdata_path()) {
-		errorstream << "Cannot create user data directory" << std::endl;
-		return 1;
-	}
-
-	// List gameids if requested
-	if (cmd_args.exists("gameid") && cmd_args.get("gameid") == "list") {
-		list_game_ids();
-		return 0;
-	}
-
-	// List worlds, world names, and world paths if requested
-	if (cmd_args.exists("worldlist")) {
-		if (cmd_args.get("worldlist") == "name") {
-			list_worlds(true, false);
-		} else if (cmd_args.get("worldlist") == "path") {
-			list_worlds(false, true);
-		} else if (cmd_args.get("worldlist") == "both") {
-			list_worlds(true, true);
-		} else {
-			errorstream << "Invalid --worldlist value: "
-				<< cmd_args.get("worldlist") << std::endl;
+		if (!create_userdata_path()) {
+			errorstream << "Cannot create user data directory" << std::endl;
 			return 1;
 		}
-		return 0;
-	}
 
-	if (!init_common(cmd_args, argc, argv))
-		return 1;
+		// List gameids if requested
+		if (cmd_args.exists("gameid") && cmd_args.get("gameid") == "list") {
+			list_game_ids();
+			return 0;
+		}
 
-	g_analytics.is_enabled = g_settings->getBool("analytics_enabled");
+		// List worlds, world names, and world paths if requested
+		if (cmd_args.exists("worldlist")) {
+			if (cmd_args.get("worldlist") == "name") {
+				list_worlds(true, false);
+			}
+			else if (cmd_args.get("worldlist") == "path") {
+				list_worlds(false, true);
+			}
+			else if (cmd_args.get("worldlist") == "both") {
+				list_worlds(true, true);
+			}
+			else {
+				errorstream << "Invalid --worldlist value: "
+					<< cmd_args.get("worldlist") << std::endl;
+				return 1;
+			}
+			return 0;
+		}
 
-	if (g_settings->getBool("enable_console"))
-		porting::attachOrCreateConsole();
+		if (!init_common(cmd_args, argc, argv))
+			return 1;
 
-	// Run unit tests
-	if (cmd_args.getFlag("run-unittests")) {
-		porting::attachOrCreateConsole();
+		g_analytics.is_enabled = g_settings->getBool("analytics_enabled");
+
+		if (g_settings->getBool("enable_console"))
+			porting::attachOrCreateConsole();
+
+		// Run unit tests
+		if (cmd_args.getFlag("run-unittests")) {
+			porting::attachOrCreateConsole();
 #if BUILD_UNITTESTS
-		if (cmd_args.exists("test-module"))
-			return run_tests(cmd_args.get("test-module")) ? 0 : 1;
-		else
-			return run_tests() ? 0 : 1;
+			if (cmd_args.exists("test-module"))
+				return run_tests(cmd_args.get("test-module")) ? 0 : 1;
+			else
+				return run_tests() ? 0 : 1;
 #else
-		errorstream << "Unittest support is not enabled in this binary. "
-			<< "If you want to enable it, compile project with BUILD_UNITTESTS=1 flag."
-			<< std::endl;
-		return 1;
+			errorstream << "Unittest support is not enabled in this binary. "
+				<< "If you want to enable it, compile project with BUILD_UNITTESTS=1 flag."
+				<< std::endl;
+			return 1;
 #endif
-	}
+		}
 
-	// Run benchmarks
-	if (cmd_args.getFlag("run-benchmarks")) {
-		porting::attachOrCreateConsole();
+		// Run benchmarks
+		if (cmd_args.getFlag("run-benchmarks")) {
+			porting::attachOrCreateConsole();
 #if BUILD_BENCHMARKS
-		if (cmd_args.exists("test-module"))
-			return run_benchmarks(cmd_args.get("test-module").c_str()) ? 0 : 1;
-		else
-			return run_benchmarks() ? 0 : 1;
+			if (cmd_args.exists("test-module"))
+				return run_benchmarks(cmd_args.get("test-module").c_str()) ? 0 : 1;
+			else
+				return run_benchmarks() ? 0 : 1;
 #else
-		errorstream << "Benchmark support is not enabled in this binary. "
-			<< "If you want to enable it, compile project with BUILD_BENCHMARKS=1 flag."
-			<< std::endl;
-		return 1;
+			errorstream << "Benchmark support is not enabled in this binary. "
+				<< "If you want to enable it, compile project with BUILD_BENCHMARKS=1 flag."
+				<< std::endl;
+			return 1;
 #endif
-	}
+		}
 
-	GameStartData game_params;
+		GameStartData game_params;
 #ifdef SERVER
-	porting::attachOrCreateConsole();
-	game_params.is_dedicated_server = true;
-#else
-	const bool noRender = cmd_args.getFlag("norender");
-
-	const bool isServer = cmd_args.getFlag("server");
-	if (isServer || noRender)
 		porting::attachOrCreateConsole();
-	game_params.is_dedicated_server = isServer;
+		game_params.is_dedicated_server = true;
+#else
+		const bool noRender = cmd_args.getFlag("norender");
 
-	if (cmd_args.exists("playerai"))
-		game_params.playerai = cmd_args.get("playerai");
-	if (noRender && game_params.playerai.empty())
-		game_params.playerai = "playerai";
+		const bool isServer = cmd_args.getFlag("server");
+		if (isServer || noRender)
+			porting::attachOrCreateConsole();
+		game_params.is_dedicated_server = isServer;
 
-	if (cmd_args.exists("launcher_url"))
-		g_settings->set("launcher_url", cmd_args.get("launcher_url"));
+		if (cmd_args.exists("playerai"))
+			game_params.playerai = cmd_args.get("playerai");
+		if (noRender && game_params.playerai.empty())
+			game_params.playerai = "playerai";
+
+		if (cmd_args.exists("launcher_url"))
+			g_settings->set("launcher_url", cmd_args.get("launcher_url"));
 #endif
 
-	if (!game_configure(&game_params, cmd_args))
-		return 1;
+		if (!game_configure(&game_params, cmd_args))
+			return 1;
 
-	sanity_check(!game_params.world_path.empty());
+		sanity_check(!game_params.world_path.empty());
 
-	if (game_params.is_dedicated_server)
-		return run_dedicated_server(game_params, cmd_args) ? 0 : 1;
+		if (game_params.is_dedicated_server)
+			return run_dedicated_server(game_params, cmd_args) ? 0 : 1;
 
 #ifndef SERVER
-	retval = ClientLauncher().run(game_params, cmd_args) ? 0 : 1;
+		retval = ClientLauncher().run(game_params, cmd_args) ? 0 : 1;
 #else
-	retval = 0;
+		retval = 0;
 #endif
 
-	// Update configuration file
-	if (!g_settings_path.empty())
-		g_settings->updateConfigFile(g_settings_path.c_str());
+		// Update configuration file
+		if (!g_settings_path.empty())
+			g_settings->updateConfigFile(g_settings_path.c_str());
 
-	print_modified_quicktune_values();
+		print_modified_quicktune_values();
 
-	END_DEBUG_EXCEPTION_HANDLER
+		END_DEBUG_EXCEPTION_HANDLER
 
-	g_logger.flushLogToOutputs();
-	return retval;
+			g_logger.flushLogToOutputs();
+		return retval;
+	}
+	catch (std::exception e) {
+		std::cerr << "Crashed on init: " << e.what() << std::endl;
+		errorstream << "Crashed on init: " << e.what() << std::endl;
+		return 2;
+	}
+	catch (const char* err) {
+		std::cerr << "Crashed on init: " << err << std::endl;
+		errorstream << "Crashed on init: " << err << std::endl;
+		return 2;
+	}
 }
 
 
