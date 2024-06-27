@@ -19,5 +19,6 @@ cmake .. \
 cmake -j$(sysctl -n hw.logicalcpu)
 make install
 
-# M1 Macs w/ MacOS >= BigSur
-codesign --force --deep -s - macos/District53.app
+cp ../codesign.sh ./macos/codesign.sh
+cd macos
+./codesign.sh
