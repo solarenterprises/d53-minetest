@@ -295,4 +295,6 @@ public:
 	}
 
 	void updateMeshCulling();
+
+	virtual bool shouldIgnoreCollisionWithObject(ActiveObject* active_object) override;
 };

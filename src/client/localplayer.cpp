@@ -379,9 +379,17 @@ void LocalPlayer::move(f32 dtime, Environment *env, f32 pos_max_d,
 	const v3f initial_position = position;
 	const v3f initial_speed = m_speed;
 
-	collisionMoveResult result = collisionMoveSimple(env, m_client,
-		pos_max_d, m_collisionbox, player_stepheight, dtime,
-		&position, &m_speed, accel_f);
+	collisionMoveResult result = collisionMoveSimple(
+		env,
+		m_client,
+		pos_max_d,
+		m_collisionbox,
+		player_stepheight,
+		dtime,
+		&position,
+		&m_speed,
+		accel_f,
+		getCAO());
 
 	bool could_sneak = control.sneak && !free_move && !in_liquid &&
 		!is_climbing && physics_override.sneak;

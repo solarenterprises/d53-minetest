@@ -927,9 +927,33 @@ int ObjectRef::l_get_nametag_attributes(lua_State *L)
 	lua_pushstring(L, prop->nametag.c_str());
 	lua_setfield(L, -2, "text");
 
-
-
 	return 1;
+}
+
+int ObjectRef::l_ignore_object_collision(lua_State* L)
+{
+	NO_MAP_LOCK_REQUIRED;
+	ObjectRef* ref = checkObject<ObjectRef>(L, 1);
+	ObjectRef* ref2 = checkObject<ObjectRef>(L, 2);
+
+	ServerActiveObject* sao = getobject(ref);
+	if (sao == nullptr)
+		return 0;
+
+	ServerActiveObject* sao2 = getobject(ref2);
+	if (sao2 == nullptr)
+		return 0;
+
+	ObjectProperties* prop = sao->accessObjectProperties();
+	if (prop == nullptr)
+		return 0;
+
+	prop->collision_ignore_objects.insert(sao2->getId());
+
+	prop->validate();
+	sao->notifyObjectPropertiesModified();
+
+	return 0;
 }
 
 /* LuaEntitySAO-only */
@@ -2766,6 +2790,7 @@ luaL_Reg ObjectRef::methods[] = {
 	luamethod(ObjectRef, get_entity_name),
 	luamethod(ObjectRef, get_luaentity),
 	luamethod(ObjectRef, saveStaticData),
+	luamethod(ObjectRef, ignore_object_collision),
 
 	// Player-only
 	luamethod(ObjectRef, is_player),

@@ -300,17 +300,19 @@ int main(int argc, char *argv[])
 
 		END_DEBUG_EXCEPTION_HANDLER
 
-			g_logger.flushLogToOutputs();
+		g_logger.flushLogToOutputs(true);
 		return retval;
 	}
 	catch (std::exception e) {
 		std::cerr << "Crashed on init: " << e.what() << std::endl;
 		errorstream << "Crashed on init: " << e.what() << std::endl;
+		g_logger.flushLogToOutputs(true);
 		return 2;
 	}
 	catch (const char* err) {
 		std::cerr << "Crashed on init: " << err << std::endl;
 		errorstream << "Crashed on init: " << err << std::endl;
+		g_logger.flushLogToOutputs(true);
 		return 2;
 	}
 }

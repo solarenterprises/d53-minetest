@@ -62,5 +62,3 @@ void ClientActiveObject::registerType(u16 type, Factory f)
 		return;
 	m_types[type] = f;
 }
-
-

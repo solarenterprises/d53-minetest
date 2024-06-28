@@ -27,6 +27,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include <map>
 #include <vector>
 #include "util/pointabilities.h"
+#include <unordered_set>
 
 struct ObjectProperties
 {
@@ -72,6 +73,8 @@ struct ObjectProperties
 	bool use_texture_alpha = false;
 	bool shaded = true;
 	bool show_on_minimap = false;
+
+	std::unordered_set<u16> collision_ignore_objects;
 
 	ObjectProperties();
 

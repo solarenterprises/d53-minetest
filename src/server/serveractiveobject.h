@@ -229,6 +229,8 @@ public:
 	inline bool isPendingRemoval() const
 	{ return m_pending_removal; }
 
+	virtual bool shouldIgnoreCollisionWithObject(ActiveObject* active_object) override;
+
 	/*
 		Whether the object's static data has been stored to a block
 	*/

@@ -119,9 +119,13 @@ bool ObjectProperties::validate()
 
 void ObjectProperties::serialize(std::ostream &os) const
 {
-	writeU8(os, 4); // PROTOCOL_VERSION >= 37
+	writeU8(os, 5); // PROTOCOL_VERSION >= 50
 	writeU16(os, hp_max);
 	writeU8(os, physical);
+	writeU16(os, collision_ignore_objects.size());
+	for (auto id : collision_ignore_objects)
+		writeU16(os, id);
+
 	writeF32(os, 0.f); // Removed property (weight)
 	writeV3F32(os, collisionbox.MinEdge);
 	writeV3F32(os, collisionbox.MaxEdge);
@@ -178,11 +182,19 @@ void ObjectProperties::serialize(std::ostream &os) const
 void ObjectProperties::deSerialize(std::istream &is)
 {
 	int version = readU8(is);
-	if (version != 4)
+	if (version != 4 && version != 5)
 		throw SerializationError("unsupported ObjectProperties version");
 
 	hp_max = readU16(is);
 	physical = readU8(is);
+	if (version >= 5) {
+		u16 num_ignore = readU16(is);
+		collision_ignore_objects.reserve(num_ignore);
+		for (u16 i = 0; i < num_ignore; i++) {
+			u16 id = readU16(is);
+			collision_ignore_objects.insert(id);
+		}
+	}
 	readU32(is); // removed property (weight)
 	collisionbox.MinEdge = readV3F32(is);
 	collisionbox.MaxEdge = readV3F32(is);

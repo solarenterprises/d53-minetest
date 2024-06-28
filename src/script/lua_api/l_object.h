@@ -168,6 +168,8 @@ private:
 
 	/* LuaEntitySAO-only */
 
+	static int l_ignore_object_collision(lua_State* L);
+
 	// set_velocity(self, velocity)
 	static int l_set_velocity(lua_State *L);
 

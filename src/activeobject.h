@@ -24,6 +24,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include <quaternion.h>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 
 
 enum ActiveObjectType {
@@ -192,6 +193,7 @@ public:
 
 
 	virtual bool collideWithObjects() const = 0;
+	virtual bool shouldIgnoreCollisionWithObject(ActiveObject* active_object) = 0;
 
 
 	virtual void setAttachment(int parent_id, const std::string &bone, v3f position,
@@ -202,6 +204,7 @@ public:
 	virtual void clearParentAttachment() {}
 	virtual void addAttachmentChild(int child_id) {}
 	virtual void removeAttachmentChild(int child_id) {}
+
 protected:
 	u16 m_id; // 0 is invalid, "no id"
 };

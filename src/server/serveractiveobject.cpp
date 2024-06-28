@@ -23,6 +23,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "inventorymanager.h"
 #include "constants.h" // BS
 #include "log.h"
+#include "object_properties.h"
 
 ServerActiveObject::ServerActiveObject(ServerEnvironment *env, v3f pos):
 	ActiveObject(0),
@@ -94,4 +95,12 @@ void ServerActiveObject::markForDeactivation()
 InventoryLocation ServerActiveObject::getInventoryLocation() const
 {
 	return InventoryLocation();
+}
+
+bool ServerActiveObject::shouldIgnoreCollisionWithObject(ActiveObject* active_object) {
+	ObjectProperties* prop = accessObjectProperties();
+	if (!prop)
+		return false;
+
+	return prop->collision_ignore_objects.find(active_object->getId()) != prop->collision_ignore_objects.end();
 }

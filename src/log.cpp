@@ -295,14 +295,21 @@ void Logger::logToOutputs(LogLevel lev, const std::string &combined,
 	flushLogToOutputs();
 }
 
-void Logger::flushLogToOutputs() {
+void Logger::flushLogToOutputs(bool force) {
 	std::vector<LogOutputData> flushedLogOutputData;
 	{
-		std::unique_lock<std::mutex> lock(m_mutex, std::try_to_lock);
-		if (!lock.owns_lock())
-			return;
-		flushedLogOutputData = std::move(logOutputData);
-		logOutputData = std::vector<LogOutputData>();
+		if (!force) {
+			std::unique_lock<std::mutex> lock(m_mutex, std::try_to_lock);
+			if (!lock.owns_lock())
+				return;
+			flushedLogOutputData = std::move(logOutputData);
+			logOutputData = std::vector<LogOutputData>();
+		}
+		else {
+			MutexAutoLock(m_mutex);
+			flushedLogOutputData = std::move(logOutputData);
+			logOutputData = std::vector<LogOutputData>();
+		}
 	}
 
 	for (auto& d : flushedLogOutputData) {

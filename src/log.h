@@ -82,7 +82,7 @@ public:
 
 	static LogColor color_mode;
 
-	void flushLogToOutputs();
+	void flushLogToOutputs(bool force = false);
 
 private:
 	void logToOutputsRaw(LogLevel, const std::string &line);

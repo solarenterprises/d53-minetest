@@ -334,6 +334,20 @@ void read_object_properties(lua_State *L, int index,
 		}
 	}
 	getboolfield(L, -1, "physical", prop->physical);
+	lua_getfield(L, -1, "collision_ignore_objects");
+	if (lua_istable(L, -1)) {
+		prop->collision_ignore_objects.clear();
+		int table = lua_gettop(L);
+		lua_pushnil(L);
+		while (lua_next(L, table) != 0) {
+			if (lua_isnumber(L, -1))
+				prop->collision_ignore_objects.insert(lua_tonumber(L, -1));
+			// removes value, keeps key for next iteration
+			lua_pop(L, 1);
+		}
+	}
+	lua_pop(L, 1);
+
 	getboolfield(L, -1, "collide_with_objects", prop->collideWithObjects);
 
 	lua_getfield(L, -1, "collisionbox");
@@ -486,6 +500,15 @@ void push_object_properties(lua_State *L, const ObjectProperties *prop)
 	lua_setfield(L, -2, "breath_max");
 	lua_pushboolean(L, prop->physical);
 	lua_setfield(L, -2, "physical");
+
+	lua_createtable(L, prop->textures.size(), 0);
+	u16 i = 1;
+	for (const u16& id : prop->collision_ignore_objects) {
+		lua_pushnumber(L, id);
+		lua_rawseti(L, -2, i++);
+	}
+	lua_setfield(L, -2, "collision_ignore_objects");
+
 	lua_pushboolean(L, prop->collideWithObjects);
 	lua_setfield(L, -2, "collide_with_objects");
 	push_aabb3f(L, prop->collisionbox);
@@ -504,7 +527,7 @@ void push_object_properties(lua_State *L, const ObjectProperties *prop)
 	lua_setfield(L, -2, "visual_size");
 
 	lua_createtable(L, prop->textures.size(), 0);
-	u16 i = 1;
+	i = 1;
 	for (const std::string &texture : prop->textures) {
 		lua_pushlstring(L, texture.c_str(), texture.size());
 		lua_rawseti(L, -2, i++);

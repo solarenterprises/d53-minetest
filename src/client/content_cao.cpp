@@ -212,6 +212,9 @@ public:
 	void processMessage(const std::string &data);
 
 	bool getCollisionBox(aabb3f *toset) const { return false; }
+
+	virtual bool shouldIgnoreCollisionWithObject(ActiveObject* active_object) override { return false; }
+
 private:
 	scene::IMeshSceneNode *m_node;
 	v3f m_position;
@@ -2114,6 +2117,12 @@ void GenericCAO::updateMeshCulling()
 		});
 	}
 }
+
+bool GenericCAO::shouldIgnoreCollisionWithObject(ActiveObject* active_object) {
+	return m_prop.collision_ignore_objects.find(active_object->getId()) != m_prop.collision_ignore_objects.end();
+}
+
+
 
 // Prototype
 GenericCAO proto_GenericCAO(NULL, NULL);
