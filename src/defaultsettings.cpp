@@ -36,7 +36,7 @@ void set_default_settings()
 	settings->setDefault("analytics_enabled", "true");
 #endif
 
-	settings->setDefault("analytics_url", "https://dev.district53.io:4002");
+	settings->setDefault("analytics_url", "https://dev.game.district53.io:4002");
 	settings->setDefault("analytics_api_key", "");
 
 	// Client and server
@@ -45,7 +45,7 @@ void set_default_settings()
 	settings->setDefault("bind_address", "");
 
 #if DEVELOPMENT_BUILD
-	settings->setDefault("serverlist_url", "http://dev.district53.io:5000");
+	settings->setDefault("serverlist_url", "http://dev.game.district53.io:5000");
 #else
 	settings->setDefault("serverlist_url", "https://serverlist.district53.io");
 #endif
@@ -77,9 +77,9 @@ void set_default_settings()
 	//settings->setDefault("client_mapblock_limit", "7500");
 	settings->setDefault("client_mapblock_limit", "4500");
 	settings->setDefault("enable_build_where_you_stand", "false");
-	settings->setDefault("curl_timeout", "20000");
+	settings->setDefault("curl_timeout", "40000");
 	settings->setDefault("curl_parallel_limit", "8");
-	settings->setDefault("curl_file_download_timeout", "300000");
+	settings->setDefault("curl_file_download_timeout", "800000");
 	settings->setDefault("curl_verify_cert", "true");
 	settings->setDefault("enable_remote_media_server", "true");
 	settings->setDefault("enable_client_modding", "true");
