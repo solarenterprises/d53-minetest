@@ -67,6 +67,8 @@ struct ToolCapabilities
 	ToolGCMap groupcaps;
 	DamageGroup damageGroups;
 	int punch_attack_uses;
+	bool can_break = true;
+	bool dig_time_based_on_level = true;
 
 	ToolCapabilities(
 		float full_punch_interval_ = 1.4f,

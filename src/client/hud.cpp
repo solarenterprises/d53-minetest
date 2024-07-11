@@ -1175,9 +1175,12 @@ void drawItemStack(
 
 		// Shrink progressrect by amount of tool damage
 		float wear = item.wear / 65535.0f;
-		int progressmid =
-			wear * progressrect.UpperLeftCorner.X +
-			(1 - wear) * progressrect.LowerRightCorner.X;
+		int progressmid = 0;
+		if (item.wear >= 65535)
+			progressmid = progressrect.LowerRightCorner.X;
+		else
+			progressmid = wear * progressrect.UpperLeftCorner.X +
+				(1 - wear) * progressrect.LowerRightCorner.X;
 
 		// Compute progressbar color
 		// default scheme:

@@ -1537,6 +1537,8 @@ void push_tool_capabilities(lua_State *L,
 	}
 
 	setintfield(L, -1, "punch_attack_uses", toolcap.punch_attack_uses);
+	setboolfield(L, -1, "can_break", toolcap.can_break);
+	setboolfield(L, -1, "dig_time_based_on_level", toolcap.dig_time_based_on_level);
 
 	// Create groupcaps table
 	lua_newtable(L);
@@ -1706,6 +1708,9 @@ ToolCapabilities read_tool_capabilities(
 	}
 
 	getintfield(L, table, "punch_attack_uses", toolcap.punch_attack_uses);
+	getboolfield(L, table, "can_break", toolcap.can_break);
+	getboolfield(L, table, "dig_time_based_on_level", toolcap.dig_time_based_on_level);
+
 	lua_getfield(L, table, "groupcaps");
 	if(lua_istable(L, -1)){
 		int table_groupcaps = lua_gettop(L);

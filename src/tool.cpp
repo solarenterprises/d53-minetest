@@ -62,7 +62,7 @@ void ToolGroupCap::fromJson(const Json::Value& json)
 void ToolCapabilities::serialize(std::ostream& os, u16 protocol_version) const
 {
 	if (protocol_version >= 49)
-		writeU8(os, 6);
+		writeU8(os, 7);
 	else if (protocol_version >= 38)
 		writeU8(os, 5);
 	else
@@ -102,6 +102,9 @@ void ToolCapabilities::serialize(std::ostream& os, u16 protocol_version) const
 			os << serializeString16(*name);
 			writeS16(os, value);
 		}
+
+		writeU8(os, dig_time_based_on_level ? 1 : 0);
+		writeU8(os, can_break ? 1 : 0);
 	}
 }
 
@@ -146,6 +149,9 @@ void ToolCapabilities::deSerialize(std::istream& is)
 			int value = readS16(is);
 			max_drop_level_table[name] = value;
 		}
+
+		dig_time_based_on_level = readU8(is) > 0;
+		can_break = readU8(is) > 0;
 	}
 }
 
@@ -153,8 +159,25 @@ void ToolCapabilities::serializeJson(std::ostream& os) const
 {
 	Json::Value root;
 	root["full_punch_interval"] = full_punch_interval;
-	root["max_drop_level"] = max_drop_level;
+	
 	root["punch_attack_uses"] = punch_attack_uses;
+	root["dig_time_based_on_level"] = dig_time_based_on_level;
+	root["can_break"] = can_break;
+
+	if (max_drop_level_table.empty())
+		root["max_drop_level"] = max_drop_level;
+	else {
+		Json::Value j_max_drop_level;
+		for (const auto& max_drop_level : max_drop_level_table) {
+			const std::string* name = &max_drop_level.first;
+			const int value = max_drop_level.second;
+			Json::Value v;
+			v["name"] = name;
+			v["value"] = value;
+			j_max_drop_level.append(v);
+		}
+		root["max_drop_level"] = j_max_drop_level;
+	}
 
 	Json::Value groupcaps_object;
 	for (const auto& groupcap : groupcaps) {
@@ -178,8 +201,24 @@ void ToolCapabilities::deserializeJson(std::istream& is)
 	if (root.isObject()) {
 		if (root["full_punch_interval"].isDouble())
 			full_punch_interval = root["full_punch_interval"].asFloat();
+		if (root["can_break"].isInt())
+			can_break = root["can_break"].asBool();
+
 		if (root["max_drop_level"].isInt())
 			max_drop_level = root["max_drop_level"].asInt();
+		else if (root["max_drop_level"].isArray()) {
+			max_drop_level = 0;
+			max_drop_level_table.clear();
+			for (auto it : root["max_drop_level"]) {
+				auto name = it["name"].asString();
+				auto value = it["value"].asInt();
+				max_drop_level_table[name] = value;
+			}
+		}
+
+		if (root["dig_time_based_on_level"].isBool())
+			dig_time_based_on_level = root["dig_time_based_on_level"].asBool();
+
 		if (root["punch_attack_uses"].isInt())
 			punch_attack_uses = root["punch_attack_uses"].asInt();
 
@@ -396,6 +435,8 @@ DigParams getDigParams(const ItemGroupList& groups,
 	const ToolCapabilities* tp,
 	const u16 initial_wear)
 {
+	if (initial_wear >= U16_MAX)
+		return DigParams(true, 10000000.0);
 
 	// Group dig_immediate defaults to fixed time and no wear
 	if (tp->groupcaps.find("dig_immediate") == tp->groupcaps.cend()) {
@@ -430,8 +471,9 @@ DigParams getDigParams(const ItemGroupList& groups,
 		if (!time_exists)
 			continue;
 
-		/*if (leveldiff > 1)
-			time /= leveldiff;*/
+		if (tp->dig_time_based_on_level && leveldiff > 1)
+			time /= leveldiff;
+
 		if (!result_diggable || time < result_time) {
 			result_time = time;
 			result_diggable = true;

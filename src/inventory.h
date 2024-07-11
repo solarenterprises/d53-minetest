@@ -146,12 +146,20 @@ struct ItemStack
 	{
 		if(getDefinition(itemdef).type == ITEM_TOOL)
 		{
-			if(amount > 65535 - wear)
-				clear();
-			else if(amount < -wear)
+			if (wear >= U16_MAX)
+				return true;
+
+			if (amount > U16_MAX - wear) {
+				if (getToolCapabilities(itemdef).can_break)
+					clear();
+				else {
+					wear = U16_MAX;
+				}
+			} else if(amount < -wear)
 				wear = 0;
 			else
 				wear += amount;
+
 			return true;
 		}
 
