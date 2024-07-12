@@ -1404,7 +1404,7 @@ core.register_chatcommand("kill", {
 	end,
 })
 
-core.register_chatcommand("print_item", {
+core.register_chatcommand("print", {
 	params = S("[<name>]"),
 	description = S("Print debug info on item"),
 	privs = {privs=true},

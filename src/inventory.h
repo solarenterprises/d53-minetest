@@ -146,7 +146,7 @@ struct ItemStack
 	{
 		if(getDefinition(itemdef).type == ITEM_TOOL)
 		{
-			if (wear >= U16_MAX)
+			if (amount > 0 && wear >= U16_MAX)
 				return true;
 
 			if (amount > U16_MAX - wear) {
