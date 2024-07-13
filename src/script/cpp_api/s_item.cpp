@@ -117,7 +117,7 @@ bool ScriptApiItem::item_OnWield(const ItemStack& item, PlayerSAO* user) {
 	return true;
 }
 
-bool ScriptApiItem::item_OnEquip(const ItemStack& item, PlayerSAO* user, bool is_action_by_player) {
+bool ScriptApiItem::item_OnEquip(const ItemStack& item, ServerActiveObject* user, bool is_action_by_player) {
 	SCRIPTAPI_PRECHECKHEADER
 
 	int error_handler = PUSH_ERROR_HANDLER(L);
@@ -128,7 +128,7 @@ bool ScriptApiItem::item_OnEquip(const ItemStack& item, PlayerSAO* user, bool is
 		return true;
 	}
 
-	// Call function
+	// Call function(itemstack, player, is_action_by_player)
 	LuaItemStack::create(L, item);
 	objectrefGetOrCreate(L, user);
 	lua_pushboolean(L, is_action_by_player);
@@ -147,6 +147,147 @@ bool ScriptApiItem::item_OnEquip(const ItemStack& item, PlayerSAO* user, bool is
 
 	lua_pop(L, 1);  // Pop error handler
 	return can_equip;
+}
+
+void ScriptApiItem::item_OnAdd(const ItemStack& item, PlayerSAO* user)
+{
+	SCRIPTAPI_PRECHECKHEADER
+
+	int error_handler = PUSH_ERROR_HANDLER(L);
+
+	// Push callback function on stack
+	if (!getItemCallback(item.name.c_str(), "on_add")) {
+		lua_pop(L, 1);  // Pop error handler
+		return;
+	}
+
+	// Call function(itemstack, player)
+	LuaItemStack::create(L, item);
+	objectrefGetOrCreate(L, user);
+
+	PCALL_RES(lua_pcall(L, 2, 1, error_handler));
+	lua_pop(L, 1);  // Pop error handler
+}
+
+//bool ScriptApiItem::item_OnInventoryAction_AllowFit(const ItemStack& item, const InventoryLocation& inv_loc, u32 slot, PlayerSAO* user) {
+//	SCRIPTAPI_PRECHECKHEADER
+//
+//	int error_handler = PUSH_ERROR_HANDLER(L);
+//
+//	// Push callback function on stack
+//	if (!getItemCallback(item.name.c_str(), "allow_fit")) {
+//		lua_pop(L, 1);  // Pop error handler
+//		return true;
+//	}
+//
+//	// Call function(itemstack, player, is_action_by_player)
+//	LuaItemStack::create(L, item);
+//	objectrefGetOrCreate(L, user);
+//	InvRef::create(L, inv_loc);
+//	inv_loc.
+//	lua_pushboolean(L, is_action_by_player);
+//
+//	bool can_equip = false;
+//
+//	PCALL_RES(lua_pcall(L, 3, 1, error_handler));
+//	if (!lua_isnil(L, -1)) {
+//		try {
+//			can_equip = lua_toboolean(L, -1);
+//		}
+//		catch (LuaError& e) {
+//			throw WRAP_LUAERROR(e, "item=" + item.name);
+//		}
+//	}
+//
+//	lua_pop(L, 1);  // Pop error handler
+//	return can_equip;
+//}
+
+int ScriptApiItem::item_OnInventoryAction_AllowMove(const ItemStack& item, const MoveAction& ma, int count, ServerActiveObject* user)
+{
+	SCRIPTAPI_PRECHECKHEADER
+
+	int error_handler = PUSH_ERROR_HANDLER(L);
+
+	// Push callback function on stack
+	if (!getItemCallback(item.name.c_str(), "allow_move")) {
+		lua_pop(L, 1);  // Pop error handler
+		return count;
+	}
+
+	// Call function
+	LuaItemStack::create(L, item);
+
+	// function(itemstack, inv, from_list, from_index, to_list, to_index, count, player)
+	// inv
+	InvRef::create(L, ma.from_inv);
+	lua_pushstring(L, ma.from_list.c_str()); // from_list
+	lua_pushinteger(L, ma.from_i + 1);       // from_index
+	lua_pushstring(L, ma.to_list.c_str());   // to_list
+	lua_pushinteger(L, ma.to_i + 1);         // to_index
+	lua_pushinteger(L, count);               // count
+	objectrefGetOrCreate(L, user);         // server active object
+
+	PCALL_RES(lua_pcall(L, 8, 1, error_handler));
+	if (!lua_isnumber(L, -1))
+		throw LuaError("allow_move should return a number. name=" + ma.from_inv.name);
+	int ret = luaL_checkinteger(L, -1);
+	lua_pop(L, 2); // Pop integer and error handler
+	return ret;
+}
+
+int ScriptApiItem::item_OnInventoryAction_AllowTake(const ItemStack& item, const MoveAction& ma, ServerActiveObject* user) {
+	SCRIPTAPI_PRECHECKHEADER
+
+		int error_handler = PUSH_ERROR_HANDLER(L);
+
+	// Push callback function on stack
+	if (!getItemCallback(item.name.c_str(), "allow_take")) {
+		lua_pop(L, 1);  // Pop error handler
+		return item.count;
+	}
+
+	// function(inv, listname, index, stack, player)
+	// inv
+	InvRef::create(L, ma.from_inv);          // inv
+	lua_pushstring(L, ma.from_list.c_str()); // listname
+	lua_pushinteger(L, ma.from_i + 1);       // index
+	LuaItemStack::create(L, item);      // stack
+	objectrefGetOrCreate(L, user);     // player
+
+	PCALL_RES(lua_pcall(L, 5, 1, error_handler));
+	if (!lua_isnumber(L, -1))
+		throw LuaError("allow_take should return a number. name=" + ma.from_inv.name);
+	int ret = luaL_checkinteger(L, -1);
+	lua_pop(L, 2); // Pop integer and error handler
+	return ret;
+}
+
+int ScriptApiItem::item_OnInventoryAction_AllowPut(const ItemStack& item, const MoveAction& ma, ServerActiveObject* user) {
+	SCRIPTAPI_PRECHECKHEADER
+
+	int error_handler = PUSH_ERROR_HANDLER(L);
+
+	// Push callback function on stack
+	if (!getItemCallback(item.name.c_str(), "allow_put")) {
+		lua_pop(L, 1);  // Pop error handler
+		return item.count;
+	}
+
+	// function(inv, listname, index, stack, player)
+	// inv
+	InvRef::create(L, ma.to_inv);
+	lua_pushstring(L, ma.to_list.c_str()); // listname
+	lua_pushinteger(L, ma.to_i + 1);       // index
+	LuaItemStack::create(L, item);        // stack
+	objectrefGetOrCreate(L, user);       // player
+
+	PCALL_RES(lua_pcall(L, 5, 1, error_handler));
+	if (!lua_isnumber(L, -1))
+		throw LuaError("allow_put should return a number. name=" + ma.from_inv.name);
+	int ret = luaL_checkinteger(L, -1);
+	lua_pop(L, 2); // Pop integer and error handler
+	return ret;
 }
 
 bool ScriptApiItem::item_OnUse(std::optional<ItemStack> &ret_item,

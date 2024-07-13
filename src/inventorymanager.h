@@ -155,7 +155,7 @@ struct IMoveAction : public InventoryAction, public MoveAction
 	u16 count = 0;
 	bool move_somewhere = false;
 
-	bool can_move = true;
+	//bool can_move = true;
 
 	// treat these as private
 	// related to movement to somewhere
@@ -201,7 +201,7 @@ struct IMoveAction : public InventoryAction, public MoveAction
 
 	int allowTake(const ItemStack &src_item, ServerActiveObject *player) const;
 
-	int allowMove(int try_take_count, ServerActiveObject *player) const;
+	int allowMove(const ItemStack& src_item, int try_take_count, ServerActiveObject *player) const;
 };
 
 struct IDropAction : public InventoryAction, public MoveAction

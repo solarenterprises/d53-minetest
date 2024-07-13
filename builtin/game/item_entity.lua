@@ -102,6 +102,17 @@ core.register_entity(":__builtin:item", {
 		self:set_item()
 	end,
 
+    on_deactivate = function (self, removal)
+        local stack = ItemStack(self.itemstring)
+        local item = core.registered_items[stack:get_name()]
+
+        if item and item.on_deactivate then 
+            item.on_deactivate(self, stack, removal)
+        end
+  
+        self.itemstring = ""
+    end,
+
 	try_merge_with = function(self, own_stack, object, entity)
 		if self.age == entity.age then
 			-- Cannot merge with itself
@@ -135,7 +146,7 @@ core.register_entity(":__builtin:item", {
 		own_stack:set_count(total_count)
 		self:set_item(own_stack)
 
-		entity.itemstring = ""
+		-- entity.itemstring = ""
 		object:remove()
 		return true
 	end,
@@ -161,7 +172,7 @@ core.register_entity(":__builtin:item", {
 	on_step = function(self, dtime, moveresult)
 		self.age = self.age + dtime
 		if time_to_live > 0 and self.age > time_to_live then
-			self.itemstring = ""
+			-- self.itemstring = ""
 			self.object:remove()
 			return
 		end
@@ -174,7 +185,7 @@ core.register_entity(":__builtin:item", {
 		})
 		-- Delete in 'ignore' nodes
 		if node and node.name == "ignore" then
-			self.itemstring = ""
+			-- self.itemstring = ""
 			self.object:remove()
 			return
 		end
@@ -343,7 +354,7 @@ core.register_entity(":__builtin:item", {
 
 		-- Handle the leftover itemstack
 		if itemstack:is_empty() then
-			self.itemstring = ""
+			-- self.itemstring = ""
 			self.object:remove()
 		else
 			self:set_item(itemstack)

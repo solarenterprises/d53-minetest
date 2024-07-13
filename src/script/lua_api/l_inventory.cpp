@@ -25,6 +25,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "server.h"
 #include "server/serverinventorymgr.h"
 #include "remoteplayer.h"
+#include "scripting_server.h"
 
 /*
 	InvRef
@@ -289,14 +290,15 @@ int InvRef::l_add_item(lua_State *L)
 	const char *listname = luaL_checkstring(L, 2);
 	ItemStack item = read_item(L, 3, getServer(L)->idef());
 	InventoryList *list = getlist(L, ref, listname);
-	if(list){
-
+	if(list) {
 		RemotePlayer* player = getServer(L)->getEnv().getPlayer(ref->m_loc.name.c_str(), false);
 		PlayerSAO* sao = player ? player->getPlayerSAO() : nullptr;
 
 		ItemStack leftover = list->addItem(item);
-		if(leftover.count != item.count)
+		if (leftover.count != item.count) {
 			reportInventoryChange(L, ref);
+			getServer(L)->getScriptIface()->item_OnAdd(item, sao);
+		}
 		LuaItemStack::create(L, leftover);
 	} else {
 		LuaItemStack::create(L, item);

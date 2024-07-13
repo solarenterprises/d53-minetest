@@ -659,6 +659,7 @@ ItemStack InventoryList::addItem(u32 i, const ItemStack &newitem)
 	if(i >= m_items.size())
 		return newitem;
 
+	
 	if (on_item_fits)
 		if (!on_item_fits(*this, i, newitem))
 			return newitem;

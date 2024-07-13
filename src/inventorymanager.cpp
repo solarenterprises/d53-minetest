@@ -29,6 +29,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "util/strfnd.h"
 #include "util/basic_macros.h"
 #include "inventory.h"
+#include "remoteplayer.h"
+#include "server/player_sao.h"
 
 #define PLAYER_TO_SA(p)   p->getEnv()->getScriptIface()
 
@@ -127,6 +129,29 @@ InventoryAction *InventoryAction::deSerialize(std::istream &is)
 /*
 	IMoveAction
 */
+bool is_move_action_equip(const IMoveAction& ma, ServerActiveObject* player) {
+	if (player->getType() != ACTIVEOBJECT_TYPE_PLAYER)
+		return false;
+
+	if (ma.from_inv.type != InventoryLocation::Type::DETACHED &&
+		ma.from_inv.type != InventoryLocation::Type::PLAYER &&
+		ma.from_inv.type != InventoryLocation::Type::NODEMETA)
+		return false;
+
+	if (ma.to_inv.type != InventoryLocation::Type::PLAYER)
+		return false;
+
+	PlayerSAO* playersao = (PlayerSAO*)player;
+	int hotbarcount = playersao->getPlayer()->getHotbarItemcount();
+
+	if (ma.to_i >= hotbarcount)
+		return false;
+
+	if (ma.to_list != "main")
+		return false;
+
+	return true;
+}
 
 IMoveAction::IMoveAction(std::istream &is, bool somewhere) :
 		move_somewhere(somewhere)
@@ -199,11 +224,20 @@ void IMoveAction::onMove(int count, ServerActiveObject *player) const
 
 int IMoveAction::allowPut(const ItemStack &dst_item, ServerActiveObject *player) const
 {
-	if (!can_move)
-		return 0;
-
 	ServerScripting *sa = PLAYER_TO_SA(player);
 	int dst_can_put_count = 0xffff;
+
+	//
+	// On Equip
+	if (is_move_action_equip(*this, player) && !sa->item_OnEquip(dst_item, player, true))
+		return 0;
+
+	//
+	// Item inventory action
+	int result = sa->item_OnInventoryAction_AllowPut(dst_item, *this, player);
+	if (result >= 0)
+		return result;
+
 	if (to_inv.type == InventoryLocation::DETACHED)
 		dst_can_put_count = sa->detached_inventory_AllowPut(*this, dst_item, player);
 	else if (to_inv.type == InventoryLocation::NODEMETA)
@@ -219,6 +253,13 @@ int IMoveAction::allowTake(const ItemStack &src_item, ServerActiveObject *player
 {
 	ServerScripting *sa = PLAYER_TO_SA(player);
 	int src_can_take_count = 0xffff;
+
+	//
+	// Item inventory action
+	int result = sa->item_OnInventoryAction_AllowTake(src_item, *this, player);
+	if (result >= 0)
+		return result;
+
 	if (from_inv.type == InventoryLocation::DETACHED)
 		src_can_take_count = sa->detached_inventory_AllowTake(*this, src_item, player);
 	else if (from_inv.type == InventoryLocation::NODEMETA)
@@ -230,13 +271,22 @@ int IMoveAction::allowTake(const ItemStack &src_item, ServerActiveObject *player
 	return src_can_take_count;
 }
 
-int IMoveAction::allowMove(int try_take_count, ServerActiveObject *player) const
+int IMoveAction::allowMove(const ItemStack& src_item, int try_take_count, ServerActiveObject *player) const
 {
-	if (!can_move)
-		return 0;
-
 	ServerScripting *sa = PLAYER_TO_SA(player);
 	int src_can_take_count = 0xffff;
+
+	//
+	// On Equip
+	if (is_move_action_equip(*this, player) && !sa->item_OnEquip(src_item, player, true))
+		return 0;
+
+	//
+	// Item inventory action
+	int result = sa->item_OnInventoryAction_AllowMove(src_item, *this, try_take_count, player);
+	if (result >= 0)
+		try_take_count = src_can_take_count = result;
+	
 	if (from_inv.type == InventoryLocation::DETACHED)
 		src_can_take_count = sa->detached_inventory_AllowMove(*this, try_take_count, player);
 	else if (from_inv.type == InventoryLocation::NODEMETA)
@@ -396,7 +446,7 @@ void IMoveAction::apply(InventoryManager *mgr, ServerActiveObject *player, IGame
 
 	if (from_inv == to_inv) {
 		// Move action within the same inventory
-		src_can_take_count = allowMove(src_item.count, player);
+		src_can_take_count = allowMove(src_item, src_item.count, player);
 
 		bool swap_expected = allow_swap;
 		allow_swap = allow_swap
@@ -404,7 +454,7 @@ void IMoveAction::apply(InventoryManager *mgr, ServerActiveObject *player, IGame
 		if (allow_swap) {
 			int try_put_count = list_to->getItem(to_i).count;
 			swapDirections();
-			dst_can_put_count = allowMove(try_put_count, player);
+			dst_can_put_count = allowMove(src_item, try_put_count, player);
 			allow_swap = allow_swap
 				&& (dst_can_put_count == -1 || dst_can_put_count >= try_put_count);
 			swapDirections();

@@ -693,33 +693,6 @@ void Server::handleCommand_InventoryAction(NetworkPacket* pkt)
 		ma->from_inv.applyCurrentPlayer(player->getName());
 		ma->to_inv.applyCurrentPlayer(player->getName());
 
-		if ((ma->from_inv.type == InventoryLocation::Type::DETACHED || ma->from_inv.type == InventoryLocation::Type::PLAYER) &&
-			ma->to_inv.type == InventoryLocation::Type::PLAYER &&
-			ma->to_list == "main" &&
-			ma->to_i < playersao->getPlayer()->getHotbarItemcount()) {
-
-			auto get_borrow_checked_invlist = [this](const InventoryLocation& invloc,
-				const std::string& listname) -> InventoryList::ResizeLocked
-				{
-					Inventory* inv = m_inventory_mgr->getInventory(invloc);
-					if (!inv)
-						return nullptr;
-					InventoryList* list = inv->getList(listname);
-					if (!list)
-						return nullptr;
-					return list->resizeLock();
-				};
-
-			auto list_from = get_borrow_checked_invlist(ma->from_inv, ma->from_list);
-			if (!list_from)
-				return;
-
-			const ItemStack& item_stack = list_from->getItem(ma->from_i);
-			if (!m_script->item_OnEquip(item_stack, playersao, true)) {
-				ma->can_move = false;
-			}
-		}
-
 		m_inventory_mgr->setInventoryModified(ma->from_inv);
 		if (ma->from_inv != ma->to_inv)
 			m_inventory_mgr->setInventoryModified(ma->to_inv);

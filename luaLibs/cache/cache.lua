@@ -24,8 +24,10 @@ local find = string.find
 local format = string.format
 local type = type
 local getmetatable = debug.getmetatable
-local encode = require('json').encode
-local decode = require('json').decode
+-- local encode = require('json').encode
+-- local decode = require('json').decode
+local encode = minetest.write_json
+local decode = minetest.parse_json
 -- constants
 local INF_POS = math.huge
 local INF_NEG = -INF_POS
