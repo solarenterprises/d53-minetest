@@ -30,6 +30,7 @@ public:
 	~TestClientActiveObject() = default;
 	ActiveObjectType getType() const { return ACTIVEOBJECT_TYPE_TEST; }
 	virtual void addToScene(ITextureSource *tsrc, scene::ISceneManager *smgr) {}
+	virtual bool shouldIgnoreCollisionWithObject(ActiveObject* active_object) override { return false; }
 };
 
 class TestSelectableClientActiveObject : public ClientActiveObject
@@ -45,6 +46,7 @@ public:
 	void addToScene(ITextureSource *tsrc, scene::ISceneManager *smgr) override {}
 	bool getSelectionBox(aabb3f *toset) const override { *toset = selection_box; return true; }
 	const v3f getPosition() const override { return position; }
+	virtual bool shouldIgnoreCollisionWithObject(ActiveObject* active_object) override { return false; }
 
 	v3f position;
 	aabb3f selection_box;

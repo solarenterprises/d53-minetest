@@ -14,18 +14,20 @@ arch -x86_64 /usr/local/bin/cmake .. \
             -DCMAKE_FIND_FRAMEWORK=LAST \
             -DCMAKE_INSTALL_PREFIX=../build/macos_x86_64/ \
             -DRUN_IN_PLACE=FALSE \
-            -DENABLE_GETTEXT=TRUE \
+            -DENABLE_GETTEXT=FALSE \
             -DINSTALL_DEVTEST=FALSE \
             -DENABLE_LEVELDB=FALSE \
             -DENABLE_REDIS=FALSE \
+            -DBUILDUNITTESTS=FALSE \
             -DBUNDLE_LIBS=/usr/local/lib
 
 arch -x86_64 /usr/local/bin/cmake -j$(sysctl -n hw.logicalcpu)
 make install
 
-cp ../codesign.sh ./macos_x86_64/codesign.sh
-cd macos_x86_64
-./codesign.sh
+# cp ../codesign.sh ./macos_x86_64/codesign.sh
+# cp ../misc/entitlements.plist ./macos_x86_64/entitlements.plist
+# cd macos_x86_64
+# ./codesign.sh
 
 # xcrun notarytool store-credentials "notary-credentials" --apple-id "sami@solarenterprises.com" --team-id "J3T8W3347Y" --password "bobx-upah-pnfj-ldlw"
 # xcrun notarytool submit District53.zip --keychain-profile "notary-credentials" --wait
