@@ -1559,8 +1559,8 @@ void Server::handleCommand_Token(NetworkPacket* pkt)
 
 
 	HTTPFetchRequest fetch_request;
-	fetch_request.url = g_settings->get("token_url") + "/" + token;
-	//fetch_request.extra_headers.push_back("x-token: " + token);
+	fetch_request.url = g_settings->get("token_url");
+	fetch_request.extra_headers.emplace_back("x-token: " + token);
 	fetch_request.method = HTTP_GET;
 
 	httpfetch(fetch_request, std::make_unique<Http_Request_Callback>(
