@@ -17,6 +17,8 @@
 
 #include "mysql.h"
 #include "errmsg.h"
+#include <string>
+#include "log.h"
 
 extern "C" {
 #include <lua.h>
@@ -478,6 +480,80 @@ static int escape_string (lua_State *L) {
   return 0;
 }
 
+void ensure_connection(conn_data* conn)
+{
+	MYSQL* m_conn = conn->my_conn;
+
+	// mysql_ping() checks the connection, and if it is not alive, attempts to reconnect.
+	if (mysql_ping(m_conn) == 0)
+		return;
+
+	std::string host = m_conn->host ? m_conn->host : "";
+	std::string username = m_conn->user ? m_conn->user : "";
+	std::string password = m_conn->passwd ? m_conn->passwd : "";
+	std::string sourcename = m_conn->db ? m_conn->db : "";
+	std::string unix_socket = m_conn->unix_socket ? m_conn->unix_socket : "";
+	unsigned int port = m_conn->port;
+	unsigned long client_flag = m_conn->client_flag;
+
+	// If mysql_ping returns non-zero, the reconnection attempt failed.
+	// Handle the error (throw an exception or log it)
+	std::string error_msg = mysql_error(m_conn);
+	errorstream
+		<< "Lua MySQL (PING FAILED):"
+		<< error_msg.c_str()
+		<< std::endl;
+
+	conn->my_conn = nullptr;
+
+	//
+	// Do 10 attempts in 10 seconds to reconnect to database
+	for (int i = 0; i < 10; i++) {
+		if (i != 0) {
+			infostream << "Lua mySQL: retrying connection in 1sec..." << std::endl;
+			using namespace std::chrono_literals;
+			std::this_thread::sleep_for(1000ms);
+		}
+
+		mysql_close(m_conn);
+
+		m_conn = mysql_init(NULL);
+		if (!m_conn) {
+			errorstream
+				<< "Failed to initialize MySQL connection"
+				<< std::endl;
+
+			continue;
+		}
+		
+		if (mysql_real_connect(
+			m_conn,
+			host.empty() ? NULL : host.c_str(),
+			username.empty() ? NULL : username.c_str(),
+			password.empty() ? NULL : password.c_str(),
+			sourcename.empty() ? NULL : sourcename.c_str(),
+			port,
+			unix_socket.empty() ? NULL : unix_socket.c_str(),
+			client_flag)
+			== NULL) {
+
+			errorstream
+				<< "Failed to connect Lua MySQL connection"
+				<< std::endl;
+
+			continue;
+		}
+
+		//
+		// Successful connection
+		infostream << "Lua mySQL: Connection made." << std::endl;
+		conn->my_conn = m_conn;
+		return;
+	}
+
+	throw std::runtime_error("Lua MySQL Error: Failed to reconnect to database");
+}
+
 /*
 ** Execute an SQL statement.
 ** Return a Cursor object if the statement is a query, otherwise
@@ -485,6 +561,8 @@ static int escape_string (lua_State *L) {
 */
 static int conn_execute (lua_State *L) {
 	conn_data *conn = getconnection (L);
+	ensure_connection(conn);
+
 	size_t st_len;
 	const char *statement = luaL_checklstring (L, 2, &st_len);
 	if (mysql_real_query(conn->my_conn, statement, st_len)) 
