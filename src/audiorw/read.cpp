@@ -275,12 +275,13 @@ public:
 	}
 
 	~iocontext() {
-		::av_free(ctx_);
-		if (buffer_)
-			::av_free(buffer_);
+		avio_context_free(&ctx_);
+		//::av_free(ctx_);
+		/*if (buffer_)
+			::av_free(buffer_);*/
 	}
 
-	void reset_buffer() { buffer_ = NULL; }
+	//void reset_buffer() { buffer_ = NULL; }
 	void reset_inner_context() { ctx_ = NULL; buffer_ = NULL; }
 
 	static int read(void* opaque, unsigned char* buf, int buf_size) {
@@ -349,7 +350,7 @@ std::vector<std::vector<double>> audiorw::read_from_buffer(
 	// Open the file and get format information
 	int error = avformat_open_input(&format_context, "", NULL, 0);
 	if (error != 0) {
-		priv_ctx.reset_buffer();
+		//priv_ctx.reset_buffer();
 		av_strerror(error, errbuf, errbuf_size);
 		throw std::invalid_argument("Could not open buffer audio file: Error: " + std::string(errbuf));
 	}
