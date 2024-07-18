@@ -24,6 +24,12 @@ namespace audiorw {
         double& sample_rate,
         double start_seconds = 0,
         double end_seconds = -1);
+    
+    std::vector<std::vector<double>> read_from_buffer(
+        std::string* buffer,
+        double& sample_rate,
+        double start_seconds = 0,
+        double end_seconds = -1);
 
     void write(
         const std::vector<std::vector<double>>& audio,
