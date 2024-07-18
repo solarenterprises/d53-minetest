@@ -1,3 +1,3 @@
 set -e
-rm -r build/
+rm -rf build/
 find . -name CMakeCache.txt -exec rm -f {} \;

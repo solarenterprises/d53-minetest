@@ -10,10 +10,11 @@ cmake .. \
             -DCMAKE_FIND_FRAMEWORK=LAST \
             -DCMAKE_INSTALL_PREFIX=../build/macos/ \
             -DRUN_IN_PLACE=FALSE \
-            -DENABLE_GETTEXT=TRUE \
+            -DENABLE_GETTEXT=FALSE \
             -DINSTALL_DEVTEST=FALSE \
             -DENABLE_LEVELDB=FALSE \
             -DENABLE_REDIS=FALSE \
+            -DBUILDUNITTESTS=FALSE \
             -DBUNDLE_LIBS=/opt/homebrew/lib
 
 cmake -j$(sysctl -n hw.logicalcpu)

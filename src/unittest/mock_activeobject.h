@@ -28,4 +28,5 @@ public:
 	virtual bool getCollisionBox(aabb3f *toset) const { return false; }
 	virtual bool getSelectionBox(aabb3f *toset) const { return false; }
 	virtual bool collideWithObjects() const { return false; }
+	virtual bool shouldIgnoreCollisionWithObject(ActiveObject* active_object) override { return false; }
 };
