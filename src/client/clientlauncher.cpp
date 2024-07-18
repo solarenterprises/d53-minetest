@@ -274,6 +274,7 @@ bool ClientLauncher::run(GameStartData &start_data, const Settings &cmd_args)
 				menudata.script_data.errormessage = error_message;
 				menudata.script_data.reconnect_requested = false;
 				menudata.script_data.exit_after_error = true;
+				menudata.script_data.token = menudata.token;
 
 				main_menu(&menudata);
 			}
@@ -538,6 +539,8 @@ bool ClientLauncher::launch_game(std::string &error_message,
 		menudata.port                            = itos(start_data.socket_port);
 		menudata.script_data.errormessage        = std::move(error_message_lua);
 		menudata.script_data.reconnect_requested = reconnect_requested;
+		menudata.token							 = start_data.token;
+		menudata.script_data.token				 = start_data.token;
 
 		main_menu(&menudata);
 

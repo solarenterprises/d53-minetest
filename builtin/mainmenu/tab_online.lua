@@ -15,6 +15,11 @@
 --with this program; if not, write to the Free Software Foundation, Inc.,
 --51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+local launched_with_token = gamedata.token
+if launched_with_token == "" then
+    launched_with_token = nil
+end
+
 local function get_sorted_servers()
     local servers = {
         fav = {},
@@ -87,11 +92,13 @@ local function get_formspec(tabview, name, tabdata)
     local retval =
     -- Search
         "container[0,0]" ..
-        "box[0,0;9.75,7;#666666]" ..
-        "label[0.25,0.35;" .. fgettext("Select Token") .. "]" ..
-        -- "label[7.25,0.35;" .. fgettext("Password") .. "]" ..
+        "box[0,0;9.75,7;#666666]"
 
+    if not launched_with_token then
+        retval = retval ..
+        "label[0.25,0.35;" .. fgettext("Select Token") .. "]" ..
         "dropdown[0.25,0.5;7,0.75;te_token;" .. token_labels .. ";"..selected_token_index.."]"
+    end
 
         -- "pwdfield[7.25,0.5;2.5,0.75;te_pwd;]"
     --"field[0.25,0.25;7,0.75;te_search;;" .. core.formspec_escape(core.settings:get("sxpaddress")) .. "]" ..
@@ -111,7 +118,7 @@ local function get_formspec(tabview, name, tabdata)
             "field[4.25,5.15;2.5,0.75;name;;]" ..
             "button[3,6;2.5,0.75;btn_mp_do_add_token;" .. fgettext("Add") .. "]" ..
             "button[5.75,6;2.5,0.75;btn_mp_cancel_add_token;" .. fgettext("Cancel") .. "]"
-    else
+    elseif not launched_with_token then
         retval = retval .. "label[0.25,4.45;" .. fgettext("Token Info") .. "]" ..
             "box[0.25,4.6;9.5,1.15;#999999]" ..
             "textarea[0.25,4.6;9.5,1.15;;;" .. core.formspec_escape(tabdata.token_info or "") .. "]" ..
@@ -159,6 +166,10 @@ local function get_formspec(tabview, name, tabdata)
 
     retval = retval .. "container_end[]"
 
+    local table_dimensions = "0.25,1.5;9.5,2.75"
+    if launched_with_token then
+        table_dimensions = "0.25,0.6;9.5,6.3"
+    end
     -- Table
     retval = retval .. "tablecolumns[" ..
         "image,tooltip=" .. fgettext("Ping") .. "," ..
@@ -186,7 +197,7 @@ local function get_formspec(tabview, name, tabdata)
         "align=inline,padding=0.25,width=1.5;" ..
         "color,align=inline,span=1;" ..
         "text,align=inline,padding=1]" ..
-        "table[0.25,1.5;9.5,2.75;servers;"
+        "table["..table_dimensions..";servers;"
 
     local servers = get_sorted_servers()
 
@@ -351,6 +362,15 @@ local function main_button_handler(tabview, fields, name, tabdata)
                     return true
                 end
 
+                if launched_with_token then
+                    gamedata.token          = launched_with_token
+                else
+                    local token             = tokenmgr.get_token_by_name(fields.te_token)
+                    if token then
+                        gamedata.token          = token.token
+                    end
+                end
+
                 local token = tokenmgr.get_token_by_name(fields.te_token)
 
                 gamedata.address        = server.address
@@ -457,10 +477,15 @@ local function main_button_handler(tabview, fields, name, tabdata)
 
     if (fields.btn_mp_connect or fields.key_enter)
         and fields.te_address ~= "" and fields.te_port then
-        local token             = tokenmgr.get_token_by_name(fields.te_token)
-        if not token then
-            gamedata.errormessage = "No token selected"
-            return true
+        if launched_with_token then
+            gamedata.token          = launched_with_token
+        else
+            local token             = tokenmgr.get_token_by_name(fields.te_token)
+            if not token then
+                gamedata.errormessage = "No token selected"
+                return true
+            end
+            gamedata.token          = token.token
         end
 
         gamedata.playername     = fields.te_token
@@ -469,8 +494,7 @@ local function main_button_handler(tabview, fields, name, tabdata)
         gamedata.address        = fields.te_address
         gamedata.port           = tonumber(fields.te_port)
         gamedata.selected_world = 0
-        gamedata.token          = token.token
-
+        
         local idx               = core.get_table_index("servers")
         local server            = idx and tabdata.lookup[idx]
 

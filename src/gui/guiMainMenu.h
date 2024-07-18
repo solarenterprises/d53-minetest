@@ -32,6 +32,7 @@ struct MainMenuDataForScript {
 	bool reconnect_requested = false;
 	std::string errormessage = "";
 	bool exit_after_error = false;
+	std::string token = "";
 };
 
 struct MainMenuData {

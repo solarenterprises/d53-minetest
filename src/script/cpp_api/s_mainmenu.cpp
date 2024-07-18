@@ -36,6 +36,7 @@ void ScriptApiMainMenu::setMainMenuData(const MainMenuDataForScript *data)
 	lua_settable(L, gamedata_idx);
 	setboolfield(L, gamedata_idx, "reconnect_requested", data->reconnect_requested);
 	setboolfield(L, gamedata_idx, "exit_after_error", data->exit_after_error);
+	setstringfield(L, gamedata_idx, "token", data->token);
 	lua_pop(L, 1);
 }
 

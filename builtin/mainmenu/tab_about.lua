@@ -18,6 +18,7 @@
 -- https://github.com/orgs/minetest/teams/engine/members
 
 local core_developers = {
+	"Sami Mattila <sami@solarenterprises.com>",
 	"Perttu Ahola (celeron55) <celeron55@gmail.com> [Project founder]",
 	"sfan5 <sfan5@live.de>",
 	"ShadowNinja <shadowninja@minetest.net>",
@@ -35,6 +36,7 @@ local core_developers = {
 -- currently only https://github.com/orgs/minetest/teams/triagers/members
 
 local core_team = {
+    "District53 Solar Enterprises",
 	"Zughy [Issue triager]",
 	"wsor [Issue triager]",
 	"Hugo Locurcio (Calinou) [Issue triager]",
@@ -158,7 +160,7 @@ return {
 			"style[label_button;border=false]" ..
 			"button[0.1,3.4;5.3,0.5;label_button;" ..
 			core.formspec_escape(version.project .. " " .. version.string) .. "]" ..
-			"button[1.5,4.1;2.5,0.8;homepage;minetest.net]" ..
+			"button[1.5,4.1;2.5,0.8;homepage;district53.io]" ..
 			"hypertext[5.5,0.25;9.75,6.6;credits;" .. minetest.formspec_escape(hypertext) .. "]"
 
 		-- Render information
@@ -189,7 +191,7 @@ return {
 
 	cbf_button_handler = function(this, fields, name, tabdata)
 		if fields.homepage then
-			core.open_url("https://www.minetest.net")
+			core.open_url("https://district53.io/")
 		end
 
 		if fields.share_debug then
