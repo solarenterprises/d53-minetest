@@ -126,6 +126,9 @@ private:
 	// clear_registered_schematics()
 	static int l_clear_registered_schematics(lua_State *L);
 
+	// list_registered_schematics()
+	static int l_list_registered_schematics(lua_State *L);
+
 	// generate_ores(vm, p1, p2)
 	static int l_generate_ores(lua_State *L);
 

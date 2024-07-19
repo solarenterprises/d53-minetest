@@ -1421,3 +1421,13 @@ core.register_chatcommand("print", {
         return true
 	end,
 })
+
+core.register_chatcommand("schematic.list", {
+	description = S("Lists all schematics"),
+	privs = {privs=true},
+	func = function(name, param)
+        local schematics_list = minetest.list_registered_schematics()
+        minetest.chat_send_player(name, dump(schematics_list))
+        return true
+	end,
+})

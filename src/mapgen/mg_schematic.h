@@ -137,6 +137,7 @@ public:
 	SchematicManager *clone() const;
 
 	virtual void clear();
+	std::vector<std::string> list_names() const;
 
 	const char *getObjectTitle() const
 	{

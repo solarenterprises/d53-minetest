@@ -72,6 +72,20 @@ void SchematicManager::clear()
 	ObjDefManager::clear();
 }
 
+std::vector<std::string> SchematicManager::list_names() const
+{
+	std::vector<std::string> names;
+	
+	names.reserve(getNumObjects());
+
+	for (size_t i = 0; i != getNumObjects(); i++) {
+		ObjDef* def = getRaw(i);
+		names.push_back(def->name);
+	}
+
+	return names;
+}
+
 
 ///////////////////////////////////////////////////////////////////////////////
 

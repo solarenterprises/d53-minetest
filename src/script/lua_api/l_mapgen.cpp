@@ -1549,6 +1549,64 @@ int ModApiMapgen::l_clear_registered_schematics(lua_State *L)
 	return 0;
 }
 
+int ModApiMapgen::l_list_registered_schematics(lua_State* L)
+{
+	NO_MAP_LOCK_REQUIRED;
+
+	const SchematicManager* smgr =
+		getServer(L)->getEmergeManager()->getSchematicManager();
+
+	std::vector<std::string> names = smgr->list_names();
+
+	auto cleanup_path = [](const std::string& path) {
+		std::vector<std::string> parts;
+		std::stringstream ss(path);
+		std::string item;
+
+		bool ends_with_delim = path.find_last_of(DIR_DELIM_CHAR) >= path.length() - 1;
+
+		// Split the path by '/'
+		while (std::getline(ss, item, DIR_DELIM_CHAR)) {
+			if (item == "..") {
+				if (!parts.empty()) {
+					parts.pop_back();  // Go back one directory
+				}
+				continue;
+			}
+
+			if (item == ".")
+				continue;
+
+			parts.push_back(item);  // Add the current directory to parts
+		}
+
+		// Reconstruct the path
+		std::string result;
+		for (const auto& part : parts) {
+			if (!result.empty())
+				result += DIR_DELIM;
+			result += part;
+		}
+
+		if (ends_with_delim)
+			result += DIR_DELIM;
+
+		return result.empty() ? DIR_DELIM : result;
+	};
+
+	const std::string base_path = cleanup_path(porting::path_user + DIR_DELIM);
+
+	lua_createtable(L, names.size(), 0);
+	for (int i = 0; i < names.size(); i++) {
+		const std::string& str = names[i];
+		const std::string& name = cleanup_path(str).substr(base_path.length());
+		lua_pushlstring(L, name.c_str(), name.length());
+		lua_rawseti(L, -2, i + 1);
+	}
+
+	return 1;
+}
+
 
 // generate_ores(vm, p1, p2)
 int ModApiMapgen::l_generate_ores(lua_State *L)
@@ -2029,6 +2087,7 @@ void ModApiMapgen::Initialize(lua_State *L, int top)
 	API_FCT(clear_registered_decorations);
 	API_FCT(clear_registered_ores);
 	API_FCT(clear_registered_schematics);
+	API_FCT(list_registered_schematics);
 
 	API_FCT(generate_ores);
 	API_FCT(generate_decorations);

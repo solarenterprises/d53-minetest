@@ -2,6 +2,9 @@
 -- Minetest
 ----------------------------------------------
 
+-- Returns all available schematics
+function minetest.list_registered_schematics(event_name, values) end
+
 -- will record an event
 -- @param event_name string
 -- @param values table
