@@ -282,44 +282,6 @@ Server::Server(
 	if (!gamespec.isValid())
 		throw ServerError("Supplied invalid gamespec");
 
-	auto cleanup_path = [](const std::string& path) {
-		std::vector<std::string> parts;
-		std::stringstream ss(path);
-		std::string item;
-
-		bool ends_with_delim = path.find_last_of(DIR_DELIM_CHAR) >= path.length() - 1;
-
-		// Split the path by '/'
-		while (std::getline(ss, item, DIR_DELIM_CHAR)) {
-			if (item == "..") {
-				if (!parts.empty()) {
-					parts.pop_back();  // Go back one directory
-				}
-				continue;
-			}
-
-			if (item == ".")
-				continue;
-
-			parts.push_back(item);  // Add the current directory to parts
-		}
-
-		// Reconstruct the path
-		std::string result;
-		for (const auto& part : parts) {
-			if (!result.empty())
-				result += DIR_DELIM;
-			result += part;
-		}
-
-		if (ends_with_delim)
-			result += DIR_DELIM;
-
-		return result.empty() ? DIR_DELIM : result;
-	};
-
-	m_path_world = cleanup_path(m_path_world);
-
 #if USE_PROMETHEUS
 	if (!simple_singleplayer_mode)
 		m_metrics_backend = std::unique_ptr<MetricsBackend>(createPrometheusMetricsBackend());
