@@ -72,7 +72,6 @@ Database_MySQL::~Database_MySQL() {
 	closeConnection();
 }
 
-
 void Database_MySQL::closeConnection() {
 	on_close_connection();
 
@@ -91,6 +90,13 @@ void Database_MySQL::handleMySQLError(std::string info) {
 		<< " '" << info.c_str() << "'"
 		<< std::endl;
 	throw std::runtime_error("MySQL Error: " + error_msg);
+}
+
+char escape_buffer[10000];
+std::string Database_MySQL::escape_string(const std::string& str) {
+	assert(str.length() < 9900, "escape string is too long");
+	unsigned long size = mysql_real_escape_string(m_conn, escape_buffer, str.data(), str.length());
+	return std::string(escape_buffer, size);
 }
 
 bool Database_MySQL::doQueries(const std::vector<std::string>& query) {
@@ -747,10 +753,11 @@ void PlayerDatabaseMySQL::savePlayer(RemotePlayer *player)
 	//execWithParam("DELETE FROM player_metadata WHERE player = $1", rmvalues);
 	const StringMap &attrs = sao->getMeta().getStrings();
 	for (const auto &attr : attrs) {
+		
 		std::vector<std::string> meta_values = {
 			player->getName(),
-			attr.first.c_str(),
-			attr.second.c_str()
+			escape_string(attr.first),
+			escape_string(attr.second)
 		};
 		transaction.push_back({ "INSERT INTO player_metadata(player, attr, value) VALUES($1, $2, $3) ON DUPLICATE KEY UPDATE value = VALUES(value)", meta_values });
 	}
@@ -866,7 +873,11 @@ bool PlayerDatabaseMySQL::set_player_metadata(const std::string& player_name, co
 		transaction.push_back(
 			{
 				"INSERT INTO player_metadata (player, attr, value) VALUES($1, $2, $3) ON DUPLICATE KEY UPDATE value = VALUES(value)",
-				{ player_name, it.first, it.second }
+				{
+					player_name,
+					escape_string(it.first),
+					escape_string(it.second)
+				}
 			});
 	}
 
@@ -882,7 +893,7 @@ bool PlayerDatabaseMySQL::get_player_metadata(const std::string& player_name, co
 	result = "";
 
 	// Load player metadata
-	MYSQL_RES* results = execWithParamAndResult("SELECT value FROM player_metadata WHERE player = $1 AND attr = $2 LIMIT 1", { player_name, attr });
+	MYSQL_RES* results = execWithParamAndResult("SELECT value FROM player_metadata WHERE player = $1 AND attr = $2 LIMIT 1", { player_name, escape_string(attr) });
 
 	MYSQL_ROW row;
 	while ((row = mysql_fetch_row(results)) != nullptr) {

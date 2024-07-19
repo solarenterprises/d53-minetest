@@ -52,6 +52,7 @@ public:
 	bool execTransactionWithParam(const Transaction& query_and_params);
 	std::string buildQueryWithParam(const std::string& query, const std::vector<std::string>& params);
 
+	std::string escape_string(const std::string& str);
 
 protected:
 	virtual void on_close_connection() {};
