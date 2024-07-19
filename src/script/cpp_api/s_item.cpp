@@ -212,7 +212,7 @@ int ScriptApiItem::item_OnInventoryAction_AllowMove(const ItemStack& item, const
 	// Push callback function on stack
 	if (!getItemCallback(item.name.c_str(), "allow_move")) {
 		lua_pop(L, 1);  // Pop error handler
-		return count;
+		return -1;
 	}
 
 	// Call function
@@ -244,7 +244,7 @@ int ScriptApiItem::item_OnInventoryAction_AllowTake(const ItemStack& item, const
 	// Push callback function on stack
 	if (!getItemCallback(item.name.c_str(), "allow_take")) {
 		lua_pop(L, 1);  // Pop error handler
-		return item.count;
+		return -1;
 	}
 
 	// function(inv, listname, index, stack, player)
@@ -271,7 +271,7 @@ int ScriptApiItem::item_OnInventoryAction_AllowPut(const ItemStack& item, const 
 	// Push callback function on stack
 	if (!getItemCallback(item.name.c_str(), "allow_put")) {
 		lua_pop(L, 1);  // Pop error handler
-		return item.count;
+		return -1;
 	}
 
 	// function(inv, listname, index, stack, player)
