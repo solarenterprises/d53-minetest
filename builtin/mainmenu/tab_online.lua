@@ -368,6 +368,7 @@ local function main_button_handler(tabview, fields, name, tabdata)
                     local token             = tokenmgr.get_token_by_name(fields.te_token)
                     if token then
                         gamedata.token          = token.token
+                        gamedata.playername     = token.name
                     end
                 end
 
@@ -375,10 +376,7 @@ local function main_button_handler(tabview, fields, name, tabdata)
 
                 gamedata.address        = server.address
                 gamedata.port           = server.port
-                gamedata.playername     = token.name
                 gamedata.aliasname      = fields.te_name
-                gamedata.token  = token.token
-
                 gamedata.selected_world = 0
 
                 if fields.te_pwd then
@@ -393,8 +391,6 @@ local function main_button_handler(tabview, fields, name, tabdata)
                     core.settings:set("remote_port", gamedata.port)
                     core.start()
                 end
-
-                core.log(dump(gamedata))
 
                 return true
             end

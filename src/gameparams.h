@@ -50,6 +50,7 @@ struct GameStartData : GameParams
 	std::string password;
 	std::string address;
 	std::string playerai;
+	std::string init_token;
 	std::string token;
 	bool local_server;
 	bool did_skip_menu = false;
