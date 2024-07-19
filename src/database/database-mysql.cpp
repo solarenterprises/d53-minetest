@@ -94,7 +94,7 @@ void Database_MySQL::handleMySQLError(std::string info) {
 
 char escape_buffer[10000];
 std::string Database_MySQL::escape_string(const std::string& str) {
-	assert(str.length() < 9900, "escape string is too long");
+	assert(str.length() < 9900); // "escape string is too long"
 	unsigned long size = mysql_real_escape_string(m_conn, escape_buffer, str.data(), str.length());
 	return std::string(escape_buffer, size);
 }
