@@ -307,7 +307,7 @@ public:
 			h->pos = offset;
 			return 0;
 		case SEEK_CUR:
-			h->pos = std::min(h->pos + offset, h->read_buffer->length());
+			h->pos = std::min(h->pos + (size_t)offset, h->read_buffer->length());
 			return 0;
 		case SEEK_END:
 			h->pos = (size_t)std::max((long long)h->pos - offset, (long long)0);
