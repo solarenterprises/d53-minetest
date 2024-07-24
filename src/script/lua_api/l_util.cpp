@@ -46,6 +46,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "util/png.h"
 #include "util/analytics.h"
 #include <cstdio>
+#include "client/client.h"
+#include "client/camera.h"
 
 // only available in zstd 1.3.5+
 #ifndef ZSTD_CLEVEL_DEFAULT
@@ -298,6 +300,49 @@ int ModApiUtil::l_get_cache_path(lua_State *L)
 	lua_pushstring(L, path.c_str());
 
 	return 1;
+}
+
+// worldspace_to_screenspace()
+int ModApiUtil::l_worldspace_to_screenspace(lua_State *L)
+{
+	NO_MAP_LOCK_REQUIRED;
+
+	v3f pos = readParam<v3f>(L, 1);
+	pos *= BS;
+
+	v2f scale = readParam<v2f>(L, 2);
+
+	auto camera_node = getClient(L)->getCamera()->getCameraNode();
+	auto view_matrix = camera_node->getViewMatrix();
+	auto proj_matrix = camera_node->getProjectionMatrix();
+
+	matrix4 final_matrix = proj_matrix * view_matrix;
+
+	f32 clip_pos[4];
+	final_matrix.transformVect((f32*)clip_pos, pos);
+
+	v2f screen_scale = scale;
+	// Convert from clip space to NDC
+	if (clip_pos[3] != 0.0f) {
+		clip_pos[0] /= clip_pos[3];
+		clip_pos[1] /= clip_pos[3];
+		clip_pos[2] /= clip_pos[3];
+
+		screen_scale /= clip_pos[3];
+	}
+
+	if (clip_pos[3] <= 0) {
+		screen_scale.X = screen_scale.Y = 0;
+	}
+
+	// Convert from NDC to screen space
+	float screenX = (clip_pos[0] * 0.5f + 0.5f);
+	float screenY = (1.0f - (clip_pos[1] * 0.5f + 0.5f));
+
+	v3f screen_pos(screenX, screenY, clip_pos[2]);
+	push_v3f(L, screen_pos);
+	push_v2f(L, screen_scale);
+	return 2;
 }
 
 enum LuaCompressMethod
@@ -789,6 +834,8 @@ void ModApiUtil::InitializeClient(lua_State *L, int top)
 
 	API_FCT(get_last_run_mod);
 	API_FCT(set_last_run_mod);
+
+	API_FCT(worldspace_to_screenspace);
 
 	API_FCT(urlencode);
 

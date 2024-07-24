@@ -271,6 +271,7 @@ void set_default_settings()
 	settings->setDefault("enable_minimap", "true");
 	settings->setDefault("minimap_shape_round", "true");
 	settings->setDefault("minimap_double_scan_height", "true");
+	settings->setDefault("minimap_mode_index", "1");
 
 	// Effects
 	settings->setDefault("enable_post_processing", "true");

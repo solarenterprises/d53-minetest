@@ -930,6 +930,61 @@ int ObjectRef::l_get_nametag_attributes(lua_State *L)
 	return 1;
 }
 
+int ObjectRef::l_set_replicate_to_players(lua_State* L) {
+	NO_MAP_LOCK_REQUIRED;
+	ObjectRef* ref = checkObject<ObjectRef>(L, 1);
+
+	LuaEntitySAO* sao = getluaobject(ref);
+	if (sao == nullptr) {
+		lua_pushboolean(L, false);
+		return 1;
+	}
+
+	if (!lua_istable(L, 2)) {
+		lua_pushboolean(L, false);
+		return 1;
+	}
+
+	std::unordered_set<session_t> values;
+	lua_pushnil(L);
+	while (lua_next(L, 2) != 0) {
+		int peer_id = readParam<int>(L, -1);
+		values.insert(peer_id);
+		lua_pop(L, 1);
+	}
+
+	bool flag = true;
+	if (lua_isboolean(L, 3))
+		flag = lua_toboolean(L, 3);
+
+	sao->set_replicate_to_players(values, flag);
+
+	lua_pushboolean(L, true);
+	return 1;
+}
+
+int ObjectRef::l_get_replicate_to_players(lua_State* L) {
+	NO_MAP_LOCK_REQUIRED;
+	ObjectRef* ref = checkObject<ObjectRef>(L, 1);
+
+	LuaEntitySAO* sao = getluaobject(ref);
+	if (sao == nullptr) {
+		lua_pushnil(L);
+		return 1;
+	}
+
+	lua_newtable(L);
+	int index = 1;
+	std::unordered_set<session_t> to = sao->get_replicate_to_players();
+	for (auto peer_id : to) {
+		lua_pushinteger(L, peer_id);
+		lua_rawseti(L, -2, index);
+		index++;
+	}
+
+	return 1;
+}
+
 int ObjectRef::l_ignore_object_collision(lua_State* L)
 {
 	NO_MAP_LOCK_REQUIRED;
@@ -2791,6 +2846,8 @@ luaL_Reg ObjectRef::methods[] = {
 	luamethod(ObjectRef, get_luaentity),
 	luamethod(ObjectRef, saveStaticData),
 	luamethod(ObjectRef, ignore_object_collision),
+	luamethod(ObjectRef, set_replicate_to_players),
+	luamethod(ObjectRef, get_replicate_to_players),
 
 	// Player-only
 	luamethod(ObjectRef, is_player),

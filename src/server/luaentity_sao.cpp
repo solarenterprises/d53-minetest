@@ -96,6 +96,13 @@ LuaEntitySAO::~LuaEntitySAO()
 	}
 }
 
+bool LuaEntitySAO::should_replicate_to_player(session_t peer_id)
+{
+	if (!use_replicate_to_players)
+		return true;
+	return replicate_to_players.find(peer_id) != replicate_to_players.end();
+}
+
 void LuaEntitySAO::addedToEnvironment(u32 dtime_s)
 {
 	ServerActiveObject::addedToEnvironment(dtime_s);

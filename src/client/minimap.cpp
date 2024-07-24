@@ -206,7 +206,7 @@ Minimap::Minimap(Client *client)
 
 	data->minimap_shape_round = g_settings->getBool("minimap_shape_round");
 
-	setModeIndex(0);
+	setModeIndex(g_settings->getS32("minimap_mode_index"));
 
 	// Create mesh buffer for minimap
 	m_meshbuffer = getMinimapMeshBuffer();
@@ -292,6 +292,8 @@ void Minimap::setModeIndex(size_t index)
 
 	if (m_minimap_update_thread)
 		m_minimap_update_thread->deferUpdate();
+
+	g_settings->setS32("minimap_mode_index", index);
 }
 
 void Minimap::addMode(MinimapModeDef mode)
