@@ -1781,7 +1781,7 @@ void ServerEnvironment::getAddedActiveObjects(PlayerSAO *playersao, s16 radius,
 	if (player_radius_f < 0.0f)
 		player_radius_f = 0.0f;
 
-	m_ao_manager.getAddedActiveObjectsAroundPos(playersao->getBasePosition(), radius_f,
+	m_ao_manager.getAddedActiveObjectsAroundPos(playersao->getPeerID(), playersao->getBasePosition(), radius_f,
 		player_radius_f, current_objects, added_objects);
 }
 
@@ -1796,6 +1796,8 @@ void ServerEnvironment::getRemovedActiveObjects(PlayerSAO *playersao, s16 radius
 {
 	f32 radius_f = radius * BS;
 	f32 player_radius_f = player_radius * BS;
+
+	session_t peer_id = playersao->getPeerID();
 
 	if (player_radius_f < 0)
 		player_radius_f = 0;
@@ -1819,6 +1821,11 @@ void ServerEnvironment::getRemovedActiveObjects(PlayerSAO *playersao, s16 radius
 
 		if (object->isGone()) {
 			removed_objects.emplace(true, id);
+			continue;
+		}
+
+		if (!object->should_replicate_to_player(peer_id)) {
+			removed_objects.emplace(false, id);
 			continue;
 		}
 

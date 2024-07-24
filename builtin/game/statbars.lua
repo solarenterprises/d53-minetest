@@ -53,9 +53,6 @@ local function update_builtin_statbars(player)
 	local flags = player:hud_get_flags()
 	if not hud_ids[name] then
 		hud_ids[name] = {}
-		-- flags are not transmitted to client on connect, we need to make sure
-		-- our current flags are transmitted by sending them actively
-		player:hud_set_flags(flags)
 	end
 	local hud = hud_ids[name]
 
@@ -211,7 +208,14 @@ end
 -- Append "update_builtin_statbars" as late as possible
 -- This ensures that the HUD is hidden when the flags are updated in this callback
 core.register_on_mods_loaded(function()
-	core.register_on_joinplayer(update_builtin_statbars)
+	core.register_on_joinplayer(function(player) 
+        local flags = player:hud_get_flags()
+        -- flags are not transmitted to client on connect, we need to make sure
+		-- our current flags are transmitted by sending them actively
+		player:hud_set_flags(flags)
+
+        update_builtin_statbars(player)
+    end)
 end)
 core.register_on_leaveplayer(cleanup_builtin_statbars)
 core.register_playerevent(player_event_handler)

@@ -153,7 +153,7 @@ void ActiveObjectMgr::getObjectsInArea(const aabb3f &box,
 	}
 }
 
-void ActiveObjectMgr::getAddedActiveObjectsAroundPos(const v3f &player_pos, f32 radius,
+void ActiveObjectMgr::getAddedActiveObjectsAroundPos(session_t peer_id, const v3f &player_pos, f32 radius,
 		f32 player_radius, std::set<u16> &current_objects,
 		std::queue<u16> &added_objects)
 {
@@ -173,6 +173,9 @@ void ActiveObjectMgr::getAddedActiveObjectsAroundPos(const v3f &player_pos, f32 
 			continue;
 
 		if (object->isGone())
+			continue;
+
+		if (!object->should_replicate_to_player(peer_id))
 			continue;
 
 		f32 distance_f = object->getBasePosition().getDistanceFrom(player_pos);

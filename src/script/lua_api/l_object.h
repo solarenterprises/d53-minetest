@@ -168,6 +168,9 @@ private:
 
 	/* LuaEntitySAO-only */
 
+	static int l_set_replicate_to_players(lua_State* L);
+	static int l_get_replicate_to_players(lua_State* L);
+
 	static int l_ignore_object_collision(lua_State* L);
 
 	// set_velocity(self, velocity)

@@ -23,6 +23,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include <vector>
 #include "../activeobjectmgr.h"
 #include "serveractiveobject.h"
+#include "network/networkprotocol.h"
 
 namespace server
 {
@@ -45,7 +46,7 @@ public:
 			std::vector<ServerActiveObject *> &result,
 			std::function<bool(ServerActiveObject *obj)> include_obj_cb);
 
-	void getAddedActiveObjectsAroundPos(const v3f &player_pos, f32 radius,
+	void getAddedActiveObjectsAroundPos(session_t peer_id, const v3f &player_pos, f32 radius,
 			f32 player_radius, std::set<u16> &current_objects,
 			std::queue<u16> &added_objects);
 };

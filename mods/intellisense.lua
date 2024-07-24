@@ -2,6 +2,9 @@
 -- Minetest
 ----------------------------------------------
 
+-- converts worldspace to screenspace 0-1 range (client only)
+function minetest.worldspace_to_screenspace(world_pos, world_scale) end
+
 -- Returns all available schematics
 function minetest.list_registered_schematics(event_name, values) end
 
@@ -56,6 +59,7 @@ function minetest.register_on_lua_packet_stream(callback) end
 
 function minetest.hud_add(def) end
 function minetest.hud_remove(id) end
+function minetest.hud_change(id, type, value) end
 
 ----------------------------------------------
 -- Voice

@@ -37,6 +37,8 @@ public:
 	}
 	~LuaEntitySAO();
 
+	virtual bool should_replicate_to_player(session_t peer_id) override;
+
 	ActiveObjectType getType() const { return ACTIVEOBJECT_TYPE_LUAENTITY; }
 	ActiveObjectType getSendType() const { return ACTIVEOBJECT_TYPE_GENERIC; }
 	virtual void addedToEnvironment(u32 dtime_s);
@@ -79,6 +81,14 @@ public:
 	bool getSelectionBox(aabb3f *toset) const;
 	bool collideWithObjects() const;
 
+	inline const std::unordered_set<session_t>& get_replicate_to_players() {
+		return replicate_to_players;
+	}
+	inline void set_replicate_to_players(std::unordered_set<session_t>& values, bool use_replicate_condition = true) {
+		replicate_to_players = values;
+		use_replicate_to_players = use_replicate_condition;
+	}
+
 protected:
 	void dispatchScriptDeactivate(bool removal);
 	virtual void onMarkedForDeactivation() { dispatchScriptDeactivate(false); }
@@ -106,4 +116,7 @@ private:
 
 	std::string m_texture_modifier;
 	bool m_texture_modifier_sent = false;
+
+	bool use_replicate_to_players = false;
+	std::unordered_set<session_t> replicate_to_players;
 };

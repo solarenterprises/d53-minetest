@@ -25,6 +25,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "activeobject.h"
 #include "itemgroup.h"
 #include "util/container.h"
+#include "network/networkprotocol.h"
 
 
 /*
@@ -68,6 +69,10 @@ public:
 	virtual void addedToEnvironment(u32 dtime_s){};
 	// Called before removing from environment
 	virtual void removingFromEnvironment(){};
+
+	virtual bool should_replicate_to_player(session_t peer_id) {
+		return true;
+	}
 
 	// Safely mark the object for removal or deactivation
 	void markForRemoval();
