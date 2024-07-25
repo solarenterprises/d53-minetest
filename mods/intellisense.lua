@@ -2,6 +2,9 @@
 -- Minetest
 ----------------------------------------------
 
+-- get generic client active object (client only)
+function minetest.get_generic_cao(object_id, callback) end
+
 -- converts worldspace to screenspace 0-1 range (client only)
 function minetest.worldspace_to_screenspace(world_pos, world_scale) end
 
