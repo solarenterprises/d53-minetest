@@ -345,8 +345,8 @@ void Hud::drawLuaElements(const v3s16 &camera_offset)
 	}
 
 	player->hudApply([&](const std::unordered_map<u32, HudElement*>& hud) {
-		for (auto it : hud) {
-			HudElement* e = it.second;
+		for (auto it_hud : hud) {
+			HudElement* e = it_hud.second;
 			if (!e)
 				continue;
 
