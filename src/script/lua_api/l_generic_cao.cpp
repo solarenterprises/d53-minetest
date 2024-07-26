@@ -6,6 +6,7 @@
 #include "client/content_cao.h"
 #include "client/client.h"
 #include "script/cpp_api/s_client.h"
+#include "map.h"
 
 #define CAO \
 auto cao = getobject(L, 1); \
@@ -117,6 +118,77 @@ int LuaGenericCAO::l_get_armor_groups(lua_State* L)
 	return 1;
 }
 
+int LuaGenericCAO::l_get_underground(lua_State* L)
+{
+	CAO;
+
+	v3s16 node_pos = floatToInt(cao->getPosition(), BS);
+	
+
+	ClientEnvironment& env = getClient(L)->getEnv();
+	Map& map = env.getMap();
+
+	lua_createtable(L, 0, 0);
+
+	try {
+		u32 tested_count = 0;
+		u32 above_count = 0;
+
+		std::unordered_set<v3s16> checked;
+
+
+		for (int x = -1; x < 1; x++)
+			for (int y = 0; y < 2; y++)
+				for (int z = -1; z < 1; z++) {
+					v3s16 block_pos = v3s16(node_pos.X + x* MAP_BLOCKSIZE, node_pos.Y + y * MAP_BLOCKSIZE, node_pos.Z + z * MAP_BLOCKSIZE) / MAP_BLOCKSIZE;
+
+					if (checked.find(block_pos) != checked.end())
+						continue;
+					checked.insert(block_pos);
+
+					tested_count++;
+
+					MapBlock* block = nullptr;
+					try {
+						block = map.getBlockNoCreate(block_pos);
+						if (!block)
+							throw "block not found";
+					}
+					catch (const std::exception& e) {
+						continue;
+					}
+
+					if (block->isAir())
+						break;
+
+					auto f = ContentLightingFlags();
+					f.has_light = true;
+
+					for (int nx = 0; nx < MAP_BLOCKSIZE; nx++)
+						for (int ny = 0; ny < MAP_BLOCKSIZE-1; ny++)
+							for (int nz = 0; nz < MAP_BLOCKSIZE; nz++) {
+								MapNode node_above = block->getNodeNoEx(v3s16(nx, ny+1, nz));
+								if (node_above.getContent() != CONTENT_AIR)
+									above_count++;
+							}
+				}
+
+		const int nodes3 = MAP_BLOCKSIZE * (MAP_BLOCKSIZE-1) * MAP_BLOCKSIZE;
+		double alpha = (double)above_count / (tested_count * nodes3);
+
+		lua_pushboolean(L, alpha > 0.5);
+		lua_setfield(L, -2, "is_underground");
+		lua_pushnumber(L, alpha);
+		lua_setfield(L, -2, "value");
+		return 1;
+	}
+	catch (const std::exception& e) {
+		lua_pushboolean(L, false);
+		lua_setfield(L, -2, "is_underground");
+		return 1;
+	}
+}
+
 std::shared_ptr<GenericCAO> LuaGenericCAO::getobject(LuaGenericCAO* ref)
 {
 	return ref->m_genericCAO.lock();
@@ -158,6 +230,7 @@ const luaL_Reg LuaGenericCAO::methods[] = {
 		luamethod(LuaGenericCAO, set_pos_offset),
 		luamethod(LuaGenericCAO, set_rot_offset),
 		luamethod(LuaGenericCAO, is_immortal),
+		luamethod(LuaGenericCAO, get_underground),
 		{0, 0}
 };
 

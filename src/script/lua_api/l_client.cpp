@@ -173,7 +173,7 @@ int ModApiClient::l_hud_add(lua_State* L)
 	read_hud_element(L, elem);
 
 	auto player = getClient(L)->getEnv().getLocalPlayer();
-	auto id = player->addHud(elem);
+	auto id = player->addHud(elem, 0xFFFF);
 
 	lua_pushnumber(L, id);
 	return 1;

@@ -117,31 +117,23 @@ ItemStack &Player::getWieldedItem(ItemStack *selected, ItemStack *hand) const
 	return (hand && selected->name.empty()) ? *hand : *selected;
 }
 
-u32 Player::addHud(HudElement *toadd)
+u32 Player::addHud(HudElement *toadd, u32 id_offset)
 {
 	MutexAutoLock lock(m_mutex);
 
-	u32 id = getFreeHudID();
-
-	if (id < hud.size())
-		hud[id] = toadd;
-	else
-		hud.push_back(toadd);
-
+	u32 id = getFreeHudID(id_offset);
+	assert(hud.find(id) == hud.end());
+	hud[id] = toadd;
 	return id;
 }
 
 HudElement* Player::getHud(u32 id)
 {
 	MutexAutoLock lock(m_mutex);
-
-	if (id < hud.size())
-		return hud[id];
-
-	return NULL;
+	return hud[id];
 }
 
-void Player::hudApply(std::function<void(const std::vector<HudElement*>&)> f)
+void Player::hudApply(std::function<void(const std::unordered_map<u32, HudElement*>&)> f)
 {
 	MutexAutoLock lock(m_mutex);
 	f(hud);
@@ -151,11 +143,11 @@ HudElement* Player::removeHud(u32 id)
 {
 	MutexAutoLock lock(m_mutex);
 
-	HudElement* retval = NULL;
-	if (id < hud.size()) {
-		retval = hud[id];
-		hud[id] = NULL;
-	}
+	if (hud.find(id) == hud.end())
+		return NULL;
+
+	HudElement* retval = hud[id];
+	hud.erase(id);
 	return retval;
 }
 
@@ -163,10 +155,9 @@ void Player::clearHud()
 {
 	MutexAutoLock lock(m_mutex);
 
-	while(!hud.empty()) {
-		delete hud.back();
-		hud.pop_back();
-	}
+	for (auto it : hud)
+		delete it.second;
+	hud.clear();
 }
 
 #ifndef SERVER

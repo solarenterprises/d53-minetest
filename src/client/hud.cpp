@@ -344,17 +344,19 @@ void Hud::drawLuaElements(const v3s16 &camera_offset)
 		elems.push_back(&minimap);
 	}
 
-	for (size_t i = 0; i != player->maxHudId(); i++) {
-		HudElement *e = player->getHud(i);
-		if (!e)
-			continue;
+	player->hudApply([&](const std::unordered_map<u32, HudElement*>& hud) {
+		for (auto it : hud) {
+			HudElement* e = it.second;
+			if (!e)
+				continue;
 
-		auto it = elems.begin();
-		while (it != elems.end() && (*it)->z_index <= e->z_index)
-			++it;
+			auto it = elems.begin();
+			while (it != elems.end() && (*it)->z_index <= e->z_index)
+				++it;
 
-		elems.insert(it, e);
-	}
+			elems.insert(it, e);
+		}
+	});
 
 	for (HudElement *e : elems) {
 

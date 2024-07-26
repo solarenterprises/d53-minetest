@@ -1894,12 +1894,12 @@ int ObjectRef::l_hud_get_all(lua_State *L)
 		return 0;
 
 	lua_newtable(L);
-	player->hudApply([&](const std::vector<HudElement*>& hud) {
-		for (std::size_t id = 0; id < hud.size(); ++id) {
-			HudElement *elem = hud[id];
+	player->hudApply([&](const std::unordered_map<u32, HudElement*>& hud) {
+		for (auto it : hud) {
+			HudElement *elem = it.second;
 			if (elem != nullptr) {
 				push_hud_element(L, elem);
-				lua_rawseti(L, -2, id);
+				lua_rawseti(L, -2, it.first);
 			}
 		}
 	});

@@ -180,14 +180,24 @@ public:
 	const char *getAlias() const { return m_alias; }
 	void setAlias(const char* alias);
 
-	u32 getFreeHudID()
+	u32 getFreeHudID(u32 id_offset = 0)
 	{
+		bool did_lock = m_mutex.try_lock();
+
 		size_t size = hud.size();
-		for (size_t i = 0; i != size; i++) {
-			if (!hud[i])
-				return i;
+		for (u32 i = 0; i < 0xFFFF; i++) {
+			if (hud.find(i + id_offset) == hud.end()) {
+				if (did_lock)
+					m_mutex.unlock();
+
+				return i + id_offset;
+			}
 		}
-		return size;
+
+		if (did_lock)
+			m_mutex.unlock();
+
+		return 0;
 	}
 
 	v3f eye_offset_first;
@@ -239,8 +249,8 @@ public:
 	}
 
 	HudElement* getHud(u32 id);
-	void        hudApply(std::function<void(const std::vector<HudElement*>&)> f);
-	u32         addHud(HudElement* hud);
+	void        hudApply(std::function<void(const std::unordered_map<u32, HudElement*>&)> f);
+	u32         addHud(HudElement* hud, u32 id_offset = 0);
 	HudElement* removeHud(u32 id);
 	void        clearHud();
 
@@ -254,7 +264,7 @@ protected:
 	u16 m_wield_index = 0;
 	PlayerFovSpec m_fov_override_spec = { 0.0f, false, 0.0f };
 
-	std::vector<HudElement *> hud;
+	std::unordered_map<u32, HudElement *> hud;
 
 private:
 	// Protect some critical areas

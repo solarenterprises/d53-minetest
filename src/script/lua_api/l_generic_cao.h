@@ -50,6 +50,8 @@ private:
 	// get_pos(self)
 	static int l_get_pos(lua_State* L);
 
+	static int l_get_underground(lua_State* L);
+
 	static int l_set_pos_offset(lua_State* L);
 	static int l_set_rot_offset(lua_State* L);
 

@@ -1,44 +1,49 @@
 -- cache setting
 local enable_damage = core.settings:get_bool("enable_damage")
 
-local bar_definitions = {
-	hp = {
-		type = "statbar",
-		position = {x = 0.5, y = 1},
-		text = "heart.png",
-		text2 = "heart_gone.png",
-		number = core.PLAYER_MAX_HP_DEFAULT,
-		item = core.PLAYER_MAX_HP_DEFAULT,
-		direction = 0,
-		size = {x = 24, y = 24},
-		offset = {x = (-10 * 24) - 25, y = -(48 + 24 + 16)},
-	},
-	breath = {
-		type = "statbar",
-		position = {x = 0.5, y = 1},
-		text = "bubble.png",
-		text2 = "bubble_gone.png",
-		number = core.PLAYER_MAX_BREATH_DEFAULT * 2,
-		item = core.PLAYER_MAX_BREATH_DEFAULT * 2,
-		direction = 0,
-		size = {x = 24, y = 24},
-		offset = {x = 25, y= -(48 + 24 + 16)},
-	},
-	minimap = {
-		type = "minimap",
-		position = {x = 1, y = 0},
-		alignment = {x = -1, y = 1},
-		offset = {x = -10, y = 10},
-		size = {x = 256 , y = 256},
-	},
-}
+local function get_bar_definitions() 
+    local offset = core.PLAYER_HUD_STAT_OFFSET or { x = 0, y = 0 }
+
+    local bar_definitions = {
+        hp = {
+            type = "statbar",
+            position = {x = 0.5, y = 1},
+            text = "heart.png",
+            text2 = "heart_gone.png",
+            number = core.PLAYER_MAX_HP_DEFAULT,
+            item = core.PLAYER_MAX_HP_DEFAULT,
+            direction = 0,
+            size = {x = 24, y = 24},
+            offset = {x = (-10 * 24) - 25 + offset.x, y = -(48 + 24 + 16) + offset.y},
+        },
+        breath = {
+            type = "statbar",
+            position = {x = 0.5, y = 1},
+            text = "bubble.png",
+            text2 = "bubble_gone.png",
+            number = core.PLAYER_MAX_BREATH_DEFAULT * 2,
+            item = core.PLAYER_MAX_BREATH_DEFAULT * 2,
+            direction = 0,
+            size = {x = 24, y = 24},
+            offset = {x = 25 + offset.x, y= -(48 + 24 + 16) + offset.y},
+        },
+        minimap = {
+            type = "minimap",
+            position = {x = 1, y = 0},
+            alignment = {x = -1, y = 1},
+            offset = {x = -10, y = 10},
+            size = {x = 256 , y = 256},
+        },
+    }
+    return bar_definitions
+end
 
 local hud_ids = {}
 
 local function scaleToHudMax(player, field)
 	-- Scale "hp" or "breath" to the hud maximum dimensions
 	local current = player["get_" .. field](player)
-	local nominal = bar_definitions[field].item
+	local nominal = get_bar_definitions()[field].item
 	local max_display = math.max(player:get_properties()[field .. "_max"], current)
 	return math.ceil(current / max_display * nominal)
 end
@@ -57,6 +62,8 @@ local function update_builtin_statbars(player)
 	local hud = hud_ids[name]
 
 	local immortal = player:get_armor_groups().immortal == 1
+
+    local bar_definitions = get_bar_definitions()
 
 	if flags.healthbar and enable_damage and not immortal then
 		local number = scaleToHudMax(player, "hp")
