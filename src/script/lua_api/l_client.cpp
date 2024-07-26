@@ -481,6 +481,90 @@ int ModApiClient::l_register_on_lua_packet_stream(lua_State* L)
 	return 0;
 }
 
+int ModApiClient::l_get_underground(lua_State* L)
+{
+	NO_MAP_LOCK_REQUIRED;
+
+	lua_createtable(L, 0, 0);
+
+	LocalPlayer* player = getClient(L)->getEnv().getLocalPlayer();
+	if (!player) {
+		lua_pushboolean(L, false);
+		lua_setfield(L, -2, "is_underground");
+		lua_pushnumber(L, 0);
+		lua_setfield(L, -2, "value");
+		return 1;
+	}
+
+	v3f player_pos = player->getPosition();
+
+	
+	v3s16 node_pos = floatToInt(player_pos, BS);
+
+	ClientEnvironment& env = getClient(L)->getEnv();
+	Map& map = env.getMap();
+
+	try {
+		u32 tested_count = 0;
+		u32 above_count = 0;
+
+		std::unordered_set<v3s16> checked;
+
+
+		for (int x = -1; x < 1; x++)
+			for (int y = 0; y < 2; y++)
+				for (int z = -1; z < 1; z++) {
+					v3s16 block_pos = v3s16(node_pos.X + x * MAP_BLOCKSIZE, node_pos.Y + y * MAP_BLOCKSIZE, node_pos.Z + z * MAP_BLOCKSIZE) / MAP_BLOCKSIZE;
+
+					if (checked.find(block_pos) != checked.end())
+						continue;
+					checked.insert(block_pos);
+
+					tested_count++;
+
+					MapBlock* block = nullptr;
+					try {
+						block = map.getBlockNoCreate(block_pos);
+						if (!block)
+							throw "block not found";
+					}
+					catch (const std::exception& e) {
+						continue;
+					}
+
+					if (block->isAir())
+						break;
+
+					auto f = ContentLightingFlags();
+					f.has_light = true;
+
+					for (int nx = 0; nx < MAP_BLOCKSIZE; nx++)
+						for (int ny = 0; ny < MAP_BLOCKSIZE - 1; ny++)
+							for (int nz = 0; nz < MAP_BLOCKSIZE; nz++) {
+								MapNode node_above = block->getNodeNoEx(v3s16(nx, ny + 1, nz));
+								if (node_above.getContent() != CONTENT_AIR)
+									above_count++;
+							}
+				}
+
+		const int nodes3 = MAP_BLOCKSIZE * (MAP_BLOCKSIZE - 1) * MAP_BLOCKSIZE;
+		double alpha = (double)above_count / (tested_count * nodes3);
+
+		lua_pushboolean(L, alpha > 0.5);
+		lua_setfield(L, -2, "is_underground");
+		lua_pushnumber(L, alpha);
+		lua_setfield(L, -2, "value");
+		return 1;
+	}
+	catch (const std::exception& e) {
+		lua_pushboolean(L, false);
+		lua_setfield(L, -2, "is_underground");
+		lua_pushnumber(L, 0);
+		lua_setfield(L, -2, "value");
+		return 1;
+	}
+}
+
 void ModApiClient::Initialize(lua_State *L, int top)
 {
 	API_FCT(get_current_modname);
@@ -511,4 +595,5 @@ void ModApiClient::Initialize(lua_State *L, int top)
 	API_FCT(register_on_lua_packet);
 	API_FCT(register_on_lua_packet_stream);
 	API_FCT(send);
+	API_FCT(get_underground);
 }

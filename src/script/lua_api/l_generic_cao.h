@@ -33,6 +33,12 @@ private:
 	// garbage collector
 	static int gc_object(lua_State* L);
 
+	// is_local_player(self)
+	static int l_is_local_player(lua_State* L);
+
+	// is_player(self)
+	static int l_is_player(lua_State* L);
+
 	// is_valid(self)
 	static int l_is_valid(lua_State* L);
 
@@ -50,8 +56,6 @@ private:
 	// get_pos(self)
 	static int l_get_pos(lua_State* L);
 
-	static int l_get_underground(lua_State* L);
-
 	static int l_set_pos_offset(lua_State* L);
 	static int l_set_rot_offset(lua_State* L);
 
@@ -64,13 +68,15 @@ private:
 	// get_armor_groups(self)
 	static int l_get_armor_groups(lua_State* L);
 
-	static std::shared_ptr<GenericCAO> getobject(LuaGenericCAO* ref);
-	static std::shared_ptr<GenericCAO> getobject(lua_State* L, int narg);
+	static GenericCAO* getobject(LuaGenericCAO* ref);
+	static GenericCAO* getobject(lua_State* L, int narg);
 
 	std::weak_ptr<GenericCAO> m_genericCAO;
+	GenericCAO* m_genericCAO_ptr;
 
 public:
 	LuaGenericCAO(std::shared_ptr<GenericCAO> m);
+	LuaGenericCAO(GenericCAO* m);
 	~LuaGenericCAO() = default;
 
 	static void Register(lua_State* L);
@@ -81,6 +87,7 @@ public:
 class ModApiGenericCAO : public ModApiBase {
 private:
 	static int l_get_generic_cao(lua_State* L);
+	static int l_get_local_player(lua_State* L);
 
 public:
 	static void Initialize(lua_State* L, int top);

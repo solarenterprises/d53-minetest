@@ -2,6 +2,12 @@
 -- Minetest
 ----------------------------------------------
 
+-- get data about being underground (client only)
+function minetest.get_underground() end
+
+-- get local player info (client only)
+function minetest.get_local_player() end
+
 -- get generic client active object (client only)
 function minetest.get_generic_cao(object_id, callback) end
 

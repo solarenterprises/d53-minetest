@@ -101,6 +101,7 @@ private:
 	static int l_send(lua_State* L);
 	static int l_register_on_lua_packet(lua_State* L);
 	static int l_register_on_lua_packet_stream(lua_State* L);
+	static int l_get_underground(lua_State* L);
 
 public:
 	static void Initialize(lua_State *L, int top);

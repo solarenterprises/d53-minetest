@@ -75,7 +75,7 @@ public:
 	void step(f32 dtime);
 
 	virtual void setLocalPlayer(LocalPlayer *player);
-	LocalPlayer *getLocalPlayer() const { return m_local_player; }
+	LocalPlayer* getLocalPlayer() const { return m_local_player; }
 
 	/*
 		ClientSimpleObjects
