@@ -334,6 +334,21 @@ void read_object_properties(lua_State *L, int index,
 		}
 	}
 	getboolfield(L, -1, "physical", prop->physical);
+
+	lua_getfield(L, -1, "collision_group");
+	if (!lua_isnil(L, -1)) {
+		lua_pop(L, 1);
+		getintfield(L, -1, "collision_group", prop->collision_group);
+	} else
+		lua_pop(L, 1);
+
+	lua_getfield(L, -1, "collision_mask");
+	if (!lua_isnil(L, -1)) {
+		lua_pop(L, 1);
+		getintfield(L, -1, "collision_mask", prop->collision_mask);
+	} else
+		lua_pop(L, 1);
+
 	lua_getfield(L, -1, "collision_ignore_objects");
 	if (lua_istable(L, -1)) {
 		prop->collision_ignore_objects.clear();
@@ -500,6 +515,11 @@ void push_object_properties(lua_State *L, const ObjectProperties *prop)
 	lua_setfield(L, -2, "breath_max");
 	lua_pushboolean(L, prop->physical);
 	lua_setfield(L, -2, "physical");
+
+	lua_pushnumber(L, prop->collision_group);
+	lua_setfield(L, -2, "collision_group");
+	lua_pushnumber(L, prop->collision_mask);
+	lua_setfield(L, -2, "collision_mask");
 
 	lua_createtable(L, prop->textures.size(), 0);
 	u16 i = 1;

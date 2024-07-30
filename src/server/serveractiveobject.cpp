@@ -101,6 +101,9 @@ bool ServerActiveObject::shouldIgnoreCollisionWithObject(ActiveObject* active_ob
 	ObjectProperties* prop = accessObjectProperties();
 	if (!prop)
 		return false;
+	if ((active_object->getType() == ACTIVEOBJECT_TYPE_LUAENTITY || active_object->getType() == ACTIVEOBJECT_TYPE_PLAYER) &&
+		(prop->collision_mask & ((ServerActiveObject*)active_object)->accessObjectProperties()->collision_group) == 0)
+		return true;
 
 	return prop->collision_ignore_objects.find(active_object->getId()) != prop->collision_ignore_objects.end();
 }

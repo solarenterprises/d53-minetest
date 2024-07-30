@@ -75,6 +75,8 @@ struct ObjectProperties
 	bool show_on_minimap = false;
 
 	std::unordered_set<u16> collision_ignore_objects;
+	u32 collision_group = 1;
+	u32 collision_mask = 0xFFFFFF;
 
 	ObjectProperties();
 

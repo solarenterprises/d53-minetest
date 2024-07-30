@@ -185,6 +185,8 @@ public:
 
 	scene::IAnimatedMeshSceneNode *getAnimatedMeshSceneNode() const override;
 
+	const ObjectProperties& accessObjectProperties();
+
 	// m_matrixnode controls the position and rotation of the child node
 	// for all scene nodes, as a workaround for an Irrlicht problem with
 	// rotations. The child node's position can't be used because it's

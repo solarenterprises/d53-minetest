@@ -68,11 +68,14 @@ private:
 	// get_armor_groups(self)
 	static int l_get_armor_groups(lua_State* L);
 
+	// get_properties(self)
+	static int l_get_properties(lua_State* L);
+
 	static GenericCAO* getobject(LuaGenericCAO* ref);
 	static GenericCAO* getobject(lua_State* L, int narg);
 
 	std::weak_ptr<GenericCAO> m_genericCAO;
-	GenericCAO* m_genericCAO_ptr;
+	GenericCAO* m_genericCAO_ptr = nullptr;
 
 public:
 	LuaGenericCAO(std::shared_ptr<GenericCAO> m);

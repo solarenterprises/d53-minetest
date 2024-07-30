@@ -2067,6 +2067,11 @@ bool GenericCAO::directReportPunch(v3f dir, const ItemStack *punchitem,
 	return false;
 }
 
+const ObjectProperties& GenericCAO::accessObjectProperties()
+{
+	return m_prop;
+}
+
 std::string GenericCAO::debugInfoText()
 {
 	std::ostringstream os(std::ios::binary);
@@ -2119,6 +2124,9 @@ void GenericCAO::updateMeshCulling()
 }
 
 bool GenericCAO::shouldIgnoreCollisionWithObject(ActiveObject* active_object) {
+	if (active_object->getType() == ACTIVEOBJECT_TYPE_GENERIC &&
+		(m_prop.collision_mask & ((GenericCAO*)active_object)->accessObjectProperties().collision_group) == 0)
+		return true;
 	return m_prop.collision_ignore_objects.find(active_object->getId()) != m_prop.collision_ignore_objects.end();
 }
 

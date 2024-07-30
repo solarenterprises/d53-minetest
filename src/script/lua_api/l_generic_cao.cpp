@@ -138,6 +138,16 @@ int LuaGenericCAO::l_get_armor_groups(lua_State* L)
 	return 1;
 }
 
+// get_properties(self)
+int LuaGenericCAO::l_get_properties(lua_State *L)
+{
+	CAO;
+
+	const ObjectProperties& prop = cao->accessObjectProperties();
+	push_object_properties(L, &prop);
+	return 1;
+}
+
 GenericCAO* LuaGenericCAO::getobject(LuaGenericCAO* ref)
 {
 	if (ref->m_genericCAO_ptr)
@@ -182,6 +192,7 @@ const luaL_Reg LuaGenericCAO::methods[] = {
 		luamethod(LuaGenericCAO, set_pos_offset),
 		luamethod(LuaGenericCAO, set_rot_offset),
 		luamethod(LuaGenericCAO, is_immortal),
+		luamethod(LuaGenericCAO, get_properties),
 		{0, 0}
 };
 

@@ -40,6 +40,8 @@ std::string ObjectProperties::dump() const
 	os << ", physical=" << physical;
 	os << ", collideWithObjects=" << collideWithObjects;
 	os << ", collisionbox=" << collisionbox.MinEdge << "," << collisionbox.MaxEdge;
+	os << ", collision_group=" << collision_group;
+	os << ", collision_mask=" << collision_mask;
 	os << ", visual=" << visual;
 	os << ", mesh=" << mesh;
 	os << ", visual_size=" << visual_size;
@@ -119,9 +121,11 @@ bool ObjectProperties::validate()
 
 void ObjectProperties::serialize(std::ostream &os) const
 {
-	writeU8(os, 5); // PROTOCOL_VERSION >= 50
+	writeU8(os, 6); // PROTOCOL_VERSION >= 50
 	writeU16(os, hp_max);
 	writeU8(os, physical);
+	writeU32(os, collision_group);
+	writeU32(os, collision_mask);
 	writeU16(os, collision_ignore_objects.size());
 	for (auto id : collision_ignore_objects)
 		writeU16(os, id);
@@ -182,11 +186,16 @@ void ObjectProperties::serialize(std::ostream &os) const
 void ObjectProperties::deSerialize(std::istream &is)
 {
 	int version = readU8(is);
-	if (version != 4 && version != 5)
+	if (version < 4)
 		throw SerializationError("unsupported ObjectProperties version");
 
 	hp_max = readU16(is);
 	physical = readU8(is);
+	if (version >= 6) {
+		collision_group = readU32(is);
+		collision_mask = readU32(is);
+	}
+
 	if (version >= 5) {
 		u16 num_ignore = readU16(is);
 		collision_ignore_objects.reserve(num_ignore);
