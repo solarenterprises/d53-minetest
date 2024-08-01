@@ -222,6 +222,7 @@ static inline void getNeighborConnectingFace(const v3s16 &p,
 		*neighbors |= v;
 }
 
+#include "server/luaentity_sao.h"
 collisionMoveResult collisionMoveSimple(
 	Environment *env,
 	IGameDef *gamedef,
@@ -399,39 +400,57 @@ collisionMoveResult collisionMoveSimple(
 		else
 #endif
 		{
-			if (s_env != NULL) {
-				// Calculate distance by speed, add own extent and 1.5m of tolerance
+			if (s_env != NULL && self) {
+				/*if (self->getType() == ACTIVEOBJECT_TYPE_LUAENTITY && ((LuaEntitySAO*)self)->getName()._Starts_with("d53_skills_combat")) {
+					bool test = true;
+				}*/
+
+				// Calculate distance by speed, add own extent and 4.5m of tolerance
 				f32 distance = velocity_f->getLength() * dtime +
-					box_0.getExtent().getLength() + 1.5f * BS;
+					box_0.getExtent().getLength() + 4.5f * BS;
 
 				// search for objects which are not us, or we are not its parent
 				// we directly use the callback to populate the result to prevent
 				// a useless result loop here
 				auto include_obj_cb = [self, &objects] (ServerActiveObject *obj) {
-					if (!obj->isGone() &&
-						(!self || (self != obj && self != obj->getParent()))) {
-						objects.push_back((ActiveObject *)obj);
-					}
-					return false;
+					if (obj->isGone())
+						return false;
+
+					if (self == obj)
+						return false;
+
+					if (self == obj->getParent())
+						return false;
+
+					if (!obj->collideWithObjects())
+						return false;
+
+					return true;
 				};
 
 				std::vector<ServerActiveObject *> s_objects;
 				s_env->getObjectsInsideRadius(s_objects, *pos_f, distance, include_obj_cb);
+				objects = std::move((std::vector<ActiveObject*>&)s_objects);
 			}
 		}
 
-		for (std::vector<ActiveObject*>::const_iterator iter = objects.begin();
-				iter != objects.end(); ++iter) {
-			ActiveObject *object = *iter;
+		if (self)
+			for (std::vector<ActiveObject*>::const_iterator iter = objects.begin();
+					iter != objects.end(); ++iter) {
+				ActiveObject *object = *iter;
 
-			if (object && object->collideWithObjects()) {
-				if (!self || (!self->shouldIgnoreCollisionWithObject(object) && !object->shouldIgnoreCollisionWithObject(self))) {
-					aabb3f object_collisionbox;
-					if (object->getCollisionBox(&object_collisionbox))
-						cinfo.emplace_back(object, 0, object_collisionbox);
-				}
+				if (!object)
+					continue;
+
+				if (self->shouldIgnoreCollisionWithObject(object) && object->shouldIgnoreCollisionWithObject(self))
+					continue;
+
+				aabb3f object_collisionbox;
+				if (!object->getCollisionBox(&object_collisionbox))
+					continue;
+
+				cinfo.emplace_back(object, 0, object_collisionbox);
 			}
-		}
 #ifndef SERVER
 		if (self && c_env) {
 			LocalPlayer *lplayer = c_env->getLocalPlayer();

@@ -246,6 +246,8 @@ public:
 	*/
 	v3s16 m_static_block = v3s16(1337,1337,1337);
 
+	v3s16 map_block_pos;
+
 protected:
 	virtual void onMarkedForDeactivation() {}
 	virtual void onMarkedForRemoval() {}

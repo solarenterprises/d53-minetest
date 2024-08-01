@@ -71,6 +71,16 @@ public:
 		return std::weak_ptr<T>(m_active_objects.get(id));
 	}
 
+	inline v3s16 pos_to_block_pos(v3f pos) {
+		v3s16 node_pos = floatToInt(pos, BS);
+		return node_pos / MAP_BLOCKSIZE;
+	}
+
+	inline void update_object_map(v3s16 from, v3s16 to, u16 id) {
+		remove_from_object_map(from, id);
+		add_to_object_map(to, id,  m_active_objects.get(id));
+	}
+
 protected:
 	u16 getFreeId() const
 	{
@@ -90,6 +100,21 @@ protected:
 		return id != 0 && !m_active_objects.get(id);
 	}
 
+	inline void add_to_object_map(v3s16 pos, u16 id, std::weak_ptr<T> active_object) {
+		std::unordered_map<u16, std::weak_ptr<T>>& m = object_map[pos];
+		m[id] = active_object;
+	}
+
+	inline void remove_from_object_map(v3s16 pos, u16 id) {
+		auto& m = object_map[pos];
+		m.erase(id);
+		if (!m.empty())
+			return;
+		object_map.erase(pos);
+	}
+
 	// Note that this is ordered to fix #10985
 	ModifySafeMap<u16, std::shared_ptr<T>> m_active_objects;
+
+	std::unordered_map<v3s16, std::unordered_map<u16, std::weak_ptr<T>>> object_map;
 };

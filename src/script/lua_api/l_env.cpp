@@ -748,9 +748,48 @@ int ModApiEnv::l_get_objects_inside_radius(lua_State *L)
 	// Do it
 	v3f pos = checkFloatPos(L, 1);
 	float radius = readParam<float>(L, 2) * BS;
-	std::vector<ServerActiveObject *> objs;
+	bool player = true;
+	bool should_filter_objects = false;
+	u32 collision_mask = 0xFFFFFF;
 
-	auto include_obj_cb = [](ServerActiveObject *obj){ return !obj->isGone(); };
+	if (lua_istable(L, 3)) {
+		lua_getfield(L, 3, "player");
+		if (lua_isboolean(L, -1)) {
+			player = lua_toboolean(L, -1);
+			should_filter_objects = true;
+		}
+		lua_pop(L, 1);
+
+		lua_getfield(L, 3, "object");
+		if (lua_isboolean(L, -1)) {
+			player = !lua_toboolean(L, -1);
+			should_filter_objects = true;
+		}
+		lua_pop(L, 1);
+
+		lua_getfield(L, 3, "collision_mask");
+		if (lua_isnumber(L, -1))
+			collision_mask = lua_tointeger(L, -1);
+		lua_pop(L, 1);
+	}
+
+	auto include_obj_cb = [player, should_filter_objects, collision_mask](ServerActiveObject *obj) {
+		if (obj->isGone())
+			return false;
+
+		if (should_filter_objects) {
+			if ((obj->getType() == ACTIVEOBJECT_TYPE_PLAYER) != player)
+				return false;
+		}
+
+		if (collision_mask != 0xFFFFFF)
+			if ((obj->accessObjectProperties()->collision_group & collision_mask) == 0)
+				return false;
+
+		return true;
+	};
+
+	std::vector<ServerActiveObject *> objs;
 	env->getObjectsInsideRadius(objs, pos, radius, include_obj_cb);
 
 	int i = 0;
@@ -773,9 +812,49 @@ int ModApiEnv::l_get_objects_in_area(lua_State *L)
 	v3f maxp = read_v3f(L, 2) * BS;
 	aabb3f box(minp, maxp);
 	box.repair();
+
+	bool player = true;
+	bool should_filter_objects = false;
+	u32 collision_mask = 0xFFFFFF;
+
+	if (lua_istable(L, 3)) {
+		lua_getfield(L, 3, "player");
+		if (lua_isboolean(L, -1)) {
+			player = lua_toboolean(L, -1);
+			should_filter_objects = true;
+		}
+		lua_pop(L, 1);
+
+		lua_getfield(L, 3, "object");
+		if (lua_isboolean(L, -1)) {
+			player = !lua_toboolean(L, -1);
+			should_filter_objects = true;
+		}
+		lua_pop(L, 1);
+
+		lua_getfield(L, 3, "collision_mask");
+		if (lua_isnumber(L, -1))
+			collision_mask = lua_tointeger(L, -1);
+		lua_pop(L, 1);
+	}
+
 	std::vector<ServerActiveObject *> objs;
 
-	auto include_obj_cb = [](ServerActiveObject *obj){ return !obj->isGone(); };
+	auto include_obj_cb = [player, should_filter_objects, collision_mask](ServerActiveObject *obj) {
+		if (obj->isGone())
+			return false;
+
+		if (should_filter_objects) {
+			if ((obj->getType() == ACTIVEOBJECT_TYPE_PLAYER) != player)
+				return false;
+		}
+
+		if (collision_mask != 0xFFFFFF)
+			if ((obj->accessObjectProperties()->collision_group & collision_mask) == 0)
+				return false;
+
+		return true;
+	};
 	env->getObjectsInArea(objs, box, include_obj_cb);
 
 	int i = 0;

@@ -2,6 +2,16 @@
 -- Minetest
 ----------------------------------------------
 
+---@param pos vector
+---@param radius number
+---@param def { player, object, collision_mask }
+function minetest.get_objects_inside_radius(pos, radius, def) end
+
+---@param min vector
+---@param max vector
+---@param def { player, object, collision_mask }
+function minetest.get_objects_in_area(min, max, def) end
+
 -- get data about being underground (client only)
 function minetest.get_underground() end
 

@@ -1646,6 +1646,12 @@ void ServerEnvironment::step(float dtime)
 			obj->step(dtime, send_recommended);
 			// Read messages from object
 			obj->dumpAOMessagesToQueue(m_active_object_messages);
+
+			v3s16 to = m_ao_manager.pos_to_block_pos(obj->getBasePosition());
+			if (obj->map_block_pos != to) {
+				m_ao_manager.update_object_map(obj->map_block_pos, to, obj->getId());
+				obj->map_block_pos = to;
+			}
 		};
 		m_ao_manager.step(dtime, cb_state);
 
