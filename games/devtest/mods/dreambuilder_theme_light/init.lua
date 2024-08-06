@@ -9,9 +9,9 @@ dreambuilder_theme.light = {
 	["editor_text_color"]        = "#000000FF",
 	["editor_bg_color"]          = "#F0F0F0FF",
 
-	["listcolor_slot_bg_normal"] = "#FFFFFF30",
-	["listcolor_slot_bg_hover"]  = "#FFFFFF80",
-	["listcolor_slot_border"]    = "#606060",
+	["listcolor_slot_bg_normal"] = "#808080FF",
+	["listcolor_slot_bg_hover"]  = "#9d9d9dFF",
+	["listcolor_slot_border"]    = "#e2e2e2ff",
 
 	["tooltip_bgcolor"]          = "#A0A0A0",
 	["tooltip_fontcolor"]        = "#FFF",

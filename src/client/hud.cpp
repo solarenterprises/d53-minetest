@@ -44,6 +44,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define OBJECT_CROSSHAIR_LINE_SIZE 8
 #define CROSSHAIR_LINE_SIZE 10
 
+const s32 BORDER_SIZE = 6;
+
 Hud::Hud(Client *client, LocalPlayer *player,
 		Inventory *inventory)
 {
@@ -57,7 +59,8 @@ Hud::Hud(Client *client, LocalPlayer *player,
 	m_hotbar_imagesize = std::floor(HOTBAR_IMAGE_SIZE *
 		RenderingEngine::getDisplayDensity() + 0.5f);
 	m_hotbar_imagesize *= m_hud_scaling;
-	m_padding = m_hotbar_imagesize / 12;
+	//m_padding = m_hotbar_imagesize / 12;
+	m_padding = 0;
 
 	for (auto &hbar_color : hbar_colors)
 		hbar_color = video::SColor(255, 255, 255, 255);
@@ -151,10 +154,10 @@ void Hud::drawItem(const ItemStack &item, const core::rect<s32>& rect,
 		/* draw highlighting around selected item */
 		if (use_hotbar_selected_image) {
 			core::rect<s32> imgrect2 = rect;
-			imgrect2.UpperLeftCorner.X  -= (m_padding*2);
-			imgrect2.UpperLeftCorner.Y  -= (m_padding*2);
-			imgrect2.LowerRightCorner.X += (m_padding*2);
-			imgrect2.LowerRightCorner.Y += (m_padding*2);
+			imgrect2.UpperLeftCorner.X  -= (m_padding*3);
+			imgrect2.UpperLeftCorner.Y  -= (m_padding*3);
+			imgrect2.LowerRightCorner.X += (m_padding*3);
+			imgrect2.LowerRightCorner.Y += (m_padding*3);
 				video::ITexture *texture = tsrc->getTexture(hotbar_selected_image);
 				core::dimension2di imgsize(texture->getOriginalSize());
 			draw2DImageFilterScaled(driver, texture, imgrect2,
@@ -189,6 +192,7 @@ void Hud::drawItem(const ItemStack &item, const core::rect<s32>& rect,
 					v2s32(x2, y1),
 				v2s32(x2 + m_padding, y2)
 				), NULL);
+
 			/*// Light inside borders
 			driver->draw2DRectangle(c_inside,
 				core::rect<s32>(
@@ -252,10 +256,46 @@ void Hud::drawItems(v2s32 upperleftpos, v2s32 screen_offset, s32 itemcount,
 		use_hotbar_selected_image = !hotbar_selected_image.empty();
 	}
 
+	s32 fullimglen = m_hotbar_imagesize + m_padding * 2;
+	const s32 list_size = mainlist ? mainlist->getSize() : 0;
+
+	//
+	// BORDER
+	//
+	const auto BORDER_COLOR = video::SColor(255, 0, 0, 0);
+	const s32 right_edge = pos.X + fullimglen * (std::min(itemcount, list_size)-1 - inv_offset) + m_hotbar_imagesize + m_padding*2;
+	driver->draw2DRectangle(
+				BORDER_COLOR,
+				core::rect<s32>(
+				v2s32(pos.X - BORDER_SIZE, pos.Y - BORDER_SIZE),
+				v2s32(right_edge + BORDER_SIZE, pos.Y)
+				), NULL);
+	driver->draw2DRectangle(
+				BORDER_COLOR,
+				core::rect<s32>(
+				v2s32(pos.X - BORDER_SIZE, pos.Y + m_hotbar_imagesize + m_padding),
+				v2s32(right_edge + BORDER_SIZE, pos.Y + m_hotbar_imagesize + m_padding + BORDER_SIZE)
+				), NULL);
+	driver->draw2DRectangle(
+			BORDER_COLOR,
+			core::rect<s32>(
+			v2s32(pos.X - BORDER_SIZE, pos.Y - BORDER_SIZE),
+			v2s32(pos.X, pos.Y + m_hotbar_imagesize + m_padding + BORDER_SIZE)
+			), NULL);
+	driver->draw2DRectangle(
+			BORDER_COLOR,
+			core::rect<s32>(
+			v2s32(right_edge, pos.Y - BORDER_SIZE),
+			v2s32(right_edge+BORDER_SIZE, pos.Y + m_hotbar_imagesize + m_padding + BORDER_SIZE)
+			), NULL);
+
 	// draw customized item background
 	if (use_hotbar_image) {
-		core::rect<s32> imgrect2(-m_padding/2, -m_padding/2,
-			width+m_padding/2, height+m_padding/2);
+		core::rect<s32> imgrect2(
+			-m_padding/2,
+			-m_padding/2,
+			width+m_padding/2,
+			height+m_padding/2);
 		core::rect<s32> rect2 = imgrect2 + pos;
 		video::ITexture *texture = tsrc->getTexture(hotbar_image);
 		core::dimension2di imgsize(texture->getOriginalSize());
@@ -266,10 +306,8 @@ void Hud::drawItems(v2s32 upperleftpos, v2s32 screen_offset, s32 itemcount,
 
 	// Draw items
 	core::rect<s32> imgrect(0, 0, m_hotbar_imagesize, m_hotbar_imagesize);
-	const s32 list_size = mainlist ? mainlist->getSize() : 0;
+	
 	for (s32 i = inv_offset; i < itemcount && i < list_size; i++) {
-		s32 fullimglen = m_hotbar_imagesize + m_padding * 2;
-
 		v2s32 steppos;
 		switch (direction) {
 		case HUD_DIR_RIGHT_LEFT:
@@ -772,7 +810,7 @@ void Hud::drawHotbar(u16 playeritem)
 		pos.X += width/4;
 
 		v2s32 secondpos = pos;
-		pos = pos - v2s32(0, m_hotbar_imagesize + m_padding);
+		pos = pos - v2s32(0, m_hotbar_imagesize + m_padding - BORDER_SIZE);
 
 		if (player->hud_flags & HUD_FLAG_HOTBAR_VISIBLE) {
 			drawItems(pos, v2s32(0, 0), hotbar_itemcount / 2, 0,

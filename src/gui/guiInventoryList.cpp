@@ -90,10 +90,10 @@ void GUIInventoryList::draw()
 
 	const s32 list_size = (s32)ilist->getSize();
 
-	for (s32 i = 0; i < m_geom.X * m_geom.Y; i++) {
+	for (s32 i = m_geom.X * m_geom.Y-1; i >= 0; i--) {
 		s32 item_i = i + m_start_item_i;
 		if (item_i >= list_size)
-			break;
+			continue;
 
 		v2s32 p((i % m_geom.X) * m_slot_spacing.X,
 				(i / m_geom.X) * m_slot_spacing.Y);
@@ -110,26 +110,37 @@ void GUIInventoryList::draw()
 			(hovering ? IT_ROT_HOVERED : IT_ROT_NONE);
 
 		// layer 0
-		if (hovering) {
-			driver->draw2DRectangle(m_options.slotbg_h, rect, &AbsoluteClippingRect);
-		} else {
-			driver->draw2DRectangle(m_options.slotbg_n, rect, &AbsoluteClippingRect);
-		}
+		
+
+		const s32 border = 4;
+		const s32 shadow = 3;
 
 		// Draw inv slot borders
 		if (m_options.slotborder) {
-			s32 x1 = rect.UpperLeftCorner.X;
-			s32 y1 = rect.UpperLeftCorner.Y;
-			s32 x2 = rect.LowerRightCorner.X;
-			s32 y2 = rect.LowerRightCorner.Y;
-			s32 border = 1;
+			
 			core::rect<s32> clipping_rect = Parent ? Parent->getAbsoluteClippingRect()
 					: core::rect<s32>();
 			core::rect<s32> *clipping_rect_ptr = Parent ? &clipping_rect : nullptr;
-			driver->draw2DRectangle(m_options.slotbordercolor,
+			driver->draw2DRectangle(
+				m_options.slotbordercolor,
+				rect,
+				clipping_rect_ptr);
+
+			core::rect<s32> rect_dot = rect;
+			rect_dot.LowerRightCorner.X = rect.UpperLeftCorner.X+border;
+			rect_dot.UpperLeftCorner.Y = rect.LowerRightCorner.Y-border;
+			driver->draw2DRectangle(
+				m_options.slotdotcolor,
+				rect_dot,
+				clipping_rect_ptr);
+
+			
+
+			/*driver->draw2DRectangle(m_options.slotbordercolor,
 				core::rect<s32>(v2s32(x1 - border, y1 - border),
-								v2s32(x2 + border, y1)), clipping_rect_ptr);
-			driver->draw2DRectangle(m_options.slotbordercolor,
+								v2s32(x2 + border, y1 - border)), clipping_rect_ptr);*/
+
+			/*driver->draw2DRectangle(m_options.slotbordercolor,
 				core::rect<s32>(v2s32(x1 - border, y2),
 								v2s32(x2 + border, y2 + border)), clipping_rect_ptr);
 			driver->draw2DRectangle(m_options.slotbordercolor,
@@ -137,7 +148,27 @@ void GUIInventoryList::draw()
 								v2s32(x1, y2)), clipping_rect_ptr);
 			driver->draw2DRectangle(m_options.slotbordercolor,
 				core::rect<s32>(v2s32(x2, y1),
-								v2s32(x2 + border, y2)), clipping_rect_ptr);
+								v2s32(x2 + border, y2)), clipping_rect_ptr);*/
+		}
+
+		core::rect<s32> rect_shadow = rect;
+		rect_shadow.LowerRightCorner.X -= border;
+		rect_shadow.LowerRightCorner.Y -= border;
+
+		driver->draw2DRectangle(
+			m_options.slotshadowcolor,
+			rect_shadow,
+			&AbsoluteClippingRect);
+
+		core::rect<s32> rect_fill = rect;
+		rect_fill.UpperLeftCorner.X += shadow;
+		rect_fill.UpperLeftCorner.Y += shadow;
+		rect_fill.LowerRightCorner.X -= border;
+		rect_fill.LowerRightCorner.Y -= border;
+		if (hovering) {
+			driver->draw2DRectangle(m_options.slotbg_h, rect_fill, &AbsoluteClippingRect);
+		} else {
+			driver->draw2DRectangle(m_options.slotbg_n, rect_fill, &AbsoluteClippingRect);
 		}
 
 		// layer 1
@@ -146,7 +177,7 @@ void GUIInventoryList::draw()
 
 		if (!item.empty()) {
 			// Draw item stack
-			drawItemStack(driver, m_font, item, rect, &AbsoluteClippingRect,
+			drawItemStack(driver, m_font, item, rect_fill, &AbsoluteClippingRect,
 					client, rotation_kind);
 		}
 

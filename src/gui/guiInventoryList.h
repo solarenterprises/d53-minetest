@@ -61,7 +61,9 @@ public:
 	struct Options {
 		// whether a one-pixel border for the slots should be drawn and its color
 		bool slotborder = false;
-		video::SColor slotbordercolor = video::SColor(200, 0, 0, 0);
+		video::SColor slotbordercolor = video::SColor(200, 230, 230, 230);
+		video::SColor slotshadowcolor = video::SColor(200, 15, 15, 15);
+		video::SColor slotdotcolor = video::SColor(200, 120, 120, 120);
 		// colors for normal and highlighted slot background
 		video::SColor slotbg_n = video::SColor(255, 128, 128, 128);
 		video::SColor slotbg_h = video::SColor(255, 192, 192, 192);

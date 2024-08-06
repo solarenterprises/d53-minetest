@@ -338,6 +338,32 @@ void GUISkin::drawColored3DButtonPaneStandard(IGUIElement* element,
 
 	Driver->draw2DRectangle(colors[EGDC_3D_DARK_SHADOW], rect, clip);
 
+	const int BORDER_SIZE = 3;
+	const int HIGHLIGHT_SIZE = 2;
+	const int SHADOW_SIZE = 2;
+
+	rect.LowerRightCorner.X -= BORDER_SIZE;
+	rect.UpperLeftCorner.X += BORDER_SIZE;
+	rect.UpperLeftCorner.Y += BORDER_SIZE;
+	rect.LowerRightCorner.Y -= BORDER_SIZE;
+	Driver->draw2DRectangle(colors[EGDC_3D_HIGH_LIGHT], rect, clip);
+
+	rect = r;
+	rect.LowerRightCorner.X -= BORDER_SIZE;
+	rect.LowerRightCorner.Y -= BORDER_SIZE;
+	rect.UpperLeftCorner.X += BORDER_SIZE + HIGHLIGHT_SIZE;
+	rect.UpperLeftCorner.Y += BORDER_SIZE + HIGHLIGHT_SIZE;
+	Driver->draw2DRectangle(colors[EGDC_3D_FACE], rect, clip);
+
+	rect = r;
+	rect.LowerRightCorner.X -= BORDER_SIZE;
+	rect.UpperLeftCorner.X += BORDER_SIZE;
+	rect.LowerRightCorner.Y -= BORDER_SIZE;
+	rect.UpperLeftCorner.Y = rect.LowerRightCorner.Y - SHADOW_SIZE;
+	Driver->draw2DRectangle(colors[EGDC_3D_SHADOW], rect, clip);
+
+	/*Driver->draw2DRectangle(colors[EGDC_3D_DARK_SHADOW], rect, clip);
+
 	rect.LowerRightCorner.X -= 1;
 	rect.LowerRightCorner.Y -= 1;
 	Driver->draw2DRectangle(colors[EGDC_3D_HIGH_LIGHT], rect, clip);
@@ -347,8 +373,9 @@ void GUISkin::drawColored3DButtonPaneStandard(IGUIElement* element,
 	Driver->draw2DRectangle(colors[EGDC_3D_SHADOW], rect, clip);
 
 	rect.LowerRightCorner.X -= 1;
-	rect.LowerRightCorner.Y -= 1;
+	rect.LowerRightCorner.Y -= 1;*/
 
+	/*
 	if (!UseGradient)
 	{
 		Driver->draw2DRectangle(colors[EGDC_3D_FACE], rect, clip);
@@ -358,7 +385,7 @@ void GUISkin::drawColored3DButtonPaneStandard(IGUIElement* element,
 		const video::SColor c1 = colors[EGDC_3D_FACE];
 		const video::SColor c2 = c1.getInterpolated(colors[EGDC_3D_DARK_SHADOW], 0.4f);
 		Driver->draw2DRectangle(rect, c1, c1, c2, c2, clip);
-	}
+	}*/
 }
 // END PATCH
 
@@ -385,7 +412,34 @@ void GUISkin::drawColored3DButtonPanePressed(IGUIElement* element,
 		colors = Colors;
 
 	core::rect<s32> rect = r;
+
+	Driver->draw2DRectangle(colors[EGDC_3D_DARK_SHADOW], rect, clip);
+
+	const int BORDER_SIZE = 3;
+	const int HIGHLIGHT_SIZE = 2;
+	const int SHADOW_SIZE = 2;
+
+	rect.LowerRightCorner.X -= BORDER_SIZE;
+	rect.UpperLeftCorner.X += BORDER_SIZE;
+	rect.UpperLeftCorner.Y += BORDER_SIZE;
+	rect.LowerRightCorner.Y -= BORDER_SIZE;
+	Driver->draw2DRectangle(colors[EGDC_3D_SHADOW], rect, clip);
+
+	rect = r;
+	rect.LowerRightCorner.X -= BORDER_SIZE;
+	rect.LowerRightCorner.Y -= BORDER_SIZE;
+	rect.UpperLeftCorner.X += BORDER_SIZE + HIGHLIGHT_SIZE;
+	rect.UpperLeftCorner.Y += BORDER_SIZE + HIGHLIGHT_SIZE;
+	Driver->draw2DRectangle(colors[EGDC_3D_FACE], rect, clip);
+
+	rect = r;
+	rect.LowerRightCorner.X -= BORDER_SIZE;
+	rect.UpperLeftCorner.X += BORDER_SIZE;
+	rect.LowerRightCorner.Y -= BORDER_SIZE;
+	rect.UpperLeftCorner.Y = rect.LowerRightCorner.Y - SHADOW_SIZE;
 	Driver->draw2DRectangle(colors[EGDC_3D_HIGH_LIGHT], rect, clip);
+
+	/*Driver->draw2DRectangle(colors[EGDC_3D_HIGH_LIGHT], rect, clip);
 
 	rect.LowerRightCorner.X -= 1;
 	rect.LowerRightCorner.Y -= 1;
@@ -407,7 +461,7 @@ void GUISkin::drawColored3DButtonPanePressed(IGUIElement* element,
 		const video::SColor c1 = colors[EGDC_3D_FACE];
 		const video::SColor c2 = c1.getInterpolated(colors[EGDC_3D_DARK_SHADOW], 0.4f);
 		Driver->draw2DRectangle(rect, c1, c1, c2, c2, clip);
-	}
+	}*/
 }
 // END PATCH
 
@@ -440,33 +494,35 @@ void GUISkin::drawColored3DSunkenPane(IGUIElement* element, video::SColor bgcolo
 	if (fillBackGround)
 		Driver->draw2DRectangle(bgcolor, rect, clip);
 
+	const int BORDER_SIZE = 2;
+
 	if (flat)
 	{
 		// draw flat sunken pane
 
-		rect.LowerRightCorner.Y = rect.UpperLeftCorner.Y + 1;
+		rect.LowerRightCorner.Y = rect.UpperLeftCorner.Y + BORDER_SIZE;
 		Driver->draw2DRectangle(colors[EGDC_3D_SHADOW], rect, clip);	// top
 
 		++rect.UpperLeftCorner.Y;
 		rect.LowerRightCorner.Y = r.LowerRightCorner.Y;
-		rect.LowerRightCorner.X = rect.UpperLeftCorner.X + 1;
+		rect.LowerRightCorner.X = rect.UpperLeftCorner.X + BORDER_SIZE;
 		Driver->draw2DRectangle(colors[EGDC_3D_SHADOW], rect, clip);	// left
 
 		rect = r;
 		++rect.UpperLeftCorner.Y;
-		rect.UpperLeftCorner.X = rect.LowerRightCorner.X - 1;
+		rect.UpperLeftCorner.X = rect.LowerRightCorner.X - BORDER_SIZE;
 		Driver->draw2DRectangle(colors[EGDC_3D_HIGH_LIGHT], rect, clip);	// right
 
 		rect = r;
 		++rect.UpperLeftCorner.X;
-		rect.UpperLeftCorner.Y = r.LowerRightCorner.Y - 1;
+		rect.UpperLeftCorner.Y = r.LowerRightCorner.Y - BORDER_SIZE;
 		--rect.LowerRightCorner.X;
 		Driver->draw2DRectangle(colors[EGDC_3D_HIGH_LIGHT], rect, clip);	// bottom
 	}
 	else
 	{
 		// draw deep sunken pane
-		rect.LowerRightCorner.Y = rect.UpperLeftCorner.Y + 1;
+		rect.LowerRightCorner.Y = rect.UpperLeftCorner.Y + BORDER_SIZE;
 		Driver->draw2DRectangle(colors[EGDC_3D_SHADOW], rect, clip);	// top
 		++rect.UpperLeftCorner.X;
 		++rect.UpperLeftCorner.Y;
@@ -475,8 +531,8 @@ void GUISkin::drawColored3DSunkenPane(IGUIElement* element, video::SColor bgcolo
 		Driver->draw2DRectangle(colors[EGDC_3D_DARK_SHADOW], rect, clip);
 
 		rect.UpperLeftCorner.X = r.UpperLeftCorner.X;
-		rect.UpperLeftCorner.Y = r.UpperLeftCorner.Y+1;
-		rect.LowerRightCorner.X = rect.UpperLeftCorner.X + 1;
+		rect.UpperLeftCorner.Y = r.UpperLeftCorner.Y+BORDER_SIZE;
+		rect.LowerRightCorner.X = rect.UpperLeftCorner.X + BORDER_SIZE;
 		rect.LowerRightCorner.Y = r.LowerRightCorner.Y;
 		Driver->draw2DRectangle(colors[EGDC_3D_SHADOW], rect, clip);	// left
 		++rect.UpperLeftCorner.X;
@@ -486,7 +542,7 @@ void GUISkin::drawColored3DSunkenPane(IGUIElement* element, video::SColor bgcolo
 		Driver->draw2DRectangle(colors[EGDC_3D_DARK_SHADOW], rect, clip);
 
 		rect = r;
-		rect.UpperLeftCorner.X = rect.LowerRightCorner.X - 1;
+		rect.UpperLeftCorner.X = rect.LowerRightCorner.X - BORDER_SIZE;
 		++rect.UpperLeftCorner.Y;
 		Driver->draw2DRectangle(colors[EGDC_3D_HIGH_LIGHT], rect, clip);	// right
 		--rect.UpperLeftCorner.X;
@@ -497,7 +553,7 @@ void GUISkin::drawColored3DSunkenPane(IGUIElement* element, video::SColor bgcolo
 
 		rect = r;
 		++rect.UpperLeftCorner.X;
-		rect.UpperLeftCorner.Y = r.LowerRightCorner.Y - 1;
+		rect.UpperLeftCorner.Y = r.LowerRightCorner.Y - BORDER_SIZE;
 		--rect.LowerRightCorner.X;
 		Driver->draw2DRectangle(colors[EGDC_3D_HIGH_LIGHT], rect, clip);	// bottom
 		++rect.UpperLeftCorner.X;

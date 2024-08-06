@@ -502,9 +502,10 @@ void GUIFormSpecMenu::parseList(parserData *data, const std::string &element)
 	);
 
 	v2f32 slot_spacing = style.getVector2f(StyleSpec::SPACING, v2f32(-1, -1));
-	v2f32 default_spacing = data->real_coordinates ?
+	v2f32 default_spacing = v2f32(0, 0);
+	/*v2f32 default_spacing = data->real_coordinates ?
 			v2f32(imgsize.X * 0.25f, imgsize.Y * 0.25f) :
-			v2f32(spacing.X - imgsize.X, spacing.Y - imgsize.Y);
+			v2f32(spacing.X - imgsize.X, spacing.Y - imgsize.Y);*/
 
 	slot_spacing.X = slot_spacing.X < 0 ? default_spacing.X :
 			imgsize.X * slot_spacing.X;

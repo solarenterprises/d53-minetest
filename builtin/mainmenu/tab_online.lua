@@ -92,7 +92,7 @@ local function get_formspec(tabview, name, tabdata)
     local retval =
     -- Search
         "container[0,0]" ..
-        "box[0,0;9.75,7;#666666]"
+        "box[0,0;9.75,7;#333333]"
 
     if not launched_with_token then
         retval = retval ..
@@ -129,7 +129,7 @@ local function get_formspec(tabview, name, tabdata)
     retval = retval .. "container_end[]" ..
 
         "container[9.75,0]" ..
-        "box[0,0;5.75,7.1;#666666]" ..
+        "box[0,0;5.75,7.1;#333333]" ..
 
         -- Address / Port
         "label[0.25,0.35;" .. fgettext("Server Address") .. "]" ..

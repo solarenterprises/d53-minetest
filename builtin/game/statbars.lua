@@ -2,7 +2,7 @@
 local enable_damage = core.settings:get_bool("enable_damage")
 
 local function get_bar_definitions() 
-    local offset = core.PLAYER_HUD_STAT_OFFSET or { x = 0, y = 0 }
+    local offset = core.PLAYER_HUD_STAT_OFFSET or { x = 0, y = -5 }
 
     local bar_definitions = {
         hp = {

@@ -458,9 +458,10 @@ void ClientLauncher::init_guienv(gui::IGUIEnvironment *guienv)
 
 	skin->setColor(gui::EGDC_WINDOW_SYMBOL, video::SColor(255, 255, 255, 255));
 	skin->setColor(gui::EGDC_BUTTON_TEXT, video::SColor(255, 255, 255, 255));
-	skin->setColor(gui::EGDC_3D_LIGHT, video::SColor(0, 0, 0, 0));
-	skin->setColor(gui::EGDC_3D_HIGH_LIGHT, video::SColor(255, 30, 30, 30));
-	skin->setColor(gui::EGDC_3D_SHADOW, video::SColor(255, 0, 0, 0));
+	skin->setColor(gui::EGDC_3D_LIGHT, video::SColor(255, 120, 120, 120));
+	skin->setColor(gui::EGDC_3D_HIGH_LIGHT, video::SColor(255, 152, 152, 152));
+	skin->setColor(gui::EGDC_3D_DARK_SHADOW, video::SColor(255, 54, 54, 54));
+	skin->setColor(gui::EGDC_3D_SHADOW, video::SColor(255, 90, 90, 90));
 	skin->setColor(gui::EGDC_HIGH_LIGHT, video::SColor(255, 70, 120, 50));
 	skin->setColor(gui::EGDC_HIGH_LIGHT_TEXT, video::SColor(255, 255, 255, 255));
 	skin->setColor(gui::EGDC_EDITABLE, video::SColor(255, 128, 128, 128));

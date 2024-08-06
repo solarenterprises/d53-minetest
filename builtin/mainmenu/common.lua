@@ -98,14 +98,14 @@ function render_serverlist_row(spec)
 
 	table.insert(details, ",")
 
-	local color = (grey_out and "#aaaaaa") or ((spec.is_favorite and "#ddddaa") or "#ffffff")
+	local color = (grey_out and "#CECECE") or ((spec.is_favorite and "#ddddaa") or "#ffffff")
 	if spec.clients and (spec.clients_max or 0) > 0 then
 		local clients_percent = 100 * spec.clients / spec.clients_max
 
 		-- Choose a color depending on how many clients are connected
 		-- (relatively to clients_max)
 		local clients_color
-		if     grey_out		      then clients_color = '#aaaaaa'
+		if     grey_out		      then clients_color = '#CECECE'
 		elseif spec.clients == 0      then clients_color = ''        -- 0 players: default/white
 		elseif clients_percent <= 60  then clients_color = '#a1e587' -- 0-60%: green
 		elseif clients_percent <= 90  then clients_color = '#ffdc97' -- 60-90%: yellow
