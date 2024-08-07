@@ -1562,6 +1562,8 @@ void GenericCAO::updateAnimation()
 	m_animated_meshnode->setTransitionTime(m_animation_blend);
 	if (m_animated_meshnode->getLoopMode() != m_animation_loop)
 		m_animated_meshnode->setLoopMode(m_animation_loop);
+
+	m_animated_meshnode->setCurrentFrame(m_animation_range.X);
 }
 
 void GenericCAO::updateAnimationSpeed()
