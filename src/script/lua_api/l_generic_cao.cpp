@@ -9,6 +9,9 @@
 #include "map.h"
 #include "client/localplayer.h"
 
+#define checkCSMRestrictionFlag(flag) \
+	( getClient(L)->checkCSMRestrictionFlag(CSMRestrictionFlags::flag) )
+
 #define CAO \
 auto cao = getobject(L, 1); \
 if (!cao) { \
@@ -226,6 +229,9 @@ int ModApiGenericCAO::l_get_generic_cao(lua_State* L)
 int ModApiGenericCAO::l_get_local_player(lua_State* L)
 {
 	NO_MAP_LOCK_REQUIRED;
+
+	if (checkCSMRestrictionFlag(CSM_RF_READ_PLAYERINFO))
+		return 0;
 
 	Client* client = getClient(L);
 	LocalPlayer* player = client->getEnv().getLocalPlayer();

@@ -23,6 +23,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include <cmath>
 #include "client/renderingengine.h"
 #include "camera.h"
+#include "wield.h"
 #include "client.h"
 #include "client/clientevent.h"
 #include "client/gameui.h"
@@ -894,6 +895,7 @@ private:
 	GUIChatConsole *gui_chat_console = nullptr; // Free using ->Drop()
 	MapDrawControl *draw_control = nullptr;
 	Camera *camera = nullptr;
+	Wield* wield = nullptr;
 	Clouds *clouds = nullptr;	                  // Free using ->Drop()
 	Sky *sky = nullptr;                         // Free using ->Drop()
 	Hud *hud = nullptr;
@@ -1031,6 +1033,7 @@ Game::~Game()
 	delete server; // deleted first to stop all server threads
 
 	delete hud;
+	delete wield;
 	delete camera;
 	delete quicktune;
 	delete eventmgr;
@@ -1486,6 +1489,9 @@ bool Game::createClient(const GameStartData &start_data)
 	if (client->modsLoaded())
 		client->getScript()->on_camera_ready(camera);
 	client->setCamera(camera);
+
+	wield = new Wield(m_rendering_engine, client, camera);
+	client->setWield(wield);
 
 	if (g_touchscreengui) {
 		g_touchscreengui->setUseCrosshair(!isTouchCrosshairDisabled());
@@ -3271,12 +3277,13 @@ void Game::updateCamera(f32 dtime)
 		playercao->setChildrenVisible(camera->getCameraMode() > CAMERA_MODE_FIRST);
 	}
 
+	camera->update(player, dtime);
+	camera->step(dtime);
+
 	float full_punch_interval = playeritem_toolcap.full_punch_interval;
 	float tool_reload_ratio = runData.time_from_last_punch / full_punch_interval;
-
 	tool_reload_ratio = MYMIN(tool_reload_ratio, 1.0);
-	camera->update(player, dtime, tool_reload_ratio);
-	camera->step(dtime);
+	wield->update(player, dtime, tool_reload_ratio);
 
 	f32 camera_fov = camera->getFovMax();
 	v3s16 camera_offset = camera->getOffset();
@@ -3474,7 +3481,7 @@ void Game::processPlayerInteraction(f32 dtime, bool show_hud)
 	runData.pointed_old = pointed;
 
 	if (runData.punching || wasKeyPressed(KeyType::DIG))
-		camera->setDigging(0); // dig animation
+		wield->setDigging(0); // dig animation
 
 	input->clearWasKeyPressed();
 	input->clearWasKeyReleased();
@@ -3637,7 +3644,7 @@ void Game::handlePointingAtNode(const PointedThing &pointed,
 		infostream << "Place button pressed while looking at ground" << std::endl;
 
 		// Placing animation (always shown for feedback)
-		camera->setDigging(1);
+		wield->setDigging(1);
 
 		soundmaker->m_player_rightpunch_sound = SoundSpec();
 
@@ -4068,7 +4075,7 @@ void Game::handleDigging(const PointedThing &pointed, const v3s16 &nodepos,
 		client->setCrack(-1, nodepos);
 	}
 
-	camera->setDigging(0);  // Dig animation
+	wield->setDigging(0);  // Dig animation
 }
 
 void Game::updateFrame(ProfilerGraph *graph, RunStats *stats, f32 dtime,
@@ -4191,8 +4198,8 @@ void Game::updateFrame(ProfilerGraph *graph, RunStats *stats, f32 dtime,
 		ItemStack selected_item, hand_item;
 		ItemStack &tool_item = player->getWieldedItem(&selected_item, &hand_item);
 
-		if (camera)
-			camera->wield(tool_item);
+		if (wield)
+			wield->set_item(tool_item);
 	}
 
 	/*

@@ -60,6 +60,18 @@ public:
 	bool on_punchnode(v3s16 p, MapNode node);
 	bool on_placenode(const PointedThing &pointed, const ItemDefinition &item);
 	bool on_item_use(const ItemStack &item, const PointedThing &pointed);
+	bool on_wield_animation(
+		const ItemStack &item,
+		f32 dtime,
+		v3f** script_wield_position,
+		v3f** script_wield_rotation,
+		const v3f& wield_position,
+		const v3f& wield_rotation,
+		const v3f& default_wield_position,
+		const v3f& default_wield_rotation,
+		const v3f& world_script_wield_position,
+		const v3f& world_script_wield_rotation,
+		const v3f& camera_dir);
 
 	bool on_inventory_open(Inventory *inventory);
 

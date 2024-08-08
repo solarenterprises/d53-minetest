@@ -277,6 +277,96 @@ bool ScriptApiClient::on_item_use(const ItemStack &item, const PointedThing &poi
 	return readParam<bool>(L, -1);
 }
 
+bool ScriptApiClient::on_wield_animation(
+	const ItemStack &item,
+	f32 dtime,
+	v3f** script_wield_position,
+	v3f** script_wield_rotation,
+	const v3f& wield_position,
+	const v3f& wield_rotation,
+	const v3f& default_wield_position,
+	const v3f& default_wield_rotation,
+	const v3f& world_script_wield_position,
+	const v3f& world_script_wield_rotation,
+	const v3f& camera_dir)
+{
+	SCRIPTAPI_PRECHECKHEADER
+
+	lua_newtable(L);
+	lua_pushnumber(L, dtime);
+	lua_setfield(L, -2, "dtime");
+	if (script_wield_position) {
+		push_v3f(L, **script_wield_position);
+		lua_setfield(L, -2, "position");
+	}
+	if (script_wield_rotation) {
+		push_v3f(L, **script_wield_rotation);
+		lua_setfield(L, -2, "rotation");
+	}
+	push_v3f(L, wield_position);
+	lua_setfield(L, -2, "wield_position");
+	push_v3f(L, wield_rotation);
+	lua_setfield(L, -2, "wield_rotation");
+	push_v3f(L, default_wield_position);
+	lua_setfield(L, -2, "default_wield_position");
+	push_v3f(L, default_wield_rotation);
+	lua_setfield(L, -2, "default_wield_rotation");
+	push_v3f(L, world_script_wield_position);
+	lua_setfield(L, -2, "world_position");
+	push_v3f(L, world_script_wield_rotation);
+	lua_setfield(L, -2, "world_rotation");
+	push_v3f(L, camera_dir);
+	lua_setfield(L, -2, "camera_dir");
+	int tableref = luaL_ref(L, LUA_REGISTRYINDEX);
+
+	// Get core.registered_on_item_use
+	lua_getglobal(L, "core");
+	lua_getfield(L, -1, "registered_on_wield_animation");
+
+	// Push data
+	LuaItemStack::create(L, item);
+
+	lua_rawgeti(L, LUA_REGISTRYINDEX, tableref);
+
+	// Call functions
+	try {
+		runCallbacks(2, RUN_CALLBACKS_MODE_OR);
+	} catch (LuaError &e) {
+		getClient()->setFatalError(e);
+		return true;
+	}
+
+	if (!readParam<bool>(L, -1)) {
+		luaL_unref(L, LUA_REGISTRYINDEX, tableref);
+		return false;
+	}
+
+	lua_rawgeti(L, LUA_REGISTRYINDEX, tableref);
+	if (script_wield_position) {
+		lua_getfield(L, -1, "position");
+		if (!lua_isnil(L, -1))
+			**script_wield_position = readParam<v3f>(L, -1);
+		else
+			*script_wield_position = nullptr;
+
+		lua_pop(L, 1);
+	}
+
+	if (script_wield_rotation) {
+		lua_getfield(L, -1, "rotation");
+		if (!lua_isnil(L, -1))
+			**script_wield_rotation = readParam<v3f>(L, -1);
+		else
+			*script_wield_rotation = nullptr;
+		lua_pop(L, 1);
+	}
+
+	luaL_unref(L, LUA_REGISTRYINDEX, tableref);
+	lua_pop(L, 1);
+
+	return true;
+}
+
 bool ScriptApiClient::on_inventory_open(Inventory *inventory)
 {
 	SCRIPTAPI_PRECHECKHEADER

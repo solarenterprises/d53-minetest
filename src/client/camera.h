@@ -29,12 +29,12 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include <array>
 #include <list>
 #include <optional>
+#include "wield.h"
 
 class LocalPlayer;
 struct MapDrawControl;
 class Client;
 class RenderingEngine;
-class WieldMeshSceneNode;
 
 struct Nametag
 {
@@ -83,7 +83,6 @@ class Camera
 {
 public:
 	Camera(MapDrawControl &draw_control, Client *client, RenderingEngine *rendering_engine);
-	~Camera();
 
 	// Get camera scene node.
 	// It has the eye transformation, pitch and view bobbing applied.
@@ -160,22 +159,10 @@ public:
 	void step(f32 dtime);
 
 	// Update the camera from the local player's position.
-	void update(LocalPlayer* player, f32 frametime, f32 tool_reload_ratio);
+	void update(LocalPlayer* player, f32 frametime);
 
 	// Update render distance
 	void updateViewingRange();
-
-	// Start digging animation
-	// Pass 0 for left click, 1 for right click
-	void setDigging(s32 button);
-
-	// Replace the wielded item mesh
-	void wield(const ItemStack &item);
-
-	// Draw the wielded tool.
-	// This has to happen *after* the main scene is drawn.
-	// Warning: This clears the Z buffer.
-	void drawWieldedTool(irr::core::matrix4* translation=NULL);
 
 	// Toggle the current camera mode
 	void toggleCameraMode() {
@@ -207,7 +194,7 @@ public:
 
 	void drawNametags();
 
-	inline void addArmInertia(f32 player_yaw);
+	inline f32 get_view_bobbing_anim() { return m_view_bobbing_anim; }
 
 private:
 	// Use getFrustumCuller().
@@ -218,9 +205,6 @@ private:
 	scene::ISceneNode *m_playernode = nullptr;
 	scene::ISceneNode *m_headnode = nullptr;
 	scene::ICameraSceneNode *m_cameranode = nullptr;
-
-	scene::ISceneManager *m_wieldmgr = nullptr;
-	WieldMeshSceneNode *m_wieldnode = nullptr;
 
 	// draw control
 	MapDrawControl& m_draw_control;
@@ -247,12 +231,6 @@ private:
 	bool m_fov_transition_active = false;
 	f32 m_fov_diff, m_transition_time;
 
-	v2f m_wieldmesh_offset = v2f(55.0f, -35.0f);
-	v2f m_arm_dir;
-	v2f m_cam_vel;
-	v2f m_cam_vel_old;
-	v2f m_last_cam_pos;
-
 	// Field of view and aspect ratio stuff
 	f32 m_aspect = 1.0f;
 	f32 m_fov_x = 1.0f;
@@ -269,26 +247,11 @@ private:
 	// Fall view bobbing
 	f32 m_view_bobbing_fall = 0.0f;
 
-	// Digging animation frame (0 <= m_digging_anim < 1)
-	f32 m_digging_anim = 0.0f;
-	// If -1, no digging animation
-	// If 0, left-click digging animation
-	// If 1, right-click digging animation
-	s32 m_digging_button = -1;
-
-	// Animation when changing wielded item
-	f32 m_wield_change_timer = 0.125f;
-	ItemStack m_wield_item_next;
-
 	CameraMode m_camera_mode = CAMERA_MODE_FIRST;
 
 	f32 m_cache_fall_bobbing_amount;
 	f32 m_cache_view_bobbing_amount;
-	bool m_arm_inertia;
-
+	
 	std::list<Nametag *> m_nametags;
 	bool m_show_nametag_backgrounds;
-
-	// Last known light color of the player
-	video::SColor m_player_light_color;
 };

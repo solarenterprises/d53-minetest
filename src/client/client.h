@@ -72,6 +72,7 @@ class NetworkPacket;
 struct FpsControl;
 class InputHandler;
 class StreamPacketHandler;
+class Wield;
 
 namespace con {
 	class Connection;
@@ -392,8 +393,10 @@ public:
 
 	Minimap* getMinimap() { return m_minimap; }
 	void setCamera(Camera* camera) { m_camera = camera; }
+	void setWield(Wield* wield) { m_wield = wield; }
 
 	Camera* getCamera() { return m_camera; }
+	Wield* getWield() { return m_wield; }
 	scene::ISceneManager* getSceneManager();
 
 	// IGameDef interface
@@ -546,6 +549,7 @@ private:
 	std::string m_address_name;
 	ELoginRegister m_allow_login_or_register = ELoginRegister::Any;
 	Camera *m_camera = nullptr;
+	Wield *m_wield = nullptr;
 	Minimap *m_minimap = nullptr;
 
 	// Server serialization version

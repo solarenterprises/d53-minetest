@@ -47,7 +47,7 @@ void DrawWield::run(PipelineContext &context)
 		m_target->activate(context);
 
 	if (context.draw_wield_tool)
-		context.client->getCamera()->drawWieldedTool();
+		context.client->getWield()->drawWieldedTool();
 }
 
 void DrawHUD::run(PipelineContext &context)
