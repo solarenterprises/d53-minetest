@@ -99,7 +99,6 @@ struct ItemDefinition
 	u16 stack_max;
 	bool usable;
 	bool liquids_pointable;
-	float use_time = 0;
 	std::optional<Pointabilities> pointabilities;
 
 	// They may be NULL. If non-NULL, deleted by destructor

@@ -60,6 +60,7 @@ public:
 	bool on_punchnode(v3s16 p, MapNode node);
 	bool on_placenode(const PointedThing &pointed, const ItemDefinition &item);
 	bool on_item_use(const ItemStack &item, const PointedThing &pointed);
+	bool on_item_secondary_use(const ItemStack &item);
 	bool on_wield_animation(
 		const ItemStack &item,
 		f32 dtime,

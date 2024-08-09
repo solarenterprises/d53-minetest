@@ -3476,6 +3476,7 @@ void Game::processPlayerInteraction(f32 dtime, bool show_hud)
 			client->getScript()->on_item_use(selected_item, pointed);
 	} else if (wasKeyPressed(KeyType::PLACE)) {
 		handlePointingAtNothing(selected_item);
+		client->getScript()->on_item_secondary_use(selected_item);
 	}
 
 	runData.pointed_old = pointed;

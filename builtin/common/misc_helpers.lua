@@ -247,6 +247,10 @@ function math.round(x)
     return math.ceil(x - 0.5)
 end
 
+function math.lerp(x, y, a)
+    return x * (1 - a) + y * a;
+end
+
 local formspec_escapes = {
     ["\\"] = "\\\\",
     ["["] = "\\[",

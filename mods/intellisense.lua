@@ -2,6 +2,9 @@
 -- Minetest
 ----------------------------------------------
 
+---@param callback { itemstack }
+function minetest.register_on_item_secondary_use(callback) end
+
 ---@param pos vector
 ---@param radius number
 ---@param def { player, object, collision_mask }

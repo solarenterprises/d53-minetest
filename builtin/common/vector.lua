@@ -375,6 +375,18 @@ function vector.in_area(pos, min, max)
 		(pos.z >= min.z) and (pos.z <= max.z)
 end
 
+local function lerp(x, y, a)
+    return x * (1 - a) + y * a;
+end
+
+function vector.lerp(x, y, a)
+    return {
+        x = lerp(x.x, y.x, a),
+        y = lerp(x.y, y.y, a),
+        z = lerp(x.z, y.z, a),
+    }
+end
+
 if rawget(_G, "core") and core.set_read_vector and core.set_push_vector then
 	local function read_vector(v)
 		return v.x, v.y, v.z
