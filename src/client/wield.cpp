@@ -114,14 +114,23 @@ void Wield::update(LocalPlayer* player, f32 dtime, f32 tool_reload_ratio)
 		matrix4 mat_screen_to_world_inv;
 		mat_screen_to_world.getInverse(mat_screen_to_world_inv);
 
+		//v3f cameraPos = m_camera->getPosition();
+
 		v3f clipPos;
 		mat_to_screen.transformVect(clipPos, script_wield_position);
 		// Convert from clip space to NDC (Normalized Device Coordinates)
 		if (clipPos.Z != 0.0f) {
 			clipPos.X /= clipPos.Z;
 			clipPos.Y /= clipPos.Z;
-			clipPos.Z = 0;
+			clipPos.Z = 0.0f;
 		}
+
+		if (clipPos.X != clipPos.X)
+			return;
+		if (clipPos.Y != clipPos.Y)
+			return;
+		if (clipPos.Z != clipPos.Z)
+			return;
 
 		f32 vec[4];
 		mat_screen_to_world_inv.transformVect(vec, clipPos);
@@ -131,6 +140,16 @@ void Wield::update(LocalPlayer* player, f32 dtime, f32 tool_reload_ratio)
 			world_script_wield_position.Y = (vec[1] / vec[3]) / BS;
 			world_script_wield_position.Z = (vec[2] / vec[3]) / BS;
 		}
+
+		if (world_script_wield_position.X != world_script_wield_position.X)
+			return;
+		if (world_script_wield_position.Y != world_script_wield_position.Y)
+			return;
+		if (world_script_wield_position.Z != world_script_wield_position.Z)
+			return;
+
+		v3s16 cam_offset = m_camera->getOffset();
+		world_script_wield_position += v3f(cam_offset.X, cam_offset.Y, cam_offset.Z);
 
 		world_script_wield_rotation = script_wield_rotation;
 		matrix4 mat_inv_view;

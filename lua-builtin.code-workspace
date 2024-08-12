@@ -1,14 +1,17 @@
 {
 	"folders": [
-		{
-			"path": "builtin"
-		},
-		{
-			"path": "mods"
-		},
-		{
-			"path": "games"
-		}
-	],
+        {
+            "path": "builtin"
+        },
+        {
+            "path": "mods"
+        },
+        {
+            "path": "games"
+        },
+        {
+            "path": "clientmods"
+        }
+    ],
 	"settings": {}
 }
