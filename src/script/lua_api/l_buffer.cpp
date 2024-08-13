@@ -157,7 +157,7 @@ int read_buffer(lua_State *L) {
 	std::string buffer;
 	buffer.resize(read_size);
 
-    size_t read = fread_s((void*)buffer.c_str(), read_size, 1, read_size, file);
+    size_t read = fread((void*)buffer.c_str(), 1, read_size, file);
 
     return LuaBuffer::create_object(L, buffer);
 }
