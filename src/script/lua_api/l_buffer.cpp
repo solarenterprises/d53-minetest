@@ -1,6 +1,7 @@
 #include "l_buffer.h"
 #include "lua_api/l_internal.h"
 #include "common/c_converter.h"
+#include "lualib.h"
 
 // garbage collector
 int LuaBuffer::gc_object(lua_State* L)
@@ -120,7 +121,66 @@ int ModApiBuffer::l_Buffer(lua_State* L) {
 	return 1;
 }
 
+int write_buffer(lua_State *L) {
+    // Get the file object (userdata) at the first argument
+    luaL_checktype(L, 1, LUA_TUSERDATA);
+    FILE* file = *(FILE**)luaL_checkudata(L, 1, LUA_FILEHANDLE);
+	if (!file) {
+		luaL_error(L, "File is nil");
+		return 0;
+	}
+
+    // Get the LuaBuffer object at the second argument
+    LuaBuffer* lua_buffer = *(LuaBuffer**)luaL_checkudata(L, 2, "Buffer");
+
+    // Write the buffer's data to the file
+    const std::string& data = lua_buffer->buffer;
+    size_t written = fwrite(data.c_str(), sizeof(char), data.size(), file);
+
+	fflush(file);
+
+    // Return the number of bytes written
+    lua_pushinteger(L, written);
+    return 1;
+}
+
+int read_buffer(lua_State *L) {
+    // Get the file object (userdata) at the first argument
+    luaL_checktype(L, 1, LUA_TUSERDATA);
+    FILE* file = *(FILE**)luaL_checkudata(L, 1, LUA_FILEHANDLE);
+
+	size_t beg = ftell(file);
+	fseek(file, 0, SEEK_END);
+	size_t read_size = ftell(file) - beg;
+	fseek(file, beg, SEEK_SET);
+
+	std::string buffer;
+	buffer.resize(read_size);
+
+    size_t read = fread_s((void*)buffer.c_str(), read_size, 1, read_size, file);
+
+    return LuaBuffer::create_object(L, buffer);
+}
+
+int ModApiBuffer::l_string_to_buffer(lua_State* L)
+{
+	NO_MAP_LOCK_REQUIRED;
+
+	std::string str = readParam<std::string>(L, 1);
+	return LuaBuffer::create_object(L, str);
+}
+
 void ModApiBuffer::Initialize(lua_State* L, int top)
 {
 	API_FCT(Buffer);
+	API_FCT(string_to_buffer);
+
+	lua_getglobal(L, "io");
+	if (!lua_isnil(L, -1)) {
+		lua_pushcfunction(L, write_buffer);
+		lua_setfield(L, -2, "write_buffer");
+		lua_pushcfunction(L, read_buffer);
+		lua_setfield(L, -2, "read_buffer");
+	}
+	lua_remove(L, -1); // Remove io
 }

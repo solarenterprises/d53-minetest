@@ -18,6 +18,7 @@ private:
 	static int mt_tostring(lua_State* L);
 
 	static int l_to_string(lua_State* L);
+	
 	static int l_get_size(lua_State* L);
 
 public:
@@ -34,6 +35,7 @@ public:
 class ModApiBuffer : public ModApiBase {
 private:
 	static int l_Buffer(lua_State* L);
+	static int l_string_to_buffer(lua_State* L);
 
 public:
 	static void Initialize(lua_State* L, int top);

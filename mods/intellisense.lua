@@ -2,6 +2,17 @@
 -- Minetest
 ----------------------------------------------
 
+---@param file FILE
+---@param buffer Buffer
+function io.write_buffer(file, buffer) end
+
+---@param file FILE
+---@return Buffer
+function io.read_buffer(file) end
+
+---@param str string
+function minetest.string_to_buffer(str) end
+
 ---@param callback { itemstack }
 function minetest.register_on_item_secondary_use(callback) end
 
