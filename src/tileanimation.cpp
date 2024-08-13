@@ -68,6 +68,9 @@ void TileAnimationParams::determineParams(v2u32 texture_size, int *frame_count,
 		int frame_height = (float)texture_size.X /
 				(float)vertical_frames.aspect_w *
 				(float)vertical_frames.aspect_h;
+		if (frame_height == 0)
+			frame_height = 1;
+
 		int _frame_count = texture_size.Y / frame_height;
 		if (frame_count)
 			*frame_count = _frame_count;
