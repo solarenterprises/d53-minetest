@@ -35,6 +35,12 @@ NodeMetadata::NodeMetadata(IItemDefManager *item_def_mgr):
 	m_inventory(new Inventory(item_def_mgr))
 {}
 
+NodeMetadata::NodeMetadata(const NodeMetadata& other)
+{
+	*this = other;
+	m_inventory = new Inventory(*other.m_inventory);
+}
+
 NodeMetadata::~NodeMetadata()
 {
 	delete m_inventory;

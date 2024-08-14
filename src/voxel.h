@@ -30,6 +30,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "irrlicht_changes/printing.h"
 
 class NodeDefManager;
+class NodeMetadataList;
+class NodeMetadata;
 
 // For VC++
 #undef min
@@ -499,7 +501,7 @@ public:
 
 	// Copy data
 	void copyTo(MapNode *dst, const VoxelArea& dst_area,
-			v3s16 dst_pos, v3s16 from_pos, const v3s16 &size);
+			v3s16 dst_pos, v3s16 from_pos, const v3s16 &size, NodeMetadataList& m_node_metadata);
 
 	/*
 		Algorithms
@@ -523,6 +525,16 @@ public:
 		Data is stored as [z*h*w + y*h + x]
 	*/
 	MapNode *m_data = nullptr;
+
+	/*
+		if load_metadata = true then m_metadata will allocate NodeMetadata array alongside with m_data.
+	*/
+	NodeMetadata** m_metadata = nullptr;
+
+	s32 data_size = 0;
+
+	bool load_metadata = false;
+
 
 	/*
 		Flags of all nodes

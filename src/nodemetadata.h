@@ -39,8 +39,9 @@ class NodeMetadata : public SimpleMetadata
 {
 public:
 	NodeMetadata(IItemDefManager *item_def_mgr);
+	NodeMetadata(const NodeMetadata& other);
 	~NodeMetadata();
-
+	
 	void serialize(std::ostream &os, u8 version, bool disk=true) const;
 	void deSerialize(std::istream &is, u8 version);
 

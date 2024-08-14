@@ -2095,6 +2095,11 @@ MMVManip *MMVManip::clone() const
 		ret->m_flags = new u8[size];
 		memcpy(ret->m_flags, m_flags, size * sizeof(u8));
 	}
+	if (m_metadata) {
+		ret->m_metadata = new NodeMetadata *[size];
+		for (s32 i = 0; i < size; i++)
+			ret->m_metadata[i] = new NodeMetadata(*m_metadata[i]);
+	}
 
 	ret->m_is_dirty = m_is_dirty;
 	// Even if the copy is disconnected from a map object keep the information

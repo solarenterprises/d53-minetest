@@ -2,6 +2,15 @@
 -- Minetest
 ----------------------------------------------
 
+---@param pos vector
+---@param schematic string
+---@param rot string
+---@param replace table
+---@param force_placement boolean
+---@param flags string|table
+---@param metadata table
+function minetest.place_schematic(pos, schematic, rot, replace, force_placement, flags, metadata) end
+
 ---@param file FILE
 ---@param buffer Buffer
 function io.write_buffer(file, buffer) end

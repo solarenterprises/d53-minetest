@@ -110,9 +110,9 @@ public:
 	bool serializeToMts(std::ostream *os) const;
 	bool serializeToLua(std::ostream *os, bool use_comments, u32 indent_spaces) const;
 
-	void blitToVManip(MMVManip *vm, v3s16 p, Rotation rot, bool force_place);
+	void blitToVManip(MMVManip *vm, v3s16 p, Rotation rot, bool force_place, NodeMetadata* metadata = nullptr);
 	bool placeOnVManip(MMVManip *vm, v3s16 p, u32 flags, Rotation rot, bool force_place);
-	void placeOnMap(ServerMap *map, v3s16 p, u32 flags, Rotation rot, bool force_place);
+	void placeOnMap(ServerMap *map, v3s16 p, u32 flags, Rotation rot, bool force_place, NodeMetadata* metadata = nullptr);
 
 	void applyProbabilities(v3s16 p0,
 		std::vector<std::pair<v3s16, u8> > *plist,

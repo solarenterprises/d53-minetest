@@ -211,7 +211,7 @@ void MapBlock::copyFrom(VoxelManipulator &dst)
 
 	// Copy from VoxelManipulator to data
 	dst.copyTo(data, data_area, v3s16(0,0,0),
-			getPosRelative(), data_size);
+			getPosRelative(), data_size, m_node_metadata);
 }
 
 void MapBlock::actuallyUpdateIsAir()

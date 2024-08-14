@@ -135,7 +135,7 @@ void Schematic::resolveNodeNames()
 }
 
 
-void Schematic::blitToVManip(MMVManip *vm, v3s16 p, Rotation rot, bool force_place)
+void Schematic::blitToVManip(MMVManip *vm, v3s16 p, Rotation rot, bool force_place, NodeMetadata* metadata)
 {
 	assert(schemdata && slice_probs);
 	sanity_check(m_ndef != NULL);
@@ -209,6 +209,9 @@ void Schematic::blitToVManip(MMVManip *vm, v3s16 p, Rotation rot, bool force_pla
 				vm->m_data[vi] = schemdata[i];
 				vm->m_data[vi].param1 = 0;
 
+				if (vm->load_metadata && metadata)
+					vm->m_metadata[vi] = new NodeMetadata(*metadata);
+
 				if (rot)
 					vm->m_data[vi].rotateAlongYAxis(m_ndef, rot);
 			}
@@ -246,7 +249,7 @@ bool Schematic::placeOnVManip(MMVManip *vm, v3s16 p, u32 flags,
 }
 
 void Schematic::placeOnMap(ServerMap *map, v3s16 p, u32 flags,
-	Rotation rot, bool force_place)
+	Rotation rot, bool force_place, NodeMetadata* metadata)
 {
 	std::map<v3s16, MapBlock *> modified_blocks;
 	std::map<v3s16, MapBlock *>::iterator it;
@@ -276,9 +279,10 @@ void Schematic::placeOnMap(ServerMap *map, v3s16 p, u32 flags,
 	v3s16 bp2 = getNodeBlockPos(p + s - v3s16(1, 1, 1));
 
 	MMVManip vm(map);
+	vm.load_metadata = metadata != nullptr;
 	vm.initialEmerge(bp1, bp2);
 
-	blitToVManip(&vm, p, rot, force_place);
+	blitToVManip(&vm, p, rot, force_place, metadata);
 
 	voxalgo::blit_back_with_light(map, &vm, &modified_blocks);
 

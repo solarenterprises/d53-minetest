@@ -24,32 +24,30 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include <zlib.h>
 #include <zstd.h>
 
+static std::string zerr_to_string(int ret) {
+	switch (ret) {
+	case Z_ERRNO:
+		if (ferror(stdin))
+			return "error reading stdin";
+		if (ferror(stdout))
+			return "error writing stdout";
+	case Z_STREAM_ERROR:
+		return "invalid compression level";
+	case Z_DATA_ERROR:
+		return "invalid or incomplete deflate data";
+	case Z_MEM_ERROR:
+		return "out of memory";
+	case Z_VERSION_ERROR:
+		return "zlib version mismatch!";
+	}
+	return "return value = " + ret;
+}
+
 /* report a zlib or i/o error */
 static void zerr(int ret)
 {
 	dstream<<"zerr: ";
-	switch (ret) {
-	case Z_ERRNO:
-		if (ferror(stdin))
-			dstream<<"error reading stdin"<<std::endl;
-		if (ferror(stdout))
-			dstream<<"error writing stdout"<<std::endl;
-		break;
-	case Z_STREAM_ERROR:
-		dstream<<"invalid compression level"<<std::endl;
-		break;
-	case Z_DATA_ERROR:
-		dstream<<"invalid or incomplete deflate data"<<std::endl;
-		break;
-	case Z_MEM_ERROR:
-		dstream<<"out of memory"<<std::endl;
-		break;
-	case Z_VERSION_ERROR:
-		dstream<<"zlib version mismatch!"<<std::endl;
-		break;
-	default:
-		dstream<<"return value = "<<ret<<std::endl;
-	}
+	dstream<<zerr_to_string(ret)<<std::endl;
 }
 
 // Make sure that z is deleted in case of exception
@@ -160,11 +158,10 @@ void decompressZlib(std::istream &is, std::ostream &os, size_t limit)
 
 		status = inflate(&z, Z_NO_FLUSH);
 
-		if(status == Z_NEED_DICT || status == Z_DATA_ERROR
-				|| status == Z_MEM_ERROR)
+		if(status == Z_NEED_DICT || status == Z_DATA_ERROR || status == Z_MEM_ERROR)
 		{
 			zerr(status);
-			throw SerializationError("decompressZlib: inflate failed");
+			throw SerializationError("decompressZlib: inflate failed. " + zerr_to_string(status));
 		}
 		int count = output_size - z.avail_out;
 		if(count)

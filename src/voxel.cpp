@@ -46,6 +46,13 @@ void VoxelManipulator::clear()
 	m_data = nullptr;
 	delete[] m_flags;
 	m_flags = nullptr;
+
+	if (m_metadata) {
+		for (s32 i = 0; i < data_size; i++)
+			delete m_metadata[i];
+	}
+	delete[] m_metadata;
+	m_metadata = nullptr;
 }
 
 void VoxelManipulator::print(std::ostream &o, const NodeDefManager *ndef,
@@ -170,6 +177,12 @@ void VoxelManipulator::addArea(const VoxelArea &area)
 	assert(new_flags);
 	memset(new_flags, VOXELFLAG_NO_DATA, new_size);
 
+	NodeMetadata** new_metadata = nullptr;
+	if (load_metadata) {
+		new_metadata = new NodeMetadata *[new_size];
+		memset(new_metadata, 0, new_size*sizeof(void*));
+	}
+
 	// Copy old data
 	s32 old_x_width = m_area.MaxEdge.X - m_area.MinEdge.X + 1;
 	for(s32 z=m_area.MinEdge.Z; z<=m_area.MaxEdge.Z; z++)
@@ -182,6 +195,9 @@ void VoxelManipulator::addArea(const VoxelArea &area)
 				old_x_width * sizeof(MapNode));
 		memcpy(&new_flags[new_index], &m_flags[old_index],
 				old_x_width * sizeof(u8));
+
+		if (load_metadata)
+			new_metadata[new_index] = m_metadata[old_index];
 	}
 
 	// Replace area, data and flags
@@ -190,15 +206,19 @@ void VoxelManipulator::addArea(const VoxelArea &area)
 
 	MapNode *old_data = m_data;
 	u8 *old_flags = m_flags;
+	NodeMetadata** old_metadata = m_metadata;
 
 	/*dstream<<"old_data="<<(int)old_data<<", new_data="<<(int)new_data
 	<<", old_flags="<<(int)m_flags<<", new_flags="<<(int)new_flags<<std::endl;*/
 
 	m_data = new_data;
 	m_flags = new_flags;
+	m_metadata = new_metadata;
+	data_size = new_size;
 
 	delete[] old_data;
 	delete[] old_flags;
+	delete[] old_metadata;
 
 	//dstream<<"addArea done"<<std::endl;
 }
@@ -252,7 +272,7 @@ void VoxelManipulator::copyFrom(MapNode *src, const VoxelArea& src_area,
 }
 
 void VoxelManipulator::copyTo(MapNode *dst, const VoxelArea& dst_area,
-		v3s16 dst_pos, v3s16 from_pos, const v3s16 &size)
+		v3s16 dst_pos, v3s16 from_pos, const v3s16 &size, NodeMetadataList& m_node_metadata)
 {
 	for(s16 z=0; z<size.Z; z++)
 	for(s16 y=0; y<size.Y; y++)
@@ -260,8 +280,14 @@ void VoxelManipulator::copyTo(MapNode *dst, const VoxelArea& dst_area,
 		s32 i_dst = dst_area.index(dst_pos.X, dst_pos.Y+y, dst_pos.Z+z);
 		s32 i_local = m_area.index(from_pos.X, from_pos.Y+y, from_pos.Z+z);
 		for (s16 x = 0; x < size.X; x++) {
-			if (m_data[i_local].getContent() != CONTENT_IGNORE)
+			if (m_data[i_local].getContent() != CONTENT_IGNORE) {
 				dst[i_dst] = m_data[i_local];
+
+				if (m_metadata && m_metadata[i_local]) {
+					m_node_metadata.set(v3s16(x, y, z), m_metadata[i_local]);
+					m_metadata[i_local] = nullptr;
+				}
+			}
 			i_dst++;
 			i_local++;
 		}

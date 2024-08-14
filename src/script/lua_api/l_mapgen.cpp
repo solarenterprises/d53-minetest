@@ -348,6 +348,25 @@ void read_schematic_replacements(lua_State *L, int index, StringMap *replace_nam
 	}
 }
 
+void read_schematic_metadata(lua_State *L, int index, NodeMetadata* metadata)
+{
+	if (index < 0)
+		index = lua_gettop(L) + 1 + index;
+
+	lua_pushnil(L);
+	while (lua_next(L, index)) {
+		std::string key = lua_tostring(L, -2);
+		if (lua_isstring(L, -1))
+			metadata->setString(key, lua_tostring(L, -1));
+		else if (lua_isnumber(L, -1))
+			metadata->setString(key, std::to_string(lua_tonumber(L, -1)));
+		else if (lua_isboolean(L, -1))
+			metadata->setString(key, std::to_string(lua_toboolean(L, -1)));
+
+		lua_pop(L, 1);
+	}
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 Biome *get_or_load_biome(lua_State *L, int index, BiomeManager *biomemgr)
@@ -1784,7 +1803,16 @@ int ModApiMapgen::l_place_schematic(lua_State *L)
 	u32 flags = 0;
 	read_flags(L, 6, flagdesc_deco, &flags, NULL);
 
-	schem->placeOnMap(map, p, flags, (Rotation)rot, force_placement);
+	NodeMetadata* metadata = nullptr;
+
+	if (lua_istable(L, 7)) {
+		metadata = new NodeMetadata(getServer(L)->getItemDefManager());
+		read_schematic_metadata(L, 7, metadata);
+	}
+
+	schem->placeOnMap(map, p, flags, (Rotation)rot, force_placement, metadata);
+
+	delete metadata;
 
 	lua_pushboolean(L, true);
 	return 1;
