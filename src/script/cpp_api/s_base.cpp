@@ -122,6 +122,16 @@ ScriptApiBase::ScriptApiBase(ScriptingType type):
 	lua_newtable(m_luastack);
 	// Populate with some internal functions which will be removed in Lua:
 	lua_pushcfunction(m_luastack, [](lua_State *L) -> int {
+		lua_rawseti(L, LUA_REGISTRYINDEX, CUSTOM_RIDX_READ_QUAT);
+		return 0;
+	});
+	lua_setfield(m_luastack, -2, "set_read_quat");
+	lua_pushcfunction(m_luastack, [](lua_State *L) -> int {
+		lua_rawseti(L, LUA_REGISTRYINDEX, CUSTOM_RIDX_PUSH_QUAT);
+		return 0;
+	});
+	lua_setfield(m_luastack, -2, "set_push_quat");
+	lua_pushcfunction(m_luastack, [](lua_State *L) -> int {
 		lua_rawseti(L, LUA_REGISTRYINDEX, CUSTOM_RIDX_READ_VECTOR);
 		return 0;
 	});

@@ -41,6 +41,12 @@ function minetest.get_underground() end
 -- get local player info (client only)
 function minetest.get_local_player() end
 
+-- get objects (client only)
+function minetest.get_objects() end
+
+-- get players (client only)
+function minetest.get_players() end
+
 -- get generic client active object (client only)
 function minetest.get_generic_cao(object_id, callback) end
 

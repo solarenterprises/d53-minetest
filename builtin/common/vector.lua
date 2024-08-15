@@ -380,11 +380,11 @@ local function lerp(x, y, a)
 end
 
 function vector.lerp(x, y, a)
-    return {
-        x = lerp(x.x, y.x, a),
-        y = lerp(x.y, y.y, a),
-        z = lerp(x.z, y.z, a),
-    }
+    return fast_new(
+        lerp(x.x, y.x, a),
+        lerp(x.y, y.y, a),
+        lerp(x.z, y.z, a)
+    )
 end
 
 if rawget(_G, "core") and core.set_read_vector and core.set_push_vector then

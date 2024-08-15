@@ -31,6 +31,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include "irrlichttypes_bloated.h"
 #include "common/c_types.h"
+#include "quaternion.h"
 
 extern "C" {
 #include <lua.h>
@@ -89,6 +90,7 @@ void               setboolfield(lua_State *L, int table,
 v3f                 checkFloatPos       (lua_State *L, int index);
 v2f                 check_v2f           (lua_State *L, int index);
 v3f                 check_v3f           (lua_State *L, int index);
+core::quaternion    check_quat           (lua_State *L, int index);
 v3s16               check_v3s16         (lua_State *L, int index);
 
 v3f                 read_v3f            (lua_State *L, int index);
@@ -113,6 +115,7 @@ void                push_v3s16          (lua_State *L, v3s16 p);
 void                push_aabb3f         (lua_State *L, aabb3f box, f32 divisor = 1.0f);
 void                push_ARGB8          (lua_State *L, video::SColor color);
 void                pushFloatPos        (lua_State *L, v3f p);
+void                push_quat           (lua_State *L, core::quaternion q);
 void                push_v3f            (lua_State *L, v3f p);
 void                push_v2f            (lua_State *L, v2f p);
 void                push_aabb3f_vector  (lua_State *L, const std::vector<aabb3f> &boxes,

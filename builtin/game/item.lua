@@ -578,16 +578,21 @@ function core.node_dig(pos, node, digger)
 		if wdef and wdef.after_use then
 			wielded = wdef.after_use(wielded, digger, node, dp) or wielded
 		else
-			-- Wear out tool
-			if not core.is_creative_enabled(diggername) then
-				wielded:add_wear(dp.wear)
-				if wielded:get_count() == 0 and wdef.sound and wdef.sound.breaks then
-					core.sound_play(wdef.sound.breaks, {
-						pos = pos,
-						gain = 0.5
-					}, true)
-				end
-			end
+            local tool_def_default = core.registered_items[""]
+            if tool_def_default and tool_def_default.after_use then
+                wielded = tool_def_default.after_use(wielded, digger, node, dp) or wielded
+            else
+                -- Wear out tool
+                if not core.is_creative_enabled(diggername) then
+                    wielded:add_wear(dp.wear)
+                    if wielded:get_count() == 0 and wdef.sound and wdef.sound.breaks then
+                        core.sound_play(wdef.sound.breaks, {
+                            pos = pos,
+                            gain = 0.5
+                        }, true)
+                    end
+                end
+            end
 		end
 		digger:set_wielded_item(wielded)
 	end

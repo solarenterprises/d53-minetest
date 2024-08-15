@@ -403,7 +403,7 @@ void GenericCAO::processInitData(const std::string &data)
 
 	m_rotation = wrapDegrees_0_360_v3f(m_rotation);
 	pos_translator.init(m_position);
-	rot_translator.init(m_rotation);
+	rot_translator.init(v3f(0, m_rotation.Y, 0));
 	updateNodePos();
 }
 
@@ -1057,7 +1057,7 @@ void GenericCAO::updateNodePos()
 				intToFloat(camera_offset, BS);
 		getPosRotMatrix().setTranslation(pos);
 		if (node != m_spritenode) { // rotate if not a sprite
-			v3f rot = m_is_local_player ? -m_rotation : -rot_translator.val_current;
+			v3f rot = m_is_local_player ? v3f(0, -m_rotation.Y, 0) : -rot_translator.val_current;
 			setPitchYawRoll(getPosRotMatrix(), rot);
 		}
 	}
@@ -1070,8 +1070,15 @@ void GenericCAO::step(float dtime, ClientEnvironment *env)
 		LocalPlayer *player = m_env->getLocalPlayer();
 		m_position = player->getPosition();
 		pos_translator.val_current = m_position;
-		m_rotation.Y = wrapDegrees_0_360(player->getYaw());
-		rot_translator.val_current = m_rotation;
+
+		float pitch = player->getPitch();
+		float yaw = player->getYaw();
+		m_rotation.X = wrapDegrees_0_360(-pitch);
+		m_rotation.Y = wrapDegrees_0_360(yaw);
+		m_rotation.Z = 0;
+		//m_rotation.Y = wrapDegrees_0_360(player->getYaw());
+
+		rot_translator.val_current = v3f(0, m_rotation.Y, 0);
 
 		if (m_is_visible) {
 			LocalPlayerAnimation old_anim = player->last_animation;
@@ -1275,7 +1282,7 @@ void GenericCAO::step(float dtime, ClientEnvironment *env)
 			m_rotation.Y = target_yaw;
 		}
 
-		rot_translator.val_current = m_rotation;
+		rot_translator.val_current = v3f(0, m_rotation.Y, 0);
 		updateNodePos();
 	}
 
@@ -1599,33 +1606,33 @@ void GenericCAO::updateBones(f32 dtime)
 	}
 
 	// search through bones to find mistakenly rotated bones due to bug in Irrlicht
-	for (u32 i = 0; i < m_animated_meshnode->getJointCount(); ++i) {
-		scene::IBoneSceneNode *bone = m_animated_meshnode->getJointNode(i);
-		if (!bone)
-			continue;
+	//for (u32 i = 0; i < m_animated_meshnode->getJointCount(); ++i) {
+	//	scene::IBoneSceneNode *bone = m_animated_meshnode->getJointNode(i);
+	//	if (!bone)
+	//		continue;
 
-		//If bone is manually positioned there is no need to perform the bug check
-		bool skip = false;
-		for (auto &it : m_bone_override) {
-			if (it.first == bone->getName()) {
-				skip = true;
-				break;
-			}
-		}
-		if (skip)
-			continue;
+	//	//If bone is manually positioned there is no need to perform the bug check
+	//	/*bool skip = false;
+	//	for (auto &it : m_bone_override) {
+	//		if (it.first == bone->getName()) {
+	//			skip = true;
+	//			break;
+	//		}
+	//	}
+	//	if (skip)
+	//		continue;*/
 
-		// Workaround for Irrlicht bug
-		// We check each bone to see if it has been rotated ~180deg from its expected position due to a bug in Irricht
-		// when using EJUOR_CONTROL joint control. If the bug is detected we update the bone to the proper position
-		// and update the bones transformation.
-		v3f bone_rot = bone->getRelativeTransformation().getRotationDegrees();
-		float offset = fabsf(bone_rot.X - bone->getRotation().X);
-		if (offset > 179.9f && offset < 180.1f) {
-			bone->setRotation(bone_rot);
-			bone->updateAbsolutePosition();
-		}
-	}
+	//	// Workaround for Irrlicht bug
+	//	// We check each bone to see if it has been rotated ~180deg from its expected position due to a bug in Irricht
+	//	// when using EJUOR_CONTROL joint control. If the bug is detected we update the bone to the proper position
+	//	// and update the bones transformation.
+	//	v3f bone_rot = bone->getRelativeTransformation().getRotationDegrees();
+	//	float offset = fabsf(bone_rot.X - bone->getRotation().X);
+	//	if (offset > 179.9f && offset < 180.1f) {
+	//		bone->setRotation(bone_rot);
+	//		bone->updateAbsolutePosition();
+	//	}
+	//}
 	// The following is needed for set_bone_pos to propagate to
 	// attached objects correctly.
 	// Irrlicht ought to do this, but doesn't when using EJUOR_CONTROL.
@@ -1801,7 +1808,7 @@ void GenericCAO::processMessage(const std::string &data)
 		} else {
 			pos_translator.init(m_position);
 		}
-		rot_translator.update(m_rotation, false, update_interval);
+		rot_translator.update(v3f(0, m_rotation.Y, 0), false, update_interval);
 		updateNodePos();
 	} else if (cmd == AO_CMD_SET_TEXTURE_MOD) {
 		std::string mod = deSerializeString16(is);
@@ -2132,7 +2139,20 @@ bool GenericCAO::shouldIgnoreCollisionWithObject(ActiveObject* active_object) {
 	return m_prop.collision_ignore_objects.find(active_object->getId()) != m_prop.collision_ignore_objects.end();
 }
 
+void GenericCAO::setBoneOverride(const std::string &bone, const BoneOverride &props)
+{
+	// store these so they can be updated to clients
+	m_bone_override[bone] = props;
+}
 
+BoneOverride GenericCAO::getBoneOverride(const std::string &bone)
+{
+	auto it = m_bone_override.find(bone);
+	BoneOverride props;
+	if (it != m_bone_override.end())
+		props = it->second;
+	return props;
+}
 
 // Prototype
 GenericCAO proto_GenericCAO(NULL, NULL);

@@ -151,6 +151,102 @@ int LuaGenericCAO::l_get_properties(lua_State *L)
 	return 1;
 }
 
+static void push_bone_override(lua_State *L, const BoneOverride &props)
+{
+	lua_newtable(L);
+
+	auto push_prop = [L](const char *name, const auto &prop, v3f vec) {
+		lua_newtable(L);
+		push_v3f(L, vec);
+		lua_setfield(L, -2, "vec");
+		lua_pushnumber(L, prop.interp_timer);
+		lua_setfield(L, -2, "interpolate");
+		lua_pushboolean(L, prop.absolute);
+		lua_setfield(L, -2, "absolute");
+		lua_setfield(L, -2, name);
+	};
+
+	push_prop("position", props.position, props.position.vector);
+
+	v3f euler_rot;
+	props.rotation.next.toEuler(euler_rot);
+	push_prop("rotation", props.rotation, euler_rot);
+
+	push_prop("scale", props.scale, props.scale.vector);
+
+	// leave only override table on top of the stack
+}
+
+// get_bone_override(self, bone)
+int LuaGenericCAO::l_get_bone_override(lua_State *L)
+{
+	CAO;
+
+	std::string bone = readParam<std::string>(L, 2);
+	push_bone_override(L, cao->getBoneOverride(bone));
+	return 1;
+}
+
+// set_bone_override(self, bone, override)
+int LuaGenericCAO::l_set_bone_override(lua_State *L)
+{
+	CAO;
+
+	std::string bone = readParam<std::string>(L, 2);
+
+	BoneOverride props;
+	if (lua_isnoneornil(L, 3)) {
+		cao->setBoneOverride(bone, props);
+		return 0;
+	}
+
+	auto read_prop_attrs = [L](auto &prop) {
+		lua_getfield(L, -1, "absolute");
+		prop.absolute = lua_toboolean(L, -1);
+		lua_pop(L, 1);
+
+		lua_getfield(L, -1, "interpolate");
+		if (lua_isnumber(L, -1))
+			prop.interp_timer = lua_tonumber(L, -1);
+		lua_pop(L, 1);
+	};
+
+	lua_getfield(L, 3, "position");
+	if (!lua_isnil(L, -1)) {
+		lua_getfield(L, -1, "vec");
+		if (!lua_isnil(L, -1))
+			props.position.vector = check_v3f(L, -1);
+		lua_pop(L, 1);
+
+		read_prop_attrs(props.position);
+	}
+	lua_pop(L, 1);
+
+	lua_getfield(L, 3, "rotation");
+	if (!lua_isnil(L, -1)) {
+		lua_getfield(L, -1, "vec");
+		if (!lua_isnil(L, -1))
+			props.rotation.next = core::quaternion(check_v3f(L, -1));
+		lua_pop(L, 1);
+
+		read_prop_attrs(props.rotation);
+	}
+	lua_pop(L, 1);
+
+	lua_getfield(L, 3, "scale");
+	if (!lua_isnil(L, -1)) {
+		lua_getfield(L, -1, "vec");
+		props.scale.vector = lua_isnil(L, -1) ? v3f(1) : check_v3f(L, -1);
+		lua_pop(L, 1);
+
+		read_prop_attrs(props.scale);
+	}
+	lua_pop(L, 1);
+
+	cao->setBoneOverride(bone, props);
+	return 0;
+}
+
 GenericCAO* LuaGenericCAO::getobject(LuaGenericCAO* ref)
 {
 	if (ref->m_genericCAO_ptr)
@@ -196,6 +292,8 @@ const luaL_Reg LuaGenericCAO::methods[] = {
 		luamethod(LuaGenericCAO, set_rot_offset),
 		luamethod(LuaGenericCAO, is_immortal),
 		luamethod(LuaGenericCAO, get_properties),
+		luamethod(LuaGenericCAO, get_bone_override),
+		luamethod(LuaGenericCAO, set_bone_override),
 		{0, 0}
 };
 
@@ -254,8 +352,74 @@ int ModApiGenericCAO::l_get_local_player(lua_State* L)
 	return 1;
 }
 
+int ModApiGenericCAO::l_get_objects(lua_State* L)
+{
+	NO_MAP_LOCK_REQUIRED;
+
+	if (checkCSMRestrictionFlag(CSM_RF_READ_PLAYERINFO))
+		return 0;
+
+	Client* client = getClient(L);
+	auto objects = client->getEnv().getActiveObjects();
+
+	int index = 1;
+	lua_newtable(L);
+	for (auto obj : objects) {
+
+		if (obj->getType() != ACTIVEOBJECT_TYPE_GENERIC)
+			continue;
+
+		GenericCAO* cao = (GenericCAO*)obj;
+		
+		LuaGenericCAO* o = new LuaGenericCAO(cao);
+		*(void**)(lua_newuserdata(L, sizeof(void*))) = o;
+		luaL_getmetatable(L, LuaGenericCAO::className);
+		lua_setmetatable(L, -2);
+
+		lua_rawseti(L, -2, index);
+		index++;
+	}
+
+	return 1;
+}
+
+int ModApiGenericCAO::l_get_players(lua_State* L)
+{
+	NO_MAP_LOCK_REQUIRED;
+
+	if (checkCSMRestrictionFlag(CSM_RF_READ_PLAYERINFO))
+		return 0;
+
+	Client* client = getClient(L);
+	auto objects = client->getEnv().getActiveObjects();
+
+	int index = 1;
+	lua_newtable(L);
+	for (auto obj : objects) {
+
+		if (obj->getType() != ACTIVEOBJECT_TYPE_GENERIC)
+			continue;
+
+		GenericCAO* cao = (GenericCAO*)obj;
+		if (!cao->isPlayer())
+			continue;
+		
+		LuaGenericCAO* o = new LuaGenericCAO(cao);
+		*(void**)(lua_newuserdata(L, sizeof(void*))) = o;
+		luaL_getmetatable(L, LuaGenericCAO::className);
+		lua_setmetatable(L, -2);
+
+		lua_rawseti(L, -2, index);
+		index++;
+	}
+
+	return 1;
+}
+
 void ModApiGenericCAO::Initialize(lua_State* L, int top)
 {
 	API_FCT(get_generic_cao);
 	API_FCT(get_local_player);
+	API_FCT(get_objects);
+	API_FCT(get_players);
 }

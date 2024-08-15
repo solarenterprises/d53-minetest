@@ -71,6 +71,9 @@ private:
 	// get_properties(self)
 	static int l_get_properties(lua_State* L);
 
+	static int l_get_bone_override(lua_State* L);
+	static int l_set_bone_override(lua_State* L);
+
 	static GenericCAO* getobject(LuaGenericCAO* ref);
 	static GenericCAO* getobject(lua_State* L, int narg);
 
@@ -91,6 +94,8 @@ class ModApiGenericCAO : public ModApiBase {
 private:
 	static int l_get_generic_cao(lua_State* L);
 	static int l_get_local_player(lua_State* L);
+	static int l_get_objects(lua_State* L);
+	static int l_get_players(lua_State* L);
 
 public:
 	static void Initialize(lua_State* L, int top);

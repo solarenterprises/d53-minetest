@@ -299,4 +299,9 @@ public:
 	void updateMeshCulling();
 
 	virtual bool shouldIgnoreCollisionWithObject(ActiveObject* active_object) override;
+
+	// Bone position
+	void setBoneOverride(const std::string &bone, const BoneOverride &props);
+	BoneOverride getBoneOverride(const std::string &bone);
+	const std::unordered_map<std::string, BoneOverride>& getBoneOverrides() const { return m_bone_override; };
 };

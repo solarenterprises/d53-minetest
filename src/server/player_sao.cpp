@@ -296,7 +296,7 @@ void PlayerSAO::step(float dtime, bool send_recommended)
 			pos,
 			v3f(0.0f, 0.0f, 0.0f),
 			v3f(0.0f, 0.0f, 0.0f),
-			m_rotation,
+			v3f(-getLookPitch(), m_rotation.Y, 0),
 			true,
 			false,
 			update_interval

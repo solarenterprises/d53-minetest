@@ -66,6 +66,20 @@ public:
 		return m_active_objects.get(id).get();
 	}
 
+	std::vector<T *> getAllActiveObjects()
+	{
+		std::vector<T *> objs;
+		objs.reserve(m_active_objects.size());
+
+		for (auto& it : m_active_objects.iter()) {
+			if (!it.second)
+				continue;
+
+			objs.push_back(it.second.get());
+		}
+		return objs;
+	}
+
 	std::weak_ptr<T> getActiveObjectWeakPtr(u16 id)
 	{
 		return std::weak_ptr<T>(m_active_objects.get(id));

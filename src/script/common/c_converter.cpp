@@ -63,6 +63,14 @@ static void read_v3_aux(lua_State *L, int index)
 	lua_call(L, 1, 3);
 }
 
+static void read_quat_aux(lua_State *L, int index)
+{
+	lua_pushvalue(L, index);
+	lua_rawgeti(L, LUA_REGISTRYINDEX, CUSTOM_RIDX_READ_QUAT);
+	lua_insert(L, -2);
+	lua_call(L, 1, 4);
+}
+
 // Retrieve an integer vector where all components are optional
 template<class T>
 static bool getv3intfield(lua_State *L, int index,
@@ -77,6 +85,16 @@ static bool getv3intfield(lua_State *L, int index,
 	}
 	lua_pop(L, 1);
 	return got;
+}
+
+void push_quat(lua_State *L, core::quaternion p)
+{
+	lua_rawgeti(L, LUA_REGISTRYINDEX, CUSTOM_RIDX_PUSH_QUAT);
+	lua_pushnumber(L, p.X);
+	lua_pushnumber(L, p.Y);
+	lua_pushnumber(L, p.Z);
+	lua_pushnumber(L, p.W);
+	lua_call(L, 4, 1);
 }
 
 void push_v3f(lua_State *L, v3f p)
@@ -201,6 +219,21 @@ v3f check_v3f(lua_State *L, int index)
 	float z = lua_tonumber(L, -1);
 	lua_pop(L, 3);
 	return v3f(x, y, z);
+}
+
+core::quaternion check_quat(lua_State *L, int index)
+{
+	read_v3_aux(L, index);
+	CHECK_POS_COORD(-4, "x");
+	CHECK_POS_COORD(-3, "y");
+	CHECK_POS_COORD(-2, "z");
+	CHECK_POS_COORD(-1, "w");
+	float x = lua_tonumber(L, -4);
+	float y = lua_tonumber(L, -3);
+	float z = lua_tonumber(L, -2);
+	float w = lua_tonumber(L, -1);
+	lua_pop(L, 4);
+	return core::quaternion(x, y, z, w);
 }
 
 v3d read_v3d(lua_State *L, int index)
