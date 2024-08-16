@@ -107,6 +107,7 @@ const char ItemStackMetaRef::className[] = "ItemStackMetaRef";
 const luaL_Reg ItemStackMetaRef::methods[] = {
 	luamethod(MetaDataRef, contains),
 	luamethod(MetaDataRef, get),
+	luamethod(MetaDataRef, remove),
 	luamethod(MetaDataRef, get_string),
 	luamethod(MetaDataRef, set_string),
 	luamethod(MetaDataRef, get_int),

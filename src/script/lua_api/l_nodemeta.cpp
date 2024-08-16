@@ -205,6 +205,7 @@ const luaL_Reg NodeMetaRef::methodsServer[] = {
 	luamethod(MetaDataRef, get),
 	luamethod(MetaDataRef, get_string),
 	luamethod(MetaDataRef, set_string),
+	luamethod(MetaDataRef, remove),
 	luamethod(MetaDataRef, get_int),
 	luamethod(MetaDataRef, set_int),
 	luamethod(MetaDataRef, get_float),

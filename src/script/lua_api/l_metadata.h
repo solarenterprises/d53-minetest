@@ -56,6 +56,8 @@ protected:
 	// get(self, name)
 	static int l_get(lua_State *L);
 
+	static int l_remove(lua_State *L);
+
 	// get_string(self, name)
 	static int l_get_string(lua_State *L);
 

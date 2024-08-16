@@ -102,7 +102,7 @@ struct BoneOverride
 		f32 interp_timer = 0;
 	} rotation;
 
-	v3f getRotationEulerDeg(v3f anim_rot_euler) const {
+	core::quaternion getRotation(core::quaternion anim_rot) const {
 		core::quaternion rot;
 
 		f32 progress = dtime_passed / rotation.interp_timer;
@@ -110,13 +110,10 @@ struct BoneOverride
 			progress = 1.0f;
 		rot.slerp(rotation.previous, rotation.next, progress);
 		if (!rotation.absolute) {
-			core::quaternion anim_rot(anim_rot_euler * core::DEGTORAD);
-			rot = rot * anim_rot; // first rotate by anim. bone rot., then rot.
+			rot = anim_rot * rot; // first rotate by anim. bone rot., then rot.
 		}
 
-		v3f rot_euler;
-		rot.toEuler(rot_euler);
-		return rot_euler * core::RADTODEG;
+		return rot;
 	}
 
 	struct ScaleProperty

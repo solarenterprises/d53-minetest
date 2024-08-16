@@ -113,6 +113,12 @@ const StringMap &SimpleMetadata::getStrings(StringMap *) const
 	return m_stringvars;
 }
 
+bool SimpleMetadata::remove(const std::string &name)
+{
+	m_modified = true;
+	return m_stringvars.erase(name) > 0;
+}
+
 const std::vector<std::string> &SimpleMetadata::getKeys(std::vector<std::string> *place) const
 {
 	place->clear();

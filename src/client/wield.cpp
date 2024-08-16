@@ -101,7 +101,7 @@ void Wield::update(LocalPlayer* player, f32 dtime, f32 tool_reload_ratio)
 	}
 
 	v3f script_wield_position = m_wieldnode->getPosition();
-	v3f script_wield_rotation = m_wieldnode->getRotation();
+	v3f script_wield_rotation = m_wieldnode->getEuler();
 
 	v3f world_script_wield_position;
 	v3f world_script_wield_rotation;
@@ -159,7 +159,7 @@ void Wield::update(LocalPlayer* player, f32 dtime, f32 tool_reload_ratio)
 		camera_dir = m_camera->getDirection();
 	}
 	m_wieldnode->setPosition(wield_position);
-	m_wieldnode->setRotation(wield_rotation);
+	m_wieldnode->fromEuler(wield_rotation);
 	
 	v3f* ptr_script_wield_position = &script_wield_position;
 	v3f* ptr_script_wield_rotation = &script_wield_rotation;
@@ -180,7 +180,7 @@ void Wield::update(LocalPlayer* player, f32 dtime, f32 tool_reload_ratio)
 		if (ptr_script_wield_position)
 			m_wieldnode->setPosition(script_wield_position);
 		if (ptr_script_wield_rotation)
-			m_wieldnode->setRotation(script_wield_rotation);
+			m_wieldnode->fromEuler(script_wield_rotation);
 	}
 
 	m_wieldnode->setNodeLightColor(player->light_color);

@@ -57,6 +57,8 @@ public:
 
 	inline bool removeString(const std::string &name) { return setString(name, ""); }
 
+	virtual bool remove(const std::string &name) = 0;
+
 	// May (not must!) put strings in `place` and return a reference to these strings.
 	virtual const StringMap &getStrings(StringMap *place) const = 0;
 
@@ -93,6 +95,7 @@ public:
 	const StringMap &getStrings(StringMap *) const override final;
 	const std::vector<std::string> &getKeys(std::vector<std::string> *place)
 		const override final;
+	bool remove(const std::string &name) override;
 
 	// Simple version of getters, possible due to in-memory storage:
 

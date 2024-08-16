@@ -228,6 +228,11 @@ bool ModStorage::contains(const std::string &name) const
 	return m_database->hasModEntry(m_mod_name, name);
 }
 
+bool ModStorage::remove(const std::string &name)
+{
+	return m_database->removeModEntry(m_mod_name, name);
+}
+
 bool ModStorage::setString(const std::string &name, std::string_view var)
 {
 	if (var.empty())

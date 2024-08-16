@@ -682,6 +682,19 @@ void PlayerDatabaseMySQL::savePlayer(RemotePlayer *player)
 	if (!sao)
 		return;
 
+	//
+	// Load player metadata
+	std::unordered_set<std::string> existing_attr;
+	MYSQL_RES* metadata_result = execWithParamAndResult("SELECT attr FROM player_metadata WHERE player = $1", { player->getName() });
+	MYSQL_ROW metadata_row;
+	while ((metadata_row = mysql_fetch_row(metadata_result)) != nullptr) {
+		existing_attr.insert(metadata_row[0]);
+	}
+	mysql_free_result(metadata_result);
+
+	//
+	// Load player
+	//
 	v3f pos = sao->getBasePosition();
 	std::string pitch = ftos(sao->getLookPitch());
 	std::string yaw = ftos(sao->getRotation().Y);
@@ -760,6 +773,12 @@ void PlayerDatabaseMySQL::savePlayer(RemotePlayer *player)
 			escape_string(attr.second)
 		};
 		transaction.push_back({ "INSERT INTO player_metadata(player, attr, value) VALUES($1, $2, $3) ON DUPLICATE KEY UPDATE value = VALUES(value)", meta_values });
+	}
+
+	for (const auto &attr : existing_attr) {
+		if (attrs.find(attr) != attrs.end())
+			continue;
+		transaction.push_back({ "DELETE FROM player_metadata WHERE player=$1 AND attr=$2 LIMIT 1", {player->getName(), escape_string(attr)}});
 	}
 
 	if (!execTransactionWithParam(transaction)) {

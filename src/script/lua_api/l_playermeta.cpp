@@ -67,6 +67,7 @@ const luaL_Reg PlayerMetaRef::methods[] = {
 	luamethod(MetaDataRef, set_string),
 	luamethod(MetaDataRef, get_int),
 	luamethod(MetaDataRef, set_int),
+	luamethod(MetaDataRef, remove),
 	luamethod(MetaDataRef, get_float),
 	luamethod(MetaDataRef, set_float),
 	luamethod(MetaDataRef, get_keys),

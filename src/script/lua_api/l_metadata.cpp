@@ -129,6 +129,19 @@ int MetaDataRef::l_set_string(lua_State *L)
 	return 0;
 }
 
+int MetaDataRef::l_remove(lua_State *L)
+{
+	MAP_LOCK_REQUIRED;
+
+	MetaDataRef *ref = checkAnyMetadata(L, 1);
+	std::string name = luaL_checkstring(L, 2);
+
+	IMetadata *meta = ref->getmeta(false);
+	if (meta != NULL && meta->remove(name))
+		ref->reportMetadataChange(&name);
+	return 0;
+}
+
 // get_int(self, name)
 int MetaDataRef::l_get_int(lua_State *L)
 {

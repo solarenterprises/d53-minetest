@@ -168,6 +168,7 @@ static void updatePositionRecursive(scene::ISceneNode *node)
 	scene::ISceneNode *parent = node->getParent();
 	if (parent)
 		updatePositionRecursive(parent);
+
 	node->updateAbsolutePosition();
 }
 
@@ -297,10 +298,10 @@ void TestCAO::step(float dtime, ClientEnvironment *env)
 {
 	if(m_node)
 	{
-		v3f rot = m_node->getRotation();
+		v3f rot = m_node->getEuler();
 		//infostream<<"dtime="<<dtime<<", rot.Y="<<rot.Y<<std::endl;
 		rot.Y += dtime * 180;
-		m_node->setRotation(rot);
+		m_node->fromEuler(rot);
 	}
 }
 
@@ -1261,10 +1262,10 @@ void GenericCAO::step(float dtime, ClientEnvironment *env)
 
 	if (node && std::abs(m_prop.automatic_rotate) > 0.001f) {
 		// This is the child node's rotation. It is only used for automatic_rotate.
-		v3f local_rot = node->getRotation();
+		v3f local_rot = node->getEuler();
 		local_rot.Y = modulo360f(local_rot.Y - dtime * core::RADTODEG *
 				m_prop.automatic_rotate);
-		node->setRotation(local_rot);
+		node->fromEuler(local_rot);
 	}
 
 	if (!getParent() && m_prop.automatic_face_movement_dir &&
@@ -1601,49 +1602,8 @@ void GenericCAO::updateBones(f32 dtime)
 		props.dtime_passed += dtime;
 
 		bone->setPosition(props.getPosition(bone->getPosition()));
-		bone->setRotation(props.getRotationEulerDeg(bone->getRotation()));
+		bone->setRotation(props.getRotation(bone->getRotation()));
 		bone->setScale(props.getScale(bone->getScale()));
-	}
-
-	// search through bones to find mistakenly rotated bones due to bug in Irrlicht
-	//for (u32 i = 0; i < m_animated_meshnode->getJointCount(); ++i) {
-	//	scene::IBoneSceneNode *bone = m_animated_meshnode->getJointNode(i);
-	//	if (!bone)
-	//		continue;
-
-	//	//If bone is manually positioned there is no need to perform the bug check
-	//	/*bool skip = false;
-	//	for (auto &it : m_bone_override) {
-	//		if (it.first == bone->getName()) {
-	//			skip = true;
-	//			break;
-	//		}
-	//	}
-	//	if (skip)
-	//		continue;*/
-
-	//	// Workaround for Irrlicht bug
-	//	// We check each bone to see if it has been rotated ~180deg from its expected position due to a bug in Irricht
-	//	// when using EJUOR_CONTROL joint control. If the bug is detected we update the bone to the proper position
-	//	// and update the bones transformation.
-	//	v3f bone_rot = bone->getRelativeTransformation().getRotationDegrees();
-	//	float offset = fabsf(bone_rot.X - bone->getRotation().X);
-	//	if (offset > 179.9f && offset < 180.1f) {
-	//		bone->setRotation(bone_rot);
-	//		bone->updateAbsolutePosition();
-	//	}
-	//}
-	// The following is needed for set_bone_pos to propagate to
-	// attached objects correctly.
-	// Irrlicht ought to do this, but doesn't when using EJUOR_CONTROL.
-	for (u32 i = 0; i < m_animated_meshnode->getJointCount(); ++i) {
-		auto bone = m_animated_meshnode->getJointNode(i);
-		// Look for the root bone.
-		if (bone && bone->getParent() == m_animated_meshnode) {
-			// Update entire skeleton.
-			bone->updateAbsolutePositionOfAllChildren();
-			break;
-		}
 	}
 }
 
@@ -1954,7 +1914,6 @@ void GenericCAO::processMessage(const std::string &data)
 		} else {
 			m_bone_override[bone] = props;
 		}
-		// updateBones(); now called every step
 	} else if (cmd == AO_CMD_ATTACH_TO) {
 		u16 parent_id = readS16(is);
 		std::string bone = deSerializeString16(is);
