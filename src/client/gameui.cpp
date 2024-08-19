@@ -72,6 +72,7 @@ void GameUI::init()
 	}
 
 
+#if DEVELOPMENT_BUILD
 	// Infotext of nodes and objects.
 	// If in debug mode, object debug infos shown here, too.
 	// Located on the left on the screen, below chat.
@@ -82,6 +83,7 @@ void GameUI::init()
 			v2s32(100, chat_font_height *
 			(g_settings->getU16("recent_chat_messages") + 3)),
 			false, true, guiroot);
+#endif
 
 	// Status text (displays info when showing and hiding GUI stuff, etc.)
 	m_guitext_status = gui::StaticText::add(guienv, L"<Status>",
@@ -178,8 +180,10 @@ void GameUI::update(const RunStats &stats, Client *client, MapDrawControl *draw_
 
 	m_guitext2->setVisible(m_flags.show_basic_debug);
 
+#if DEVELOPMENT_BUILD
 	setStaticText(m_guitext_info, m_infotext.c_str());
 	m_guitext_info->setVisible(m_flags.show_hud && g_menumgr.menuCount() == 0);
+#endif
 
 	static const float statustext_time_max = 1.5f;
 

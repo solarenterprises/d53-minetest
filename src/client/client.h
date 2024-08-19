@@ -474,6 +474,10 @@ public:
 		return m_chosen_auth_mech;
 	}
 
+	const std::string get_info_text() { return m_info_text; }
+	void set_info_text(const std::string& info) { m_info_text = info; }
+	void clear_info_text() { m_info_text = ""; }
+
 	bool joinModChannel(const std::string& channel) override;
 	bool leaveModChannel(const std::string& channel) override;
 	bool sendModChannelMessage(const std::string& channel,
@@ -604,6 +608,8 @@ private:
 	bool m_activeobjects_received = false;
 	bool m_mods_loaded = false;
 	bool m_load_mods_after_content_received = false;
+
+	std::string m_info_text;
 
 	std::vector<std::string> m_remote_media_servers;
 	// Media downloader, only exists during init

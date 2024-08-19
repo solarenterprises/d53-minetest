@@ -78,6 +78,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "clientdynamicinfo.h"
 #include <IAnimatedMeshSceneNode.h>
 #include "util/analytics.h"
+#include "json/json.h"
+#include "convert_json.h"
 
 #if USE_SOUND
 	#include "client/sound/sound_openal.h"
@@ -1210,6 +1212,7 @@ void Game::run()
 
 		if (m_game_ui)
 			m_game_ui->clearInfoText();
+		
 
 		updateProfilers(stats, draw_times, dtime);
 		processUserInput(dtime);
@@ -3457,6 +3460,8 @@ void Game::processPlayerInteraction(f32 dtime, bool show_hud)
 	else
 		runData.repeat_place_timer = 0;
 
+	client->clear_info_text();
+
 	if (selected_def.usable && isKeyDown(KeyType::DIG)) {
 		if (wasKeyPressed(KeyType::DIG) && (!client->modsLoaded() ||
 				!client->getScript()->on_item_use(selected_item, pointed)))
@@ -3627,16 +3632,28 @@ void Game::handlePointingAtNode(const PointedThing &pointed,
 	// This should be done after digging handling
 	NodeMetadata *meta = map.getNodeMetadata(nodepos);
 
-	if (meta) {
-		m_game_ui->setInfoText(unescape_translate(utf8_to_wide(
-			meta->getString("infotext"))));
-	} else {
-		MapNode n = map.getNode(nodepos);
+	MapNode n = map.getNode(nodepos);
+	Json::Value j;
+	j["type"] = "node";
+	j["id"] = n.getContent();
+	j["name"] = client->getNodeDefManager()->get(n).name;
+	j["param1"] = n.getParam1();
+	j["param2"] = n.getParam2();
+	Json::Value j_pos; j_pos["x"] = nodepos.X; j_pos["y"] = nodepos.Y; j_pos["z"] = nodepos.Z;
+	j["pos"] = j_pos;
 
+	if (meta) {
+		j["infotext"] = meta->getString("infotext");
+	} else {
 		if (nodedef_manager->get(n).name == "unknown") {
-			m_game_ui->setInfoText(L"Unknown node");
+			j["infotext"] = "Unknown node";
 		}
 	}
+
+	std::string info_text = fastWriteJson(j);
+
+	m_game_ui->setInfoText(unescape_translate(utf8_to_wide(info_text)));
+	client->set_info_text(info_text);
 
 	if ((wasKeyPressed(KeyType::PLACE) ||
 			runData.repeat_place_timer >= m_repeat_place_time) &&
@@ -3900,17 +3917,17 @@ bool Game::nodePlacement(const ItemDefinition &selected_def,
 void Game::handlePointingAtObject(const PointedThing &pointed,
 		const ItemStack &tool_item, const v3f &player_position, bool show_debug)
 {
-	std::wstring infotext = unescape_translate(
-		utf8_to_wide(runData.selected_object->infoText()));
+	Json::Value j;
+	j["type"] = "object";
+	j["id"] = runData.selected_object->getId();
+	j["infotext"] = runData.selected_object->infoText();
 
-	if (show_debug) {
-		if (!infotext.empty()) {
-			infotext += L"\n";
-		}
-		infotext += utf8_to_wide(runData.selected_object->debugInfoText());
-	}
+	if (show_debug)
+		j["debuginfotext"] = runData.selected_object->debugInfoText();
 
-	m_game_ui->setInfoText(infotext);
+	std::string infotext = fastWriteJson(j);
+	m_game_ui->setInfoText(unescape_translate(utf8_to_wide(infotext)));
+	client->set_info_text(infotext);
 
 	if (isKeyDown(KeyType::DIG)) {
 		bool do_punch = false;

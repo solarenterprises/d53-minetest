@@ -36,6 +36,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "nodedef.h"
 #include "lua_api/l_network_packet.h"
 #include "../client/localplayer.h"
+#include "util/string.h"
 
 #define checkCSMRestrictionFlag(flag) \
 	( getClient(L)->checkCSMRestrictionFlag(CSMRestrictionFlags::flag) )
@@ -89,6 +90,14 @@ int ModApiClient::l_print(lua_State *L)
 	std::string text = luaL_checkstring(L, 1);
 	rawstream << text << std::endl;
 	return 0;
+}
+
+int ModApiClient::l_get_info_text(lua_State *L)
+{
+	NO_MAP_LOCK_REQUIRED;
+	const std::string& str = getClient(L)->get_info_text();
+	lua_pushlstring(L, str.data(), str.length());
+	return 1;
 }
 
 // display_chat_message(message)
@@ -156,6 +165,16 @@ int ModApiClient::l_show_formspec(lua_State *L)
 	event->show_formspec.formspec = new std::string(luaL_checkstring(L, 2));
 	getClient(L)->pushToEventQueue(event);
 	lua_pushboolean(L, true);
+	return 1;
+}
+
+int ModApiClient::l_unescape_translate(lua_State *L)
+{
+	NO_MAP_LOCK_REQUIRED;
+
+	std::string str = readParam<std::string>(L, 1);
+	std::string result = wide_to_utf8(unescape_translate(utf8_to_wide(str)));
+	lua_pushlstring(L, result.data(), result.size());
 	return 1;
 }
 
@@ -596,4 +615,6 @@ void ModApiClient::Initialize(lua_State *L, int top)
 	API_FCT(register_on_lua_packet_stream);
 	API_FCT(send);
 	API_FCT(get_underground);
+	API_FCT(get_info_text);
+	API_FCT(unescape_translate);
 }

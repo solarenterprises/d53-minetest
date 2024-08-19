@@ -2,6 +2,12 @@
 -- Minetest
 ----------------------------------------------
 
+-- (client only)
+function minetest.unescape_translate() end
+
+-- Gets the pointed at object info text (client only)
+function minetest.get_info_text() end
+
 ---@param pos vector
 ---@param schematic string
 ---@param rot string

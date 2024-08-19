@@ -1262,10 +1262,7 @@ void GenericCAO::step(float dtime, ClientEnvironment *env)
 
 	if (node && std::abs(m_prop.automatic_rotate) > 0.001f) {
 		// This is the child node's rotation. It is only used for automatic_rotate.
-		v3f local_rot = node->getEuler();
-		local_rot.Y = modulo360f(local_rot.Y - dtime * core::RADTODEG *
-				m_prop.automatic_rotate);
-		node->fromEuler(local_rot);
+		node->setRotation(node->getRotation() * core::quaternion(0, dtime * m_prop.automatic_rotate, 0));
 	}
 
 	if (!getParent() && m_prop.automatic_face_movement_dir &&

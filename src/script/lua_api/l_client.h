@@ -36,6 +36,8 @@ private:
 	// print(text)
 	static int l_print(lua_State *L);
 
+	static int l_get_info_text(lua_State *L);
+
 	// display_chat_message(message)
 	static int l_display_chat_message(lua_State *L);
 
@@ -50,6 +52,8 @@ private:
 
 	// show_formspec(name, formspec)
 	static int l_show_formspec(lua_State *L);
+
+	static int l_unescape_translate(lua_State *L);
 
 	static int l_hud_add(lua_State *L);
 	static int l_hud_remove(lua_State *L);
