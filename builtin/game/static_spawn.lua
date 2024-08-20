@@ -8,7 +8,7 @@ if static_spawnpoint_string and
 			static_spawnpoint_string .. '"')
 end
 
-local function put_player_in_spawn(player_obj)
+function core.put_player_in_spawn(player_obj)
 	local static_spawnpoint = core.setting_get_pos("static_spawnpoint")
 	if not static_spawnpoint then
 		return false
@@ -19,5 +19,9 @@ local function put_player_in_spawn(player_obj)
 	return true
 end
 
-core.register_on_newplayer(put_player_in_spawn)
-core.register_on_respawnplayer(put_player_in_spawn)
+local function respawn(player_obj)
+    core.put_player_in_spawn(player_obj)
+end
+
+core.register_on_newplayer(respawn)
+core.register_on_respawnplayer(respawn)

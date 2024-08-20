@@ -1207,6 +1207,11 @@ void push_nodebox(lua_State *L, const NodeBox &box)
 /******************************************************************************/
 void push_palette(lua_State *L, const std::vector<video::SColor> *palette)
 {
+	if (!palette) {
+		lua_createtable(L, 0, 0);
+		return;
+	}
+
 	lua_createtable(L, palette->size(), 0);
 	int newTable = lua_gettop(L);
 	int index = 1;
