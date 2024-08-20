@@ -20,7 +20,7 @@ function core.put_player_in_spawn(player_obj)
 end
 
 local function respawn(player_obj)
-    core.put_player_in_spawn(player_obj)
+    return core.put_player_in_spawn(player_obj)
 end
 
 core.register_on_newplayer(respawn)
