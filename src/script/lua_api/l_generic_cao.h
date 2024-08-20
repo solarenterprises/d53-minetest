@@ -78,11 +78,9 @@ private:
 	static GenericCAO* getobject(lua_State* L, int narg);
 
 	std::weak_ptr<GenericCAO> m_genericCAO;
-	GenericCAO* m_genericCAO_ptr = nullptr;
 
 public:
 	LuaGenericCAO(std::shared_ptr<GenericCAO> m);
-	LuaGenericCAO(GenericCAO* m);
 	~LuaGenericCAO() = default;
 
 	static void Register(lua_State* L);

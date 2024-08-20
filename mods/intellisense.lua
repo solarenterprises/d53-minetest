@@ -44,9 +44,6 @@ function minetest.get_objects_in_area(min, max, def) end
 -- get data about being underground (client only)
 function minetest.get_underground() end
 
--- get local player info (client only)
-function minetest.get_local_player() end
-
 -- get objects (client only)
 function minetest.get_objects() end
 

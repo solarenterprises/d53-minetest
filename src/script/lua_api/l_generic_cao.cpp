@@ -23,11 +23,6 @@ LuaGenericCAO::LuaGenericCAO(std::shared_ptr<GenericCAO> m) : m_genericCAO(m)
 {
 }
 
-LuaGenericCAO::LuaGenericCAO(GenericCAO* m)
-{
-	m_genericCAO_ptr = m;
-}
-
 int LuaGenericCAO::l_is_valid(lua_State* L)
 {
 	auto cao = getobject(L, 1);
@@ -249,9 +244,8 @@ int LuaGenericCAO::l_set_bone_override(lua_State *L)
 
 GenericCAO* LuaGenericCAO::getobject(LuaGenericCAO* ref)
 {
-	if (ref->m_genericCAO_ptr)
-		return ref->m_genericCAO_ptr;
-
+	if (ref->m_genericCAO.expired())
+		return nullptr;
 	return ref->m_genericCAO.lock().get();
 }
 
@@ -324,34 +318,6 @@ int ModApiGenericCAO::l_get_generic_cao(lua_State* L)
 	return 1;
 }
 
-int ModApiGenericCAO::l_get_local_player(lua_State* L)
-{
-	NO_MAP_LOCK_REQUIRED;
-
-	if (checkCSMRestrictionFlag(CSM_RF_READ_PLAYERINFO))
-		return 0;
-
-	Client* client = getClient(L);
-	LocalPlayer* player = client->getEnv().getLocalPlayer();
-	if (!player) {
-		lua_pushnil(L);
-		return 1;
-	}
-
-	GenericCAO* cao = player->getCAO();
-	if (!cao) {
-		lua_pushnil(L);
-		return 1;
-	}
-
-	LuaGenericCAO* o = new LuaGenericCAO(cao);
-	*(void**)(lua_newuserdata(L, sizeof(void*))) = o;
-	luaL_getmetatable(L, LuaGenericCAO::className);
-	lua_setmetatable(L, -2);
-
-	return 1;
-}
-
 int ModApiGenericCAO::l_get_objects(lua_State* L)
 {
 	NO_MAP_LOCK_REQUIRED;
@@ -364,14 +330,13 @@ int ModApiGenericCAO::l_get_objects(lua_State* L)
 
 	int index = 1;
 	lua_newtable(L);
-	for (auto obj : objects) {
-
+	for (auto weakptr_obj : objects) {
+		auto ptr = weakptr_obj.lock();
+		auto obj = ptr.get();
 		if (obj->getType() != ACTIVEOBJECT_TYPE_GENERIC)
 			continue;
 
-		GenericCAO* cao = (GenericCAO*)obj;
-		
-		LuaGenericCAO* o = new LuaGenericCAO(cao);
+		LuaGenericCAO* o = new LuaGenericCAO(std::static_pointer_cast<GenericCAO>(ptr));
 		*(void**)(lua_newuserdata(L, sizeof(void*))) = o;
 		luaL_getmetatable(L, LuaGenericCAO::className);
 		lua_setmetatable(L, -2);
@@ -395,7 +360,9 @@ int ModApiGenericCAO::l_get_players(lua_State* L)
 
 	int index = 1;
 	lua_newtable(L);
-	for (auto obj : objects) {
+	for (auto& weakptr_obj : objects) {
+		auto ptr = weakptr_obj.lock();
+		auto obj = ptr.get();
 
 		if (obj->getType() != ACTIVEOBJECT_TYPE_GENERIC)
 			continue;
@@ -404,7 +371,7 @@ int ModApiGenericCAO::l_get_players(lua_State* L)
 		if (!cao->isPlayer())
 			continue;
 		
-		LuaGenericCAO* o = new LuaGenericCAO(cao);
+		LuaGenericCAO* o = new LuaGenericCAO(std::static_pointer_cast<GenericCAO>(ptr));
 		*(void**)(lua_newuserdata(L, sizeof(void*))) = o;
 		luaL_getmetatable(L, LuaGenericCAO::className);
 		lua_setmetatable(L, -2);
@@ -419,7 +386,6 @@ int ModApiGenericCAO::l_get_players(lua_State* L)
 void ModApiGenericCAO::Initialize(lua_State* L, int top)
 {
 	API_FCT(get_generic_cao);
-	API_FCT(get_local_player);
 	API_FCT(get_objects);
 	API_FCT(get_players);
 }

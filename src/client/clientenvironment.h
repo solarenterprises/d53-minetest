@@ -89,7 +89,7 @@ public:
 
 	GenericCAO* getGenericCAO(u16 id);
 	std::weak_ptr<GenericCAO> getGenericCAOWeakPtr(u16 id);
-	inline std::vector<ClientActiveObject *> getActiveObjects()
+	inline std::vector<std::weak_ptr<ClientActiveObject>> getActiveObjects()
 	{
 		return std::move(m_ao_manager.getAllActiveObjects());
 	}
