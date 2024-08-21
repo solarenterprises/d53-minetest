@@ -404,7 +404,11 @@ void GenericCAO::processInitData(const std::string &data)
 
 	m_rotation = wrapDegrees_0_360_v3f(m_rotation);
 	pos_translator.init(m_position);
-	rot_translator.init(v3f(0, m_rotation.Y, 0));
+	if (m_is_player)
+		rot_translator.init(v3f(0, m_rotation.Y, 0));
+	else
+		rot_translator.init(m_rotation);
+	
 	updateNodePos();
 }
 
@@ -1280,7 +1284,7 @@ void GenericCAO::step(float dtime, ClientEnvironment *env)
 			m_rotation.Y = target_yaw;
 		}
 
-		rot_translator.val_current = v3f(0, m_rotation.Y, 0);
+		rot_translator.val_current = v3f(rot_translator.val_current.X, m_rotation.Y, rot_translator.val_current.Z);
 		updateNodePos();
 	}
 
@@ -1765,7 +1769,12 @@ void GenericCAO::processMessage(const std::string &data)
 		} else {
 			pos_translator.init(m_position);
 		}
-		rot_translator.update(v3f(0, m_rotation.Y, 0), false, update_interval);
+
+		if (m_is_player)
+			rot_translator.update(v3f(0, m_rotation.Y, 0), false, update_interval);
+		else
+			rot_translator.update(m_rotation, false, update_interval);
+
 		updateNodePos();
 	} else if (cmd == AO_CMD_SET_TEXTURE_MOD) {
 		std::string mod = deSerializeString16(is);
