@@ -288,6 +288,8 @@ const luaL_Reg LuaGenericCAO::methods[] = {
 		luamethod(LuaGenericCAO, get_properties),
 		luamethod(LuaGenericCAO, get_bone_override),
 		luamethod(LuaGenericCAO, set_bone_override),
+		luamethod(LuaGenericCAO, is_local_player),
+		luamethod(LuaGenericCAO, is_player),
 		{0, 0}
 };
 
@@ -361,6 +363,9 @@ int ModApiGenericCAO::l_get_players(lua_State* L)
 	int index = 1;
 	lua_newtable(L);
 	for (auto& weakptr_obj : objects) {
+		if (weakptr_obj.expired())
+			continue;
+
 		auto ptr = weakptr_obj.lock();
 		auto obj = ptr.get();
 

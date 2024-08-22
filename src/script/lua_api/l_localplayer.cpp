@@ -443,6 +443,75 @@ int LuaLocalPlayer::l_hud_get_all(lua_State *L)
 	return 1;
 }
 
+int LuaLocalPlayer::l_set_auto_animate(lua_State *L)
+{
+	LocalPlayer *player = getobject(L, 1);
+	if (player == nullptr)
+		return 0;
+
+	player->auto_animate = readParam<bool>(L, 2);
+
+	return 0;
+}
+
+int LuaLocalPlayer::l_get_animation(lua_State *L)
+{
+	LocalPlayer *player = getobject(L, 1);
+	if (player == nullptr)
+		return 0;
+
+	GenericCAO* cao = player->getCAO();
+	if (!cao)
+		return 0;
+
+	v2s32 frames = v2s32(1, 1);
+	float frame_speed = 15;
+	float frame_blend = 0;
+	bool frame_loop = true;
+
+	cao->getAnimation(frames, frame_speed, frame_blend, frame_loop);
+	push_v2f(L, v2f(frames.X, frames.Y));
+	lua_pushnumber(L, frame_speed);
+	lua_pushnumber(L, frame_blend);
+	lua_pushboolean(L, frame_loop);
+	return 4;
+}
+
+int LuaLocalPlayer::l_set_animation(lua_State *L)
+{
+	LocalPlayer *player = getobject(L, 1);
+	if (player == nullptr)
+		return 0;
+
+	GenericCAO* cao = player->getCAO();
+	if (!cao)
+		return 0;
+
+	v2f frame_range   = readParam<v2f>(L,  2, v2f(1, 1));
+	float frame_speed = readParam<float>(L, 3, 15.0f);
+	float frame_blend = readParam<float>(L, 4, 0.0f);
+	bool frame_loop   = readParam<bool>(L, 5, true);
+
+	cao->setAnimation(v2s32(frame_range.X, frame_range.Y), frame_speed, frame_blend, frame_loop);
+	return 0;
+}
+
+int LuaLocalPlayer::l_set_animation_frame_speed(lua_State *L)
+{
+	LocalPlayer *player = getobject(L, 1);
+	if (player == nullptr)
+		return 0;
+
+	GenericCAO* cao = player->getCAO();
+	if (!cao)
+		return 0;
+
+	float frame_speed = readParam<float>(L, 2, 15.0f);
+
+	cao->setAnimationSpeed(frame_speed);
+	return 0;
+}
+
 LocalPlayer *LuaLocalPlayer::getobject(LuaLocalPlayer *ref)
 {
 	return ref->m_localplayer;
@@ -507,6 +576,11 @@ const luaL_Reg LuaLocalPlayer::methods[] = {
 		luamethod(LuaLocalPlayer, hud_get_all),
 
 		luamethod(LuaLocalPlayer, get_move_resistance),
+
+		luamethod(LuaLocalPlayer, get_animation),
+		luamethod(LuaLocalPlayer, set_auto_animate),
+		luamethod(LuaLocalPlayer, set_animation),
+		luamethod(LuaLocalPlayer, set_animation_frame_speed),
 
 		{0, 0}
 };

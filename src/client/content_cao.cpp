@@ -1085,7 +1085,7 @@ void GenericCAO::step(float dtime, ClientEnvironment *env)
 
 		rot_translator.val_current = v3f(0, m_rotation.Y, 0);
 
-		if (m_is_visible) {
+		if (m_is_visible && player->auto_animate) {
 			LocalPlayerAnimation old_anim = player->last_animation;
 			float old_anim_speed = player->last_animation_speed;
 			m_velocity = v3f(0,0,0);
@@ -1564,15 +1564,19 @@ void GenericCAO::updateAnimation()
 		return;
 
 	if (m_animated_meshnode->getStartFrame() != m_animation_range.X ||
-		m_animated_meshnode->getEndFrame() != m_animation_range.Y)
-			m_animated_meshnode->setFrameLoop(m_animation_range.X, m_animation_range.Y);
+		m_animated_meshnode->getEndFrame() != m_animation_range.Y) {
+
+		m_animated_meshnode->setFrameLoop(m_animation_range.X, m_animation_range.Y);
+		m_animated_meshnode->setCurrentFrame(m_animation_range.X);
+	}
 	if (m_animated_meshnode->getAnimationSpeed() != m_animation_speed)
 		m_animated_meshnode->setAnimationSpeed(m_animation_speed);
 	m_animated_meshnode->setTransitionTime(m_animation_blend);
 	if (m_animated_meshnode->getLoopMode() != m_animation_loop)
 		m_animated_meshnode->setLoopMode(m_animation_loop);
 
-	m_animated_meshnode->setCurrentFrame(m_animation_range.X);
+	if (!m_animation_loop)
+		m_animated_meshnode->setCurrentFrame(m_animation_range.X);
 }
 
 void GenericCAO::updateAnimationSpeed()

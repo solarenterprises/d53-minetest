@@ -112,6 +112,7 @@ public:
 
 	LocalPlayerAnimation last_animation = LocalPlayerAnimation::NO_ANIM;
 	float last_animation_speed = 0.0f;
+	bool auto_animate = true;
 
 	std::string hotbar_image = "";
 	std::string hotbar_selected_image = "";

@@ -98,6 +98,14 @@ private:
 
 	static int l_get_move_resistance(lua_State *L);
 
+	//
+	// Animation
+	//
+	static int l_get_animation(lua_State *L);
+	static int l_set_auto_animate(lua_State *L);
+	static int l_set_animation(lua_State *L);
+	static int l_set_animation_frame_speed(lua_State *L);
+
 	static LocalPlayer *getobject(LuaLocalPlayer *ref);
 	static LocalPlayer *getobject(lua_State *L, int narg);
 

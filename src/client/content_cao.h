@@ -282,6 +282,24 @@ public:
 
 	void updateAnimationSpeed();
 
+	inline void getAnimation(v2s32& animation_range, float& animation_speed, float& animation_blend, bool& animation_loop) {
+		animation_range = m_animation_range;
+		animation_speed = m_animation_speed;
+		animation_blend = m_animation_blend;
+		animation_loop = m_animation_loop;
+	}
+	inline void setAnimation(v2s32 animation_range, float animation_speed, float animation_blend, bool animation_loop) {
+		m_animation_range = animation_range;
+		m_animation_speed = animation_speed;
+		m_animation_blend = animation_blend;
+		m_animation_loop = animation_loop;
+		updateAnimation();
+	}
+	inline void setAnimationSpeed(float animation_speed) {
+		m_animation_speed = animation_speed;
+		updateAnimationSpeed();
+	}
+
 	void updateBones(f32 dtime);
 
 	void processMessage(const std::string &data) override;
