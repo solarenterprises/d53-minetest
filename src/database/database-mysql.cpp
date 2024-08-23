@@ -1240,7 +1240,7 @@ bool ModStorageDatabaseMySQL::hasModEntry(const std::string &modname,
 {
 	verifyDatabase();
 
-	std::vector<std::string> args = { modname, key };
+	std::vector<std::string> args = { modname, escape_string(key) };
 	MYSQL_RES* results = execWithParamAndResult("SELECT 1 FROM mod_storage WHERE modname = $1 AND id = $2", args);
 
 	int numrows = mysql_num_rows(results);
@@ -1256,7 +1256,7 @@ bool ModStorageDatabaseMySQL::setModEntry(const std::string &modname,
 {
 	verifyDatabase();
 
-	std::vector<std::string> args = { modname, key, value.data() };
+	std::vector<std::string> args = { modname, escape_string(key), escape_string(value.data()) };
 	execWithParam("INSERT INTO mod_storage (modname, id, value) VALUES ($1, $2, $3) "
 		"ON DUPLICATE KEY UPDATE value = $3", args);
 
@@ -1268,7 +1268,7 @@ bool ModStorageDatabaseMySQL::removeModEntry(const std::string &modname,
 {
 	verifyDatabase();
 
-	std::vector<std::string> args = { modname, key };
+	std::vector<std::string> args = { modname, escape_string(key) };
 	MYSQL_RES* results = execWithParamAndResult("DELETE FROM mod_storage WHERE modname = $1 AND id = $2", args);
 
 	int affected = mysql_affected_rows(m_conn);
