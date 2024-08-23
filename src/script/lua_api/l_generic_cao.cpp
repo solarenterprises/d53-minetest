@@ -468,8 +468,8 @@ int ModApiGenericCAO::l_get_objects_inside_radius(lua_State *L)
 			continue;
 
 		auto ptr = client->getEnv().getActiveObjectWeakPtr(o.obj->getId());
-		LuaGenericCAO* o = new LuaGenericCAO(std::static_pointer_cast<GenericCAO>(ptr.lock()));
-		*(void**)(lua_newuserdata(L, sizeof(void*))) = o;
+		LuaGenericCAO* cao = new LuaGenericCAO(std::static_pointer_cast<GenericCAO>(ptr.lock()));
+		*(void**)(lua_newuserdata(L, sizeof(void*))) = cao;
 		luaL_getmetatable(L, LuaGenericCAO::className);
 		lua_setmetatable(L, -2);
 
