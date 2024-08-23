@@ -88,8 +88,11 @@ static inline v3f truncate(const v3f& vec, const f32 factor)
 // Returns -1 if no collision, 0 if X collision, 1 if Y collision, 2 if Z collision
 // The time after which the collision occurs is stored in dtime.
 CollisionAxis axisAlignedCollision(
-		const aabb3f &staticbox, const aabb3f &movingbox,
-		const v3f &speed, f32 *dtime)
+		const aabb3f &staticbox,
+		const aabb3f &movingbox,
+		const v3f &speed,
+		int& out_face,
+		f32 *dtime)
 {
 	//TimeTaker tt("axisAlignedCollision");
 
@@ -115,6 +118,8 @@ CollisionAxis axisAlignedCollision(
 
 		if (*dtime <= dtime_max) {
 			inner_margin = std::max(-0.5f * (staticbox.MaxEdge.Y - staticbox.MinEdge.Y), -2.0f);
+
+			out_face = (movingbox.MinEdge.Y+movingbox.MaxEdge.Y) > (staticbox.MinEdge.Y+staticbox.MaxEdge.Y);
 
 			if ((speed.Y > 0 && staticbox.MinEdge.Y - movingbox.MaxEdge.Y > inner_margin) ||
 				(speed.Y < 0 && movingbox.MinEdge.Y - staticbox.MaxEdge.Y > inner_margin)) {
@@ -144,6 +149,8 @@ CollisionAxis axisAlignedCollision(
 		if (*dtime <= dtime_max) {
 			inner_margin = std::max(-0.5f * (staticbox.MaxEdge.X - staticbox.MinEdge.X), -2.0f);
 
+			out_face = (movingbox.MinEdge.X+movingbox.MaxEdge.X) > (staticbox.MinEdge.X+staticbox.MaxEdge.X);
+
 			if ((speed.X > 0 && staticbox.MinEdge.X - movingbox.MaxEdge.X > inner_margin) ||
 				(speed.X < 0 && movingbox.MinEdge.X - staticbox.MaxEdge.X > inner_margin)) {
 				if (
@@ -169,6 +176,8 @@ CollisionAxis axisAlignedCollision(
 		time = std::max(*dtime, 0.0f);
 
 		if (*dtime <= dtime_max) {
+			out_face = (movingbox.MinEdge.Z+movingbox.MaxEdge.Z) > (staticbox.MinEdge.Z+staticbox.MaxEdge.Z);
+
 			inner_margin = std::max(-0.5f * (staticbox.MaxEdge.Z - staticbox.MinEdge.Z), -2.0f);
 
 			if ((speed.Z > 0 && staticbox.MinEdge.Z - movingbox.MaxEdge.Z > inner_margin) ||
@@ -186,6 +195,7 @@ CollisionAxis axisAlignedCollision(
 		}
 	}
 
+	out_face = 0;
 	return COLLISION_AXIS_NONE;
 }
 
@@ -489,6 +499,7 @@ collisionMoveResult collisionMoveSimple(
 		CollisionAxis nearest_collided = COLLISION_AXIS_NONE;
 		f32 nearest_dtime = dtime;
 		int nearest_boxindex = -1;
+		int nearest_face = 0;
 
 		/*
 			Go through every nodebox, find nearest collision
@@ -501,8 +512,9 @@ collisionMoveResult collisionMoveSimple(
 
 			// Find nearest collision of the two boxes (raytracing-like)
 			f32 dtime_tmp = nearest_dtime;
+			int face = 0;
 			CollisionAxis collided = axisAlignedCollision(box_info.box,
-					movingbox, *velocity_f, &dtime_tmp);
+					movingbox, *velocity_f, face, &dtime_tmp);
 
 			if (collided == -1 || dtime_tmp >= nearest_dtime)
 				continue;
@@ -510,6 +522,7 @@ collisionMoveResult collisionMoveSimple(
 			nearest_dtime = dtime_tmp;
 			nearest_collided = collided;
 			nearest_boxindex = boxindex;
+			nearest_face = face;
 		}
 
 		if (nearest_collided == COLLISION_AXIS_NONE) {
@@ -570,6 +583,7 @@ collisionMoveResult collisionMoveSimple(
 		info.object = nearest_info.obj;
 		info.old_speed = *velocity_f;
 		info.plane = nearest_collided;
+		info.face = nearest_collided*2 + nearest_face;
 
 		// Set the speed component that caused the collision to zero
 		if (step_up) {

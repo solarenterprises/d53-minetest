@@ -52,6 +52,7 @@ struct CollisionInfo
 	v3f old_speed;
 	v3f new_speed;
 	int plane = -1;
+	int face = -1;
 };
 
 struct collisionMoveResult

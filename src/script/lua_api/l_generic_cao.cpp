@@ -86,6 +86,22 @@ int LuaGenericCAO::l_get_pos(lua_State* L)
 	return 1;
 }
 
+int LuaGenericCAO::l_get_pos_offset(lua_State* L)
+{
+	CAO;
+	push_v3f(L, cao->getPositionOffset());
+	return 1;
+}
+
+int LuaGenericCAO::l_get_rot_offset(lua_State* L)
+{
+	CAO;
+	v3f euler;
+	cao->getRotationOffset().toEuler(euler);
+	push_v3f(L, euler*core::RADTODEG);
+	return 1;
+}
+
 // set_pos(self)
 int LuaGenericCAO::l_set_pos_offset(lua_State* L)
 {
@@ -104,7 +120,7 @@ int LuaGenericCAO::l_set_rot_offset(lua_State* L)
 
 	v3f offset = readParam<v3f>(L, 2);
 
-	cao->setRotationOffset(offset);
+	cao->setRotationOffset(offset*core::DEGTORAD);
 
 	return 0;
 }
@@ -282,6 +298,8 @@ const luaL_Reg LuaGenericCAO::methods[] = {
 		luamethod(LuaGenericCAO, get_pos),
 		luamethod(LuaGenericCAO, get_velocity),
 		luamethod(LuaGenericCAO, get_rot),
+		luamethod(LuaGenericCAO, get_pos_offset),
+		luamethod(LuaGenericCAO, get_rot_offset),
 		luamethod(LuaGenericCAO, set_pos_offset),
 		luamethod(LuaGenericCAO, set_rot_offset),
 		luamethod(LuaGenericCAO, is_immortal),
@@ -388,9 +406,82 @@ int ModApiGenericCAO::l_get_players(lua_State* L)
 	return 1;
 }
 
+
+// get_objects_inside_radius(pos, radius)
+int ModApiGenericCAO::l_get_objects_inside_radius(lua_State *L)
+{
+	NO_MAP_LOCK_REQUIRED;
+
+	Client *client = getClient(L);
+
+	// Do it
+	v3f pos = checkFloatPos(L, 1);
+	float radius = readParam<float>(L, 2) * BS;
+	bool player = true;
+	bool should_filter_objects = false;
+	u32 collision_mask = 0xFFFFFF;
+
+	if (lua_istable(L, 3)) {
+		lua_getfield(L, 3, "player");
+		if (lua_isboolean(L, -1)) {
+			player = lua_toboolean(L, -1);
+			should_filter_objects = true;
+		}
+		lua_pop(L, 1);
+
+		lua_getfield(L, 3, "object");
+		if (lua_isboolean(L, -1)) {
+			player = !lua_toboolean(L, -1);
+			should_filter_objects = true;
+		}
+		lua_pop(L, 1);
+
+		lua_getfield(L, 3, "collision_mask");
+		if (lua_isnumber(L, -1))
+			collision_mask = lua_tointeger(L, -1);
+		lua_pop(L, 1);
+	}
+
+	auto include_obj_cb = [player, should_filter_objects, collision_mask](GenericCAO *obj) {
+		if (should_filter_objects) {
+			if (obj->isPlayer() != player)
+				return false;
+		}
+
+		if (collision_mask != 0xFFFFFF)
+			if ((obj->getProperties().collision_group & collision_mask) == 0)
+				return false;
+
+		return true;
+	};
+
+	std::vector<DistanceSortedActiveObject> objs;
+	client->getEnv().getActiveObjects(pos, radius, objs);
+
+	int i = 0;
+	lua_createtable(L, objs.size(), 0);
+	for (const auto o : objs) {
+		if (o.obj->getType() != ACTIVEOBJECT_TYPE_GENERIC)
+			continue;
+
+		if (!include_obj_cb((GenericCAO*)o.obj))
+			continue;
+
+		auto ptr = client->getEnv().getActiveObjectWeakPtr(o.obj->getId());
+		LuaGenericCAO* o = new LuaGenericCAO(std::static_pointer_cast<GenericCAO>(ptr.lock()));
+		*(void**)(lua_newuserdata(L, sizeof(void*))) = o;
+		luaL_getmetatable(L, LuaGenericCAO::className);
+		lua_setmetatable(L, -2);
+
+		lua_rawseti(L, -2, ++i);
+	}
+	return 1;
+}
+
 void ModApiGenericCAO::Initialize(lua_State* L, int top)
 {
 	API_FCT(get_generic_cao);
 	API_FCT(get_objects);
 	API_FCT(get_players);
+	API_FCT(get_objects_inside_radius);
 }

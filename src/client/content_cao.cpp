@@ -417,6 +417,26 @@ GenericCAO::~GenericCAO()
 	removeFromScene(true);
 }
 
+v3f GenericCAO::getPositionOffset()
+{
+	auto node = getSceneNode();
+
+	if (!node)
+		return v3f();
+
+	return node->getPosition();
+}
+
+core::quaternion GenericCAO::getRotationOffset()
+{
+	auto node = getSceneNode();
+
+	if (!node)
+		return quaternion();
+
+	return node->getRotation();
+}
+
 void GenericCAO::setPositionOffset(v3f offset)
 {
 	auto node = getSceneNode();
@@ -427,14 +447,14 @@ void GenericCAO::setPositionOffset(v3f offset)
 	node->setPosition(offset * BS);
 }
 
-void GenericCAO::setRotationOffset(v3f offset)
+void GenericCAO::setRotationOffset(core::quaternion offset)
 {
 	auto node = getSceneNode();
 
 	if (!node)
 		return;
 
-	node->setPosition(offset);
+	node->setRotation(offset);
 }
 
 bool GenericCAO::getSelectionBox(aabb3f *toset) const

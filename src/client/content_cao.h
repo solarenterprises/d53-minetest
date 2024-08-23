@@ -165,8 +165,10 @@ public:
 
 	virtual bool getSelectionBox(aabb3f *toset) const override;
 
+	v3f getPositionOffset();
+	core::quaternion getRotationOffset();
 	void setPositionOffset(v3f offset);
-	void setRotationOffset(v3f offset);
+	void setRotationOffset(core::quaternion offset);
 
 	const v3f getPosition() const override final;
 

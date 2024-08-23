@@ -56,6 +56,8 @@ private:
 	// get_pos(self)
 	static int l_get_pos(lua_State* L);
 
+	static int l_get_pos_offset(lua_State* L);
+	static int l_get_rot_offset(lua_State* L);
 	static int l_set_pos_offset(lua_State* L);
 	static int l_set_rot_offset(lua_State* L);
 
@@ -91,9 +93,11 @@ public:
 class ModApiGenericCAO : public ModApiBase {
 private:
 	static int l_get_generic_cao(lua_State* L);
-	static int l_get_local_player(lua_State* L);
 	static int l_get_objects(lua_State* L);
 	static int l_get_players(lua_State* L);
+
+	// get_objects_inside_radius(pos, radius)
+	static int l_get_objects_inside_radius(lua_State *L);
 
 public:
 	static void Initialize(lua_State* L, int top);

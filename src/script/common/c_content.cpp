@@ -2681,6 +2681,9 @@ void push_collision_move_result(lua_State *L, const collisionMoveResult &res)
 		push_v3f(L, c.new_speed / BS);
 		lua_setfield(L, -2, "new_velocity");
 
+		lua_pushinteger(L, c.face);
+		lua_setfield(L, -2, "face");
+
 		lua_rawseti(L, -2, i++);
 	}
 	lua_setfield(L, -2, "collisions");
