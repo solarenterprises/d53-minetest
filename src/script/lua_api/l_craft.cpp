@@ -142,6 +142,18 @@ int ModApiCraft::l_register_craft(lua_State *L)
 
 	std::string type = getstringfield_default(L, table, "type", "shaped");
 
+	Json::Value data;
+	lua_getfield(L, table, "data");
+	if (!lua_isnoneornil(L, -1)) {
+		try {
+			read_json_value(L, data, lua_gettop(L));
+		} catch (SerializationError &e) {
+			lua_pushnil(L);
+			lua_pushstring(L, e.what());
+			return 2;
+		}
+	}
+
 	/*
 		CraftDefinitionShaped
 	*/
@@ -170,7 +182,7 @@ int ModApiCraft::l_register_craft(lua_State *L)
 		}
 
 		CraftDefinition *def = new CraftDefinitionShaped(
-				output, width, recipe, replacements);
+				output, width, recipe, replacements, data);
 		craftdef->registerCraft(def, getServer(L));
 	}
 	/*
@@ -202,7 +214,7 @@ int ModApiCraft::l_register_craft(lua_State *L)
 		}
 
 		CraftDefinition *def = new CraftDefinitionShapeless(
-				output, recipe, replacements);
+				output, recipe, replacements, data);
 		craftdef->registerCraft(def, getServer(L));
 	}
 	/*
@@ -213,7 +225,7 @@ int ModApiCraft::l_register_craft(lua_State *L)
 				"additional_wear", 0.0);
 
 		CraftDefinition *def = new CraftDefinitionToolRepair(
-				additional_wear);
+				additional_wear, data);
 		craftdef->registerCraft(def, getServer(L));
 	}
 	/*
@@ -243,7 +255,7 @@ int ModApiCraft::l_register_craft(lua_State *L)
 		}
 
 		CraftDefinition *def = new CraftDefinitionCooking(
-				output, recipe, cooktime, replacements);
+				output, recipe, cooktime, replacements, data);
 		craftdef->registerCraft(def, getServer(L));
 	}
 	/*
@@ -267,7 +279,7 @@ int ModApiCraft::l_register_craft(lua_State *L)
 		}
 
 		CraftDefinition *def = new CraftDefinitionFuel(
-				recipe, burntime, replacements);
+				recipe, burntime, replacements, data);
 		craftdef->registerCraft(def, getServer(L));
 	}
 	else
@@ -390,7 +402,8 @@ int ModApiCraft::l_get_craft_result(lua_State *L)
 	CraftInput input(method, width, items);
 	CraftOutput output;
 	std::vector<ItemStack> output_replacements;
-	bool got = cdef->getCraftResult(input, output, output_replacements, true, gdef);
+	Json::Value data;
+	bool got = cdef->getCraftResult(input, output, output_replacements, data, true, gdef);
 	lua_newtable(L); // output table
 	if (got) {
 		ItemStack item;
@@ -400,6 +413,8 @@ int ModApiCraft::l_get_craft_result(lua_State *L)
 		setintfield(L, -1, "time", output.time);
 		push_items(L, output_replacements);
 		lua_setfield(L, -2, "replacements");
+		push_json_value(L, data, -1);
+		lua_setfield(L, -2, "data");
 	} else {
 		LuaItemStack::create(L, ItemStack());
 		lua_setfield(L, -2, "item");

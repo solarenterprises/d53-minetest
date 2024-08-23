@@ -28,6 +28,9 @@ class ServerActiveObject;
 struct ItemStack;
 class Inventory;
 class IGameDef;
+namespace Json {
+	class Value;
+}
 
 struct InventoryLocation
 {
@@ -261,5 +264,5 @@ struct ICraftAction : public InventoryAction
 
 // Crafting helper
 bool getCraftingResult(Inventory *inv, ItemStack &result,
-		std::vector<ItemStack> &output_replacements,
+		std::vector<ItemStack> &output_replacements, Json::Value& data,
 		bool decrementInput, IGameDef *gamedef);

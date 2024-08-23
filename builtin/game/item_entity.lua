@@ -361,3 +361,32 @@ core.register_entity(":__builtin:item", {
 		end
 	end,
 })
+
+function core.punch_item_pickup(user, pointed_thing)
+    -- Early return if pointed_thing is not an object
+    if pointed_thing.type ~= "object" then
+        return false
+    end
+
+    local obj = pointed_thing.ref
+    -- Early return if obj is nil or not a __builtin:item entity
+    if not obj or not obj:get_luaentity() or obj:get_luaentity().name ~= "__builtin:item" then
+        return false
+    end
+
+    -- Get the item string from the entity
+    local item = obj:get_luaentity().itemstring
+    -- Attempt to add the item to the player's inventory
+    local leftover = user:get_inventory():add_item("main", item)
+
+    -- Early return if the inventory couldn't hold the entire item
+    if not leftover:is_empty() then
+        -- Update the entity with the leftover items
+        obj:get_luaentity():set_item(leftover)
+        return true
+    end
+
+    -- Successfully picked up the item, so remove the entity
+    obj:remove()
+    return true
+end

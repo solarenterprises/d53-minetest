@@ -970,7 +970,8 @@ void ICraftAction::apply(InventoryManager *mgr,
 	ItemStack craftresultitem;
 	int count_remaining = count;
 	std::vector<ItemStack> output_replacements;
-	getCraftingResult(inv_craft, crafted, output_replacements, false, gamedef);
+	Json::Value data;
+	getCraftingResult(inv_craft, crafted, output_replacements, data, false, gamedef);
 	PLAYER_TO_SA(player)->item_CraftPredict(crafted, player, list_craft, craft_inv);
 	bool found = !crafted.empty();
 
@@ -979,7 +980,7 @@ void ICraftAction::apply(InventoryManager *mgr,
 
 		std::vector<ItemStack> temp;
 		// Decrement input and add crafting output
-		getCraftingResult(inv_craft, crafted, temp, true, gamedef);
+		getCraftingResult(inv_craft, crafted, temp, data, true, gamedef);
 		PLAYER_TO_SA(player)->item_OnCraft(crafted, player, &saved_craft_list, craft_inv);
 		list_craftresult->addItem(0, crafted);
 		mgr->setInventoryModified(craft_inv);
@@ -1010,7 +1011,7 @@ void ICraftAction::apply(InventoryManager *mgr,
 			count_remaining--;
 
 		// Get next crafting result
-		getCraftingResult(inv_craft, crafted, temp, false, gamedef);
+		getCraftingResult(inv_craft, crafted, temp, data, false, gamedef);
 		PLAYER_TO_SA(player)->item_CraftPredict(crafted, player, list_craft, craft_inv);
 		found = !crafted.empty();
 	}
@@ -1050,7 +1051,7 @@ void ICraftAction::clientApply(InventoryManager *mgr, IGameDef *gamedef)
 
 // Crafting helper
 bool getCraftingResult(Inventory *inv, ItemStack &result,
-		std::vector<ItemStack> &output_replacements,
+		std::vector<ItemStack> &output_replacements, Json::Value& data,
 		bool decrementInput, IGameDef *gamedef)
 {
 	result.clear();
@@ -1070,7 +1071,7 @@ bool getCraftingResult(Inventory *inv, ItemStack &result,
 	// Find out what is crafted and add it to result item slot
 	CraftOutput co;
 	bool found = gamedef->getCraftDefManager()->getCraftResult(
-			ci, co, output_replacements, decrementInput, gamedef);
+			ci, co, output_replacements, data, decrementInput, gamedef);
 	if (found)
 		result.deSerialize(co.item, gamedef->getItemDefManager());
 

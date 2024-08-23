@@ -155,6 +155,14 @@ void ScriptApiItem::item_OnAdd(const ItemStack& item, PlayerSAO* user)
 
 	int error_handler = PUSH_ERROR_HANDLER(L);
 
+	{
+		lua_getglobal(L, "core");
+		lua_getfield(L, -1, "registered_on_player_inventory_add");
+		LuaItemStack::create(L, item);
+		objectrefGetOrCreate(L, user);
+		runCallbacks(2, RUN_CALLBACKS_MODE_FIRST);
+	}
+
 	// Push callback function on stack
 	if (!getItemCallback(item.name.c_str(), "on_add")) {
 		lua_pop(L, 1);  // Pop error handler

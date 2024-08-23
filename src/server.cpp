@@ -3279,7 +3279,8 @@ void Server::UpdateCrafting(RemotePlayer *player)
 	InventoryLocation loc;
 	loc.setPlayer(player->getName());
 	std::vector<ItemStack> output_replacements;
-	getCraftingResult(&player->inventory, preview, output_replacements, false, this);
+	Json::Value data;
+	getCraftingResult(&player->inventory, preview, output_replacements, data, false, this);
 	m_env->getScriptIface()->item_CraftPredict(preview, player->getPlayerSAO(),
 			clist, loc);
 

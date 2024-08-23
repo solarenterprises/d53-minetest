@@ -343,9 +343,12 @@ CraftDefinitionShaped::CraftDefinitionShaped(
 		const std::string &output_,
 		unsigned int width_,
 		const std::vector<std::string> &recipe_,
-		const CraftReplacements &replacements_):
+		const CraftReplacements &replacements_,
+		const Json::Value &data_):
 	output(output_), width(width_), recipe(recipe_), replacements(replacements_)
 {
+	data = data_;
+
 	if (hasGroupItem(recipe))
 		priority = PRIORITY_SHAPED_AND_GROUPS;
 	else
@@ -479,9 +482,12 @@ std::string CraftDefinitionShaped::dump() const
 CraftDefinitionShapeless::CraftDefinitionShapeless(
 		const std::string &output_,
 		const std::vector<std::string> &recipe_,
-		const CraftReplacements &replacements_):
+		const CraftReplacements &replacements_,
+		const Json::Value &data_):
 	output(output_), recipe(recipe_), replacements(replacements_)
 {
+	data = data_;
+
 	if (hasGroupItem(recipe))
 		priority = PRIORITY_SHAPELESS_AND_GROUPS;
 	else
@@ -728,9 +734,11 @@ std::string CraftDefinitionShapeless::dump() const
 	CraftDefinitionToolRepair
 */
 
-CraftDefinitionToolRepair::CraftDefinitionToolRepair(float additional_wear_):
+CraftDefinitionToolRepair::CraftDefinitionToolRepair(float additional_wear_, const Json::Value &data_):
 	additional_wear(additional_wear_)
 {
+	data = data_;
+
 	priority = PRIORITY_TOOLREPAIR;
 }
 
@@ -832,9 +840,12 @@ CraftDefinitionCooking::CraftDefinitionCooking(
 		const std::string &output_,
 		const std::string &recipe_,
 		float cooktime_,
-		const CraftReplacements &replacements_):
+		const CraftReplacements &replacements_,
+		const Json::Value &data_):
 	output(output_), recipe(recipe_), cooktime(cooktime_), replacements(replacements_)
 {
+	data = data_;
+
 	if (isGroupRecipeStr(recipe))
 		priority = PRIORITY_SHAPELESS_AND_GROUPS;
 	else
@@ -935,9 +946,12 @@ std::string CraftDefinitionCooking::dump() const
 CraftDefinitionFuel::CraftDefinitionFuel(
 		const std::string &recipe_,
 		float burntime_,
-		const CraftReplacements &replacements_):
+		const CraftReplacements &replacements_,
+		const Json::Value &data_):
 	recipe(recipe_), burntime(burntime_), replacements(replacements_)
 {
+	data = data_;
+
 	if (isGroupRecipeStr(recipe_name))
 		priority = PRIORITY_SHAPELESS_AND_GROUPS;
 	else
@@ -1048,7 +1062,7 @@ public:
 	}
 
 	virtual bool getCraftResult(CraftInput &input, CraftOutput &output,
-			std::vector<ItemStack> &output_replacement, bool decrementInput,
+			std::vector<ItemStack> &output_replacement, Json::Value& data, bool decrementInput,
 			IGameDef *gamedef) const
 	{
 		if (input.empty())
@@ -1101,6 +1115,7 @@ public:
 					output = out;
 					priority_best = priority;
 					def_best = def;
+					data = def->getData();
 				}
 			}
 		}

@@ -155,6 +155,8 @@ public:
 	// Returns type of crafting definition
 	virtual std::string getName() const=0;
 
+	virtual Json::Value getData() const { return data; }
+
 	// Checks whether the recipe is applicable
 	virtual bool check(const CraftInput &input, IGameDef *gamedef) const=0;
 	RecipePriority getPriority() const
@@ -184,6 +186,7 @@ public:
 protected:
 	CraftHashType hash_type;
 	RecipePriority priority;
+	Json::Value data;
 };
 
 /*
@@ -200,7 +203,8 @@ public:
 		const std::string &output_,
 		unsigned int width_,
 		const std::vector<std::string> &recipe_,
-		const CraftReplacements &replacements_);
+		const CraftReplacements &replacements_,
+		const Json::Value &data_);
 
 	virtual ~CraftDefinitionShaped() = default;
 
@@ -244,7 +248,8 @@ public:
 	CraftDefinitionShapeless(
 		const std::string &output_,
 		const std::vector<std::string> &recipe_,
-		const CraftReplacements &replacements_);
+		const CraftReplacements &replacements_,
+		const Json::Value &data_);
 
 	virtual ~CraftDefinitionShapeless() = default;
 
@@ -284,7 +289,7 @@ class CraftDefinitionToolRepair: public CraftDefinition
 {
 public:
 	CraftDefinitionToolRepair() = delete;
-	CraftDefinitionToolRepair(float additional_wear_);
+	CraftDefinitionToolRepair(float additional_wear_, const Json::Value &data_);
 
 	virtual ~CraftDefinitionToolRepair() = default;
 
@@ -325,7 +330,8 @@ public:
 		const std::string &output_,
 		const std::string &recipe_,
 		float cooktime_,
-		const CraftReplacements &replacements_);
+		const CraftReplacements &replacements_,
+		const Json::Value &data_);
 
 	virtual ~CraftDefinitionCooking() = default;
 
@@ -368,7 +374,8 @@ public:
 	CraftDefinitionFuel(
 		const std::string &recipe_,
 		float burntime_,
-		const CraftReplacements &replacements_);
+		const CraftReplacements &replacements_,
+		const Json::Value &data_);
 
 	virtual ~CraftDefinitionFuel() = default;
 
@@ -421,6 +428,7 @@ public:
 	 */
 	virtual bool getCraftResult(CraftInput &input, CraftOutput &output,
 			std::vector<ItemStack> &output_replacements,
+			Json::Value& data,
 			bool decrementInput, IGameDef *gamedef) const=0;
 
 	virtual std::vector<CraftDefinition*> getCraftRecipes(CraftOutput &output,
@@ -438,7 +446,7 @@ public:
 
 	// The main crafting function
 	virtual bool getCraftResult(CraftInput &input, CraftOutput &output,
-			std::vector<ItemStack> &output_replacements,
+			std::vector<ItemStack> &output_replacements, Json::Value& data,
 			bool decrementInput, IGameDef *gamedef) const=0;
 	virtual std::vector<CraftDefinition*> getCraftRecipes(CraftOutput &output,
 			IGameDef *gamedef, unsigned limit=0) const=0;

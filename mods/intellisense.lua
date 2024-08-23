@@ -3,7 +3,8 @@
 ----------------------------------------------
 
 -- (client only)
-function minetest.unescape_translate() end
+---@param str string
+function minetest.unescape_translate(str) end
 
 -- Gets the pointed at object info text (client only)
 function minetest.get_info_text() end
