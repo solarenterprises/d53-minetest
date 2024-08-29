@@ -739,6 +739,22 @@ int ModApiEnv::l_get_player_by_peer_id(lua_State *L)
 	return 1;
 }
 
+// get_object(id)
+int ModApiEnv::l_get_object(lua_State *L) {
+	GET_ENV_PTR;
+	ScriptApiBase *script = getScriptApiBase(L);
+
+	int id = readParam<int>(L, 1);
+	ServerActiveObject* obj = env->getActiveObject(id);
+	if (!obj) {
+		lua_pushnil(L);
+		return 1;
+	}
+
+	script->objectrefGetOrCreate(L, obj);
+	return 1;
+}
+
 // get_objects_inside_radius(pos, radius)
 int ModApiEnv::l_get_objects_inside_radius(lua_State *L)
 {
@@ -1543,6 +1559,7 @@ void ModApiEnv::Initialize(lua_State *L, int top)
 	API_FCT(get_connected_players);
 	API_FCT(get_player_by_name);
 	API_FCT(get_player_by_peer_id);
+	API_FCT(get_object);
 	API_FCT(get_objects_in_area);
 	API_FCT(get_objects_inside_radius);
 	API_FCT(set_timeofday);

@@ -51,6 +51,8 @@ private:
 	// get_name(self)
 	static int l_get_name(lua_State* L);
 
+	static int l_get_infoText(lua_State* L);
+
 	static int l_is_attached(lua_State* L);
 
 	// get_pos(self)

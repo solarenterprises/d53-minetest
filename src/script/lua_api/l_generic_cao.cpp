@@ -61,6 +61,15 @@ int LuaGenericCAO::l_get_name(lua_State* L)
 	return 1;
 }
 
+int LuaGenericCAO::l_get_infoText(lua_State* L)
+{
+	CAO;
+
+	auto text = cao->infoText();
+	lua_pushlstring(L, text.c_str(), text.length());
+	return 1;
+}
+
 int LuaGenericCAO::l_is_attached(lua_State* L)
 {
 	CAO;
@@ -294,6 +303,7 @@ const luaL_Reg LuaGenericCAO::methods[] = {
 		luamethod(LuaGenericCAO, get_velocity),
 		luamethod(LuaGenericCAO, get_hp),
 		luamethod(LuaGenericCAO, get_name),
+		luamethod(LuaGenericCAO, get_infoText),
 		luamethod(LuaGenericCAO, is_attached),
 		luamethod(LuaGenericCAO, get_pos),
 		luamethod(LuaGenericCAO, get_velocity),

@@ -35,6 +35,9 @@ private:
 	static int l_get_velocity(lua_State *L);
 
 	// get_hp(self)
+	static int l_get_id(lua_State *L);
+
+	// get_hp(self)
 	static int l_get_hp(lua_State *L);
 
 	// get_name(self)
@@ -55,12 +58,11 @@ private:
 
 	static int l_get_physics_override(lua_State *L);
 
-	static int l_get_override_pos(lua_State *L);
-
 	static int l_get_last_pos(lua_State *L);
 	static int l_get_last_velocity(lua_State *L);
 	static int l_get_last_look_vertical(lua_State *L);
 	static int l_get_last_look_horizontal(lua_State *L);
+	static int l_get_last_shootline(lua_State *L);
 
 	// get_control(self)
 	static int l_get_control(lua_State *L);

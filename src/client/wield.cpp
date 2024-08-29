@@ -164,7 +164,7 @@ void Wield::update(LocalPlayer* player, f32 dtime, f32 tool_reload_ratio)
 	v3f* ptr_script_wield_position = &script_wield_position;
 	v3f* ptr_script_wield_rotation = &script_wield_rotation;
 
-	if (m_client->getScript()->on_wield_animation(
+	if (m_client->getScript() && m_client->getScript()->on_wield_animation(
 		m_wield_item_next,
 		dtime,
 		&ptr_script_wield_position,

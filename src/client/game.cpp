@@ -3363,7 +3363,7 @@ void Game::processPlayerInteraction(f32 dtime, bool show_hud)
 	const ItemDefinition &selected_def = selected_item.getDefinition(itemdef_manager);
 	f32 d = getToolRange(selected_def, hand_item.getDefinition(itemdef_manager));
 
-	core::line3d<f32> shootline;
+	core::line3d<f32>& shootline = player->shootline;
 
 	switch (camera->getCameraMode()) {
 	case CAMERA_MODE_FIRST:
@@ -4524,6 +4524,9 @@ void Game::showDeathFormspec()
 #define GET_KEY_NAME(KEY) gettext(getKeySetting(#KEY).name())
 void Game::showPauseMenu()
 {
+	if (g_settings->getBool("continuous_forward"))
+		toggleAutoforward();
+
 	std::string control_text;
 
 	if (g_touchscreengui) {

@@ -32,6 +32,9 @@ function minetest.string_to_buffer(str) end
 ---@param callback { itemstack }
 function minetest.register_on_item_secondary_use(callback) end
 
+---@param id number
+function minetest.get_object(id) end
+
 ---@param pos vector
 ---@param radius number
 ---@param def { player, object, collision_mask }

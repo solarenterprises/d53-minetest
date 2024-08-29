@@ -60,6 +60,17 @@ int LuaLocalPlayer::l_get_velocity(lua_State *L)
 	return 1;
 }
 
+int LuaLocalPlayer::l_get_id(lua_State *L)
+{
+	LocalPlayer *player = getobject(L, 1);
+
+	if (!player->getCAO())
+		return 0;
+
+	lua_pushinteger(L, player->getCAO()->getId());
+	return 1;
+}
+
 int LuaLocalPlayer::l_get_hp(lua_State *L)
 {
 	LocalPlayer *player = getobject(L, 1);
@@ -231,6 +242,15 @@ int LuaLocalPlayer::l_get_last_look_horizontal(lua_State *L)
 
 	lua_pushnumber(L, (player->last_yaw + 90.) * core::DEGTORAD);
 	return 1;
+}
+
+int LuaLocalPlayer::l_get_last_shootline(lua_State *L)
+{
+	LocalPlayer *player = getobject(L, 1);
+
+	push_v3f(L, player->shootline.start / BS);
+	push_v3f(L, player->shootline.end / BS);
+	return 2;
 }
 
 // get_control(self)
@@ -544,6 +564,7 @@ void LuaLocalPlayer::Register(lua_State *L)
 
 const char LuaLocalPlayer::className[] = "LocalPlayer";
 const luaL_Reg LuaLocalPlayer::methods[] = {
+		luamethod(LuaLocalPlayer, get_id),
 		luamethod(LuaLocalPlayer, get_velocity),
 		luamethod(LuaLocalPlayer, get_hp),
 		luamethod(LuaLocalPlayer, get_name),
@@ -561,6 +582,7 @@ const luaL_Reg LuaLocalPlayer::methods[] = {
 		luamethod(LuaLocalPlayer, get_last_velocity),
 		luamethod(LuaLocalPlayer, get_last_look_horizontal),
 		luamethod(LuaLocalPlayer, get_last_look_vertical),
+		luamethod(LuaLocalPlayer, get_last_shootline),
 		//
 		luamethod(LuaLocalPlayer, get_control),
 		luamethod(LuaLocalPlayer, get_breath),

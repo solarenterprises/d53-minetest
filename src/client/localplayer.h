@@ -96,6 +96,8 @@ public:
 	v3s16 getStandingNodePos();
 	v3s16 getFootstepNodePos();
 
+	core::line3d<f32> shootline;
+
 	// Used to check if anything changed and prevent sending packets if not
 	v3f last_position;
 	v3f last_speed;

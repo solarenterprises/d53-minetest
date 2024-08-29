@@ -69,7 +69,7 @@ void FpsControl::limit(IrrlichtDevice *device, f32 *dtime, bool assume_paused)
 	else
 		busy_time = 0;
 
-	u64 setLastTime = time;
+	//u64 setLastTime = time;
 
 	if (busy_time < frametime_min) {
 		sleep_time = frametime_min - busy_time;
@@ -88,7 +88,7 @@ void FpsControl::limit(IrrlichtDevice *device, f32 *dtime, bool assume_paused)
 	else
 		*dtime = 0;
 
-	last_time = setLastTime;
+	last_time = time;
 }
 
 class FogShaderConstantSetter : public IShaderConstantSetter

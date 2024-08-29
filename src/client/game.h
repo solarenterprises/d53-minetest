@@ -44,7 +44,7 @@ struct CameraOrientation {
 };
 
 #define GAME_FALLBACK_TIMEOUT 1.8f
-#define GAME_CONNECTION_TIMEOUT 10.0f
+#define GAME_CONNECTION_TIMEOUT 200.0f
 
 void the_game(bool *kill,
 		InputHandler *input,
